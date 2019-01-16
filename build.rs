@@ -4,7 +4,7 @@ extern crate serde;
 extern crate serde_json;
 
 use serde::Deserialize;
-use serde_json::{json, Result, Value};
+use serde_json::{json, Map, Result, Value};
 use std::fs::{self, File};
 use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -35,10 +35,16 @@ fn generate_tests(input: PathBuf, output: &Path) {
 
     let destination = output.join(format!("{}.rs", suite.name));
     let mut outfile = File::create(&destination).unwrap();
-    write!(outfile, "use converter::convert_avro_direct;");
+    write!(
+        outfile,
+r#"
+use converter::convert_avro_direct;
+use serde_json::Value;
+"#
+    );
     for case in suite.tests {
         let formatted = format!(
-r##"
+            r##"
 #[test]
 fn {name}() {{
     let input_data = r#"
@@ -47,9 +53,9 @@ fn {name}() {{
     let expected_data = r#"
     {expected}
     "#;
-    let input = serde_json::from_str(input_data).unwrap();
-    let expected = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(input, "root".to_string()));
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
 }}
 "##,
             name = case.name,

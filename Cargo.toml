@@ -1,11 +1,16 @@
 [package]
-name = "telemetry-schema-transpiler"
+name = "telemetry_schema_transpiler"
 version = "0.1.0"
 authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 edition = "2018"
 
+[lib]
+name = "converter"
+
 [dependencies]
+serde = "*"
 serde_json = "*"
+serde_derive = "*"
 
 [build-dependencies]
 serde = "*"

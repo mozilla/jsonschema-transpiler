@@ -1,4 +1,7 @@
+
 use converter::convert_avro_direct;
+use serde_json::Value;
+
 #[test]
 fn test_atomic() {
     let input_data = r#"
@@ -12,9 +15,9 @@ fn test_atomic() {
 		  "type": "int"
 		}
     "#;
-    let input = serde_json::from_str(input_data).unwrap();
-    let expected = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(input, "root".to_string()));
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
 }
 
 #[test]
@@ -36,9 +39,9 @@ fn test_atomic_with_null() {
 		  ]
 		}
     "#;
-    let input = serde_json::from_str(input_data).unwrap();
-    let expected = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(input, "root".to_string()));
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
 }
 
 #[test]
@@ -56,7 +59,7 @@ fn test_incompatible_atomic_multitype() {
 		  "type": "string"
 		}
     "#;
-    let input = serde_json::from_str(input_data).unwrap();
-    let expected = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(input, "root".to_string()));
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
 }
