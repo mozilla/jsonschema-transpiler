@@ -1,4 +1,4 @@
-use serde_json::{Result, Value, json};
+use serde_json::{json, Result, Value};
 use std::collections::HashMap;
 
 // Documentation references:
@@ -22,28 +22,32 @@ use std::collections::HashMap;
 //     fields: Option<List<Box<AvroField>>>
 // }
 
-// This uses the Value interface for converting values, which is not strongly typed.
-fn convert_avro_direct(input: &Value, name: String) -> Value {
-    let element: Value = match input["type"].as_str().unwrap() {
-        "object" => {
-            let mut fields = Vec::new();
-            for (key, value) in input["properties"].as_object().unwrap().iter() {
-                fields.push(convert_avro_direct(value, key.to_string()));
+pub mod converter {
+    // This uses the Value interface for converting values, which is not strongly typed.
+    pub fn convert_avro_direct(input: &Value, name: String) -> Value {
+        let element: Value = match input["type"].as_str().unwrap() {
+            "object" => {
+                let mut fields = Vec::new();
+                for (key, value) in input["properties"].as_object().unwrap().iter() {
+                    fields.push(convert_avro_direct(value, key.to_string()));
+                }
+                fields.sort_by_key(|obj| obj["name"].as_str().unwrap().to_string());
+                json!({
+                    "type": "record",
+                    "name": name,
+                    "fields": fields,
+                })
             }
-            fields.sort_by_key(|obj| obj["name"].as_str().unwrap().to_string());
-            json!({
-                "type": "record",
-                "name": name,
-                "fields": fields,
-            })
-        }
-        "integer" => json!({"name": name, "type": "int"}),
-        "string" => json!({"name": name, "type": "string"}),
-        "boolean" => json!({"name": name, "type": "boolean"}),
-        _ => json!(null),
-    };
-    json!(element)
+            "integer" => json!({"name": name, "type": "int"}),
+            "string" => json!({"name": name, "type": "string"}),
+            "boolean" => json!({"name": name, "type": "boolean"}),
+            _ => json!(null),
+        };
+        json!(element)
+    }
 }
+
+use converter::convert_avro_direct;
 
 fn main() {
     println!("hello world!");

@@ -5,4 +5,9 @@ authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 edition = "2018"
 
 [dependencies]
-serde_json = "1.0"
+serde_json = "*"
+
+[build-dependencies]
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
