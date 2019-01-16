@@ -1,0 +1,8 @@
+[package]
+name = "telemetry-schema-transpiler"
+version = "0.1.0"
+authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
+edition = "2018"
+
+[dependencies]
+serde_json = "1.0"
