@@ -1,0 +1,43 @@
+{
+    "name": "atomic",
+    "tests": [
+        {
+            "avro": {
+                "name": "root",
+                "type": "int"
+            },
+            "json": {
+                "type": "integer"
+            },
+            "name": "test_atomic"
+        },
+        {
+            "avro": {
+                "name": "root",
+                "type": [
+                    "int",
+                    "null"
+                ]
+            },
+            "json": {
+                "type": [
+                    "integer",
+                    "null"
+                ]
+            },
+            "name": "test_atomic_with_null"
+        },
+        {
+            "name": "test_incompatible_atomic_multitype",
+            "json": {
+                "type": [
+                    "boolean",
+                    "integer"
+                ]
+            },
+            "avro": {
+                "type": "string"
+            }
+        }
+    ]
+}
