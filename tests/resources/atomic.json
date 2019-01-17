@@ -40,6 +40,9 @@
             }
         },
         {
+            "description": [
+                "Test that overlapping types are treated as json blobs."
+            ],
             "name": "test_incompatible_atomic_multitype",
             "test": {
                 "avro": {
@@ -58,6 +61,10 @@
             }
         },
         {
+            "description": [
+                "Test that overlapping types that can be null are nullable json blobs.",
+                "A field is null if any of it's types are null."
+            ],
             "name": "test_incompatible_atomic_multitype_with_null",
             "test": {
                 "avro": {
