@@ -1,0 +1,80 @@
+{
+    "name": "array",
+    "tests": [
+        {
+            "name": "test_array_with_atomics",
+            "test": {
+                "avro": {
+                    "items": {
+                        "type": "int"
+                    },
+                    "name": "root",
+                    "type": "array"
+                },
+                "bigquery": {
+                    "mode": "REPEATED",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                }
+            }
+        },
+        {
+            "name": "test_array_with_complex",
+            "test": {
+                "avro": {
+                    "items": {
+                        "fields": [
+                            {
+                                "name": "field_1",
+                                "type": "string"
+                            },
+                            {
+                                "name": "field_2",
+                                "type": "int"
+                            }
+                        ],
+                        "name": "TODO: ???",
+                        "type": "record"
+                    },
+                    "name": "root",
+                    "type": "array"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_1",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "INTEGER"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "items": {
+                        "properties": {
+                            "field_1": {
+                                "type": "string"
+                            },
+                            "field_2": {
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                }
+            }
+        }
+    ]
+}
