@@ -10,10 +10,16 @@ use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
+struct TestData {
+    avro: Value,
+    bigquery: Value,
+    json: Value,
+}
+
+#[derive(Deserialize, Debug)]
 struct TestCase {
     name: String,
-    avro: Value,
-    json: Value,
+    test: TestData,
 }
 
 #[derive(Deserialize, Debug)]
@@ -59,8 +65,8 @@ fn {name}() {{
 }}
 "##,
             name = case.name,
-            input_data = format_json(case.json),
-            expected = format_json(case.avro),
+            input_data = format_json(case.test.json),
+            expected = format_json(case.test.avro),
         );
         write!(outfile, "{}", formatted).unwrap()
     }

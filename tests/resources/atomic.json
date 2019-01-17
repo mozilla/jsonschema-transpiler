@@ -2,41 +2,59 @@
     "name": "atomic",
     "tests": [
         {
-            "avro": {
-                "name": "root",
-                "type": "int"
-            },
-            "json": {
-                "type": "integer"
-            },
-            "name": "test_atomic"
+            "name": "test_atomic",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "int"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "type": "integer"
+                }
+            }
         },
         {
-            "avro": {
-                "name": "root",
-                "type": [
-                    "int",
-                    "null"
-                ]
-            },
-            "json": {
-                "type": [
-                    "integer",
-                    "null"
-                ]
-            },
-            "name": "test_atomic_with_null"
+            "name": "test_atomic_with_null",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": [
+                        "int",
+                        "null"
+                    ]
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            }
         },
         {
             "name": "test_incompatible_atomic_multitype",
-            "json": {
-                "type": [
-                    "boolean",
-                    "integer"
-                ]
-            },
-            "avro": {
-                "type": "string"
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "type": [
+                        "boolean",
+                        "integer"
+                    ]
+                }
             }
         }
     ]
