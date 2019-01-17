@@ -56,6 +56,25 @@
                     ]
                 }
             }
+        },
+        {
+            "name": "test_incompatible_atomic_multitype_with_null",
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "STRING"
+                },
+                "json": {
+                    "type": [
+                        "boolean",
+                        "integer",
+                        "null"
+                    ]
+                }
+            }
         }
     ]
 }

@@ -63,3 +63,24 @@ fn test_incompatible_atomic_multitype() {
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
 }
+
+#[test]
+fn test_incompatible_atomic_multitype_with_null() {
+    let input_data = r#"
+    {
+		  "type": [
+		    "boolean",
+		    "integer",
+		    "null"
+		  ]
+		}
+    "#;
+    let expected_data = r#"
+    {
+		  "type": "string"
+		}
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+}
