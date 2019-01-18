@@ -1,0 +1,482 @@
+{
+    "name": "oneof",
+    "tests": [
+        {
+            "name": "test_oneof_atomic",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "int"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_oneof_atomic_with_null",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": [
+                        "null",
+                        "int"
+                    ]
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_incompatible_oneof_atomic",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "boolean"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                "Test a oneOf clause and verify that the mode is NULLABLE.",
+                "`null` has a logical-OR like behavior when there are choices of types."
+            ],
+            "name": "test_incompatible_oneof_atomic_with_null",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "STRING"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        },
+                        {
+                            "type": "boolean"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_oneof_object_with_atomics",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_1",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_2",
+                            "type": "int"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_1",
+                            "type": "INTEGER"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "INTEGER"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "integer"
+                                },
+                                "field_2": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "integer"
+                                },
+                                "field_2": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                "Test schemas that share common structure"
+            ],
+            "name": "test_oneof_object_merge",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_1",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_2",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "field_3",
+                            "type": "float"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_1",
+                            "type": "INTEGER"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "BOOLEAN"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_3",
+                            "type": "FLOAT"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "integer"
+                                },
+                                "field_3": {
+                                    "type": "number"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "field_2": {
+                                    "type": "boolean"
+                                },
+                                "field_3": {
+                                    "type": "number"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_oneof_object_merge_with_complex",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_4",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_5",
+                            "type": "boolean"
+                        },
+                        {
+                            "fields": [
+                                {
+                                    "name": "field_1",
+                                    "type": "int"
+                                },
+                                {
+                                    "name": "field_2",
+                                    "type": "boolean"
+                                },
+                                {
+                                    "name": "field_3",
+                                    "type": "float"
+                                }
+                            ],
+                            "name": "namespace_1",
+                            "type": "record"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_4",
+                            "type": "BOOLEAN"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_5",
+                            "type": "FLOAT"
+                        },
+                        {
+                            "fields": [
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_1",
+                                    "type": "INTEGER"
+                                },
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_2",
+                                    "type": "BOOLEAN"
+                                },
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_3",
+                                    "type": "FLOAT"
+                                }
+                            ],
+                            "mode": "NULLABLE",
+                            "name": "namespace_1",
+                            "type": "RECORD"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "namespace_1": {
+                                    "properties": {
+                                        "field_1": {
+                                            "type": "integer"
+                                        },
+                                        "field_3": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "namespace_1": {
+                                    "properties": {
+                                        "field_2": {
+                                            "type": "boolean"
+                                        },
+                                        "field_3": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "field_4": {
+                                    "type": "boolean"
+                                },
+                                "field_5": {
+                                    "type": "number"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_incompatible_oneof_atomic_and_object",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "test_incompatible_oneof_object",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "field_1": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                " Test behavior of creating an incompatible leaf on a complex object.",
+                "NOTE: A conflict at a node invalidates the entire tree. Another ",
+                "conflict resolution method is to treat diffs as json blobs while ",
+                "retaining as much structure as possible."
+            ],
+            "name": "test_incompatible_oneof_object_with_complex",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "namespace_1": {
+                                    "properties": {
+                                        "field_1": {
+                                            "type": "string"
+                                        },
+                                        "field_2": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "properties": {
+                                "namespace_1": {
+                                    "properties": {
+                                        "field_1": {
+                                            "type": "boolean"
+                                        },
+                                        "field_2": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
