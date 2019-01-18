@@ -30,7 +30,8 @@ struct TestSuite {
 
 fn format_json(obj: Value) -> String {
     let pretty = serde_json::to_string_pretty(&obj).unwrap();
-    pretty.replace("\n", "\n\t\t")
+    // 4 spaces
+    pretty.replace("\n", "\n    ")
 }
 
 fn generate_tests(input: PathBuf, output: &Path) {

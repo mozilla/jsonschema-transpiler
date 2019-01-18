@@ -6,14 +6,14 @@ use serde_json::Value;
 fn test_atomic() {
     let input_data = r#"
     {
-		  "type": "integer"
-		}
+      "type": "integer"
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "int"
-		}
+      "name": "root",
+      "type": "int"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -24,20 +24,20 @@ fn test_atomic() {
 fn test_atomic_with_null() {
     let input_data = r#"
     {
-		  "type": [
-		    "integer",
-		    "null"
-		  ]
-		}
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": [
-		    "int",
-		    "null"
-		  ]
-		}
+      "name": "root",
+      "type": [
+        "int",
+        "null"
+      ]
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -48,16 +48,16 @@ fn test_atomic_with_null() {
 fn test_incompatible_atomic_multitype() {
     let input_data = r#"
     {
-		  "type": [
-		    "boolean",
-		    "integer"
-		  ]
-		}
+      "type": [
+        "boolean",
+        "integer"
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "type": "string"
-		}
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -68,17 +68,17 @@ fn test_incompatible_atomic_multitype() {
 fn test_incompatible_atomic_multitype_with_null() {
     let input_data = r#"
     {
-		  "type": [
-		    "boolean",
-		    "integer",
-		    "null"
-		  ]
-		}
+      "type": [
+        "boolean",
+        "integer",
+        "null"
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "type": "string"
-		}
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();

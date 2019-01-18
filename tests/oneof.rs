@@ -6,21 +6,21 @@ use serde_json::Value;
 fn test_oneof_atomic() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "type": "integer"
-		    },
-		    {
-		      "type": "integer"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "int"
-		}
+      "name": "root",
+      "type": "int"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -31,24 +31,24 @@ fn test_oneof_atomic() {
 fn test_oneof_atomic_with_null() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "type": "integer"
-		    },
-		    {
-		      "type": "null"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": [
-		    "null",
-		    "int"
-		  ]
-		}
+      "name": "root",
+      "type": [
+        "null",
+        "int"
+      ]
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -59,21 +59,21 @@ fn test_oneof_atomic_with_null() {
 fn test_incompatible_oneof_atomic() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "type": "integer"
-		    },
-		    {
-		      "type": "boolean"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "string"
-		}
+      "name": "root",
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -84,27 +84,27 @@ fn test_incompatible_oneof_atomic() {
 fn test_incompatible_oneof_atomic_with_null() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "type": [
-		        "integer",
-		        "null"
-		      ]
-		    },
-		    {
-		      "type": "boolean"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": [
-		    "null",
-		    "string"
-		  ]
-		}
+      "name": "root",
+      "type": [
+        "null",
+        "string"
+      ]
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -115,47 +115,47 @@ fn test_incompatible_oneof_atomic_with_null() {
 fn test_oneof_object_with_atomics() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "integer"
-		        },
-		        "field_2": {
-		          "type": "integer"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "integer"
-		        },
-		        "field_2": {
-		          "type": "integer"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            },
+            "field_2": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            },
+            "field_2": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_1",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_2",
-		      "type": "int"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_1",
+          "type": "int"
+        },
+        {
+          "name": "field_2",
+          "type": "int"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -166,51 +166,51 @@ fn test_oneof_object_with_atomics() {
 fn test_oneof_object_merge() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "integer"
-		        },
-		        "field_3": {
-		          "type": "number"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "field_2": {
-		          "type": "boolean"
-		        },
-		        "field_3": {
-		          "type": "number"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            },
+            "field_3": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "field_2": {
+              "type": "boolean"
+            },
+            "field_3": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_1",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_2",
-		      "type": "boolean"
-		    },
-		    {
-		      "name": "field_3",
-		      "type": "float"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_1",
+          "type": "int"
+        },
+        {
+          "name": "field_2",
+          "type": "boolean"
+        },
+        {
+          "name": "field_3",
+          "type": "float"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -221,86 +221,86 @@ fn test_oneof_object_merge() {
 fn test_oneof_object_merge_with_complex() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "properties": {
-		        "namespace_1": {
-		          "properties": {
-		            "field_1": {
-		              "type": "integer"
-		            },
-		            "field_3": {
-		              "type": "number"
-		            }
-		          },
-		          "type": "object"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "namespace_1": {
-		          "properties": {
-		            "field_2": {
-		              "type": "boolean"
-		            },
-		            "field_3": {
-		              "type": "number"
-		            }
-		          },
-		          "type": "object"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "field_4": {
-		          "type": "boolean"
-		        },
-		        "field_5": {
-		          "type": "number"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "properties": {
+            "namespace_1": {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                },
+                "field_3": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "namespace_1": {
+              "properties": {
+                "field_2": {
+                  "type": "boolean"
+                },
+                "field_3": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "field_4": {
+              "type": "boolean"
+            },
+            "field_5": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_4",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_5",
-		      "type": "boolean"
-		    },
-		    {
-		      "fields": [
-		        {
-		          "name": "field_1",
-		          "type": "int"
-		        },
-		        {
-		          "name": "field_2",
-		          "type": "boolean"
-		        },
-		        {
-		          "name": "field_3",
-		          "type": "float"
-		        }
-		      ],
-		      "name": "namespace_1",
-		      "type": "record"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_4",
+          "type": "int"
+        },
+        {
+          "name": "field_5",
+          "type": "boolean"
+        },
+        {
+          "fields": [
+            {
+              "name": "field_1",
+              "type": "int"
+            },
+            {
+              "name": "field_2",
+              "type": "boolean"
+            },
+            {
+              "name": "field_3",
+              "type": "float"
+            }
+          ],
+          "name": "namespace_1",
+          "type": "record"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -311,26 +311,26 @@ fn test_oneof_object_merge_with_complex() {
 fn test_incompatible_oneof_atomic_and_object() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "type": "integer"
-		    },
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "integer"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "string"
-		}
+      "name": "root",
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -341,31 +341,31 @@ fn test_incompatible_oneof_atomic_and_object() {
 fn test_incompatible_oneof_object() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "integer"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "field_1": {
-		          "type": "boolean"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "field_1": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "string"
-		}
+      "name": "root",
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -376,47 +376,47 @@ fn test_incompatible_oneof_object() {
 fn test_incompatible_oneof_object_with_complex() {
     let input_data = r#"
     {
-		  "oneOf": [
-		    {
-		      "properties": {
-		        "namespace_1": {
-		          "properties": {
-		            "field_1": {
-		              "type": "string"
-		            },
-		            "field_2": {
-		              "type": "integer"
-		            }
-		          },
-		          "type": "object"
-		        }
-		      },
-		      "type": "object"
-		    },
-		    {
-		      "properties": {
-		        "namespace_1": {
-		          "properties": {
-		            "field_1": {
-		              "type": "boolean"
-		            },
-		            "field_2": {
-		              "type": "integer"
-		            }
-		          },
-		          "type": "object"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  ]
-		}
+      "oneOf": [
+        {
+          "properties": {
+            "namespace_1": {
+              "properties": {
+                "field_1": {
+                  "type": "string"
+                },
+                "field_2": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "properties": {
+            "namespace_1": {
+              "properties": {
+                "field_1": {
+                  "type": "boolean"
+                },
+                "field_2": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
     "#;
     let expected_data = r#"
     {
-		  "name": "root",
-		  "type": "string"
-		}
+      "name": "root",
+      "type": "string"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();

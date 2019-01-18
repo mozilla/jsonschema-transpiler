@@ -6,46 +6,46 @@ use serde_json::Value;
 fn test_object_with_atomics_is_sorted() {
     let input_data = r#"
     {
-		  "properties": {
-		    "field_1": {
-		      "type": "integer"
-		    },
-		    "field_2": {
-		      "type": "string"
-		    },
-		    "field_3": {
-		      "type": "boolean"
-		    },
-		    "field_4": {
-		      "type": "number"
-		    }
-		  },
-		  "type": "object"
-		}
+      "properties": {
+        "field_1": {
+          "type": "integer"
+        },
+        "field_2": {
+          "type": "string"
+        },
+        "field_3": {
+          "type": "boolean"
+        },
+        "field_4": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_1",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_2",
-		      "type": "string"
-		    },
-		    {
-		      "name": "field_3",
-		      "type": "boolean"
-		    },
-		    {
-		      "name": "field_4",
-		      "type": "float"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_1",
+          "type": "int"
+        },
+        {
+          "name": "field_2",
+          "type": "string"
+        },
+        {
+          "name": "field_3",
+          "type": "boolean"
+        },
+        {
+          "name": "field_4",
+          "type": "float"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -56,43 +56,43 @@ fn test_object_with_atomics_is_sorted() {
 fn test_object_with_atomics_required() {
     let input_data = r#"
     {
-		  "properties": {
-		    "field_1": {
-		      "type": "integer"
-		    },
-		    "field_2": {
-		      "type": "string"
-		    },
-		    "field_3": {
-		      "type": "boolean"
-		    }
-		  },
-		  "required": [
-		    "field_1",
-		    "field_3"
-		  ],
-		  "type": "object"
-		}
+      "properties": {
+        "field_1": {
+          "type": "integer"
+        },
+        "field_2": {
+          "type": "string"
+        },
+        "field_3": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field_1",
+        "field_3"
+      ],
+      "type": "object"
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_1",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_2",
-		      "type": "string"
-		    },
-		    {
-		      "name": "field_3",
-		      "type": "boolean"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_1",
+          "type": "int"
+        },
+        {
+          "name": "field_2",
+          "type": "string"
+        },
+        {
+          "name": "field_3",
+          "type": "boolean"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -103,46 +103,46 @@ fn test_object_with_atomics_required() {
 fn test_object_with_atomics_required_with_null() {
     let input_data = r#"
     {
-		  "properties": {
-		    "field_1": {
-		      "type": [
-		        "integer",
-		        "null"
-		      ]
-		    },
-		    "field_2": {
-		      "type": "string"
-		    },
-		    "field_3": {
-		      "type": "boolean"
-		    }
-		  },
-		  "required": [
-		    "field_1",
-		    "field_3"
-		  ],
-		  "type": "object"
-		}
+      "properties": {
+        "field_1": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "field_2": {
+          "type": "string"
+        },
+        "field_3": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field_1",
+        "field_3"
+      ],
+      "type": "object"
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "name": "field_1",
-		      "type": "int"
-		    },
-		    {
-		      "name": "field_2",
-		      "type": "string"
-		    },
-		    {
-		      "name": "field_3",
-		      "type": "boolean"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "name": "field_1",
+          "type": "int"
+        },
+        {
+          "name": "field_2",
+          "type": "string"
+        },
+        {
+          "name": "field_3",
+          "type": "boolean"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -153,43 +153,43 @@ fn test_object_with_atomics_required_with_null() {
 fn test_object_with_complex() {
     let input_data = r#"
     {
-		  "properties": {
-		    "namespace_1": {
-		      "properties": {
-		        "field_1": {
-		          "type": "string"
-		        },
-		        "field_2": {
-		          "type": "integer"
-		        }
-		      },
-		      "type": "object"
-		    }
-		  },
-		  "type": "object"
-		}
+      "properties": {
+        "namespace_1": {
+          "properties": {
+            "field_1": {
+              "type": "string"
+            },
+            "field_2": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    }
     "#;
     let expected_data = r#"
     {
-		  "fields": [
-		    {
-		      "fields": [
-		        {
-		          "name": "field_1",
-		          "type": "string"
-		        },
-		        {
-		          "name": "field_2",
-		          "type": "int"
-		        }
-		      ],
-		      "name": "namespace_1",
-		      "type": "record"
-		    }
-		  ],
-		  "name": "root",
-		  "type": "record"
-		}
+      "fields": [
+        {
+          "fields": [
+            {
+              "name": "field_1",
+              "type": "string"
+            },
+            {
+              "name": "field_2",
+              "type": "int"
+            }
+          ],
+          "name": "namespace_1",
+          "type": "record"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
