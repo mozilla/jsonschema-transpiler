@@ -1,0 +1,279 @@
+{
+    "name": "object",
+    "tests": [
+        {
+            "description": [
+                "Test that fields are sorted in a record.",
+                "Sorting makes the output schema deterministic."
+            ],
+            "name": "test_object_with_atomics_is_sorted",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_1",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_2",
+                            "type": "string"
+                        },
+                        {
+                            "name": "field_3",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "field_4",
+                            "type": "float"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_1",
+                            "type": "INTEGER"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_3",
+                            "type": "BOOLEAN"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_4",
+                            "type": "FLOAT"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "properties": {
+                        "field_1": {
+                            "type": "integer"
+                        },
+                        "field_2": {
+                            "type": "string"
+                        },
+                        "field_3": {
+                            "type": "boolean"
+                        },
+                        "field_4": {
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "description": [
+                "Test that required fields have the required mode.",
+                "This changes the mode of the underlying atomic field."
+            ],
+            "name": "test_object_with_atomics_required",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_1",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_2",
+                            "type": "string"
+                        },
+                        {
+                            "name": "field_3",
+                            "type": "boolean"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "field_1",
+                            "type": "INTEGER"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "field_3",
+                            "type": "BOOLEAN"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "properties": {
+                        "field_1": {
+                            "type": "integer"
+                        },
+                        "field_2": {
+                            "type": "string"
+                        },
+                        "field_3": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "field_1",
+                        "field_3"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "description": [
+                "Test the output of a nullable required field.",
+                "The field is casted from nullable to required at the object level.",
+                "Since the underlying field is null, the field is then casted back to nullable."
+            ],
+            "name": "test_object_with_atomics_required_with_null",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "field_1",
+                            "type": "int"
+                        },
+                        {
+                            "name": "field_2",
+                            "type": "string"
+                        },
+                        {
+                            "name": "field_3",
+                            "type": "boolean"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_1",
+                            "type": "INTEGER"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "field_2",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "field_3",
+                            "type": "BOOLEAN"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "properties": {
+                        "field_1": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        },
+                        "field_2": {
+                            "type": "string"
+                        },
+                        "field_3": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "field_1",
+                        "field_3"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_object_with_complex",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "fields": [
+                                {
+                                    "name": "field_1",
+                                    "type": "string"
+                                },
+                                {
+                                    "name": "field_2",
+                                    "type": "int"
+                                }
+                            ],
+                            "name": "namespace_1",
+                            "type": "record"
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "fields": [
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_1",
+                                    "type": "STRING"
+                                },
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_2",
+                                    "type": "INTEGER"
+                                }
+                            ],
+                            "mode": "NULLABLE",
+                            "name": "namespace_1",
+                            "type": "RECORD"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "properties": {
+                        "namespace_1": {
+                            "properties": {
+                                "field_1": {
+                                    "type": "string"
+                                },
+                                "field_2": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        }
+    ]
+}

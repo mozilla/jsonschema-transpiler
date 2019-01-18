@@ -1,0 +1,266 @@
+{
+    "description": [
+        "Test the behavior of repeated key-value structures.",
+        "This is influenced strongly by the data-structures used in collecting metrics.",
+        "They have different names but common structure.",
+        "This type of output structure can be handled efficiently with the use of `UNNEST` and projections.",
+        "An alternative is to dump the entire structure to JSON and use javascript UDFs to handle processing."
+    ],
+    "name": "map",
+    "tests": [
+        {
+            "name": "test_map_with_atomics",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "type": "int"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "INTEGER"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_map_with_complex",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "fields": [
+                            {
+                                "name": "field_1",
+                                "type": "string"
+                            },
+                            {
+                                "name": "field_2",
+                                "type": "int"
+                            }
+                        ],
+                        "name": "TODO: ???",
+                        "type": "record"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "fields": [
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_1",
+                                    "type": "STRING"
+                                },
+                                {
+                                    "mode": "NULLABLE",
+                                    "name": "field_2",
+                                    "type": "INTEGER"
+                                }
+                            ],
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "RECORD"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": {
+                        "properties": {
+                            "field_1": {
+                                "type": "string"
+                            },
+                            "field_2": {
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_map_with_pattern_properties",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "type": "int"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "INTEGER"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        ".+": {
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_map_with_pattern_and_additional_properties",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "type": "int"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "INTEGER"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "patternProperties": {
+                        ".+": {
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_incompatible_map_with_pattern_properties",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "type": "string"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "STRING"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^I_": {
+                            "type": "integer"
+                        },
+                        "^S_": {
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "name": "test_incompatible_map_with_pattern_and_additional_properties",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "map",
+                    "values": {
+                        "type": "string"
+                    }
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "key",
+                            "type": "STRING"
+                        },
+                        {
+                            "mode": "REQUIRED",
+                            "name": "value",
+                            "type": "STRING"
+                        }
+                    ],
+                    "mode": "REPEATED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "patternProperties": {
+                        ".+": {
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                }
+            }
+        }
+    ]
+}

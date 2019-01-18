@@ -1,0 +1,87 @@
+{
+    "name": "atomic",
+    "tests": [
+        {
+            "name": "test_atomic",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": "int"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "type": "integer"
+                }
+            }
+        },
+        {
+            "name": "test_atomic_with_null",
+            "test": {
+                "avro": {
+                    "name": "root",
+                    "type": [
+                        "int",
+                        "null"
+                    ]
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "INTEGER"
+                },
+                "json": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                "Test that overlapping types are treated as json blobs."
+            ],
+            "name": "test_incompatible_atomic_multitype",
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "type": [
+                        "boolean",
+                        "integer"
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                "Test that overlapping types that can be null are nullable json blobs.",
+                "A field is null if any of it's types are null."
+            ],
+            "name": "test_incompatible_atomic_multitype_with_null",
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "NULLABLE",
+                    "type": "STRING"
+                },
+                "json": {
+                    "type": [
+                        "boolean",
+                        "integer",
+                        "null"
+                    ]
+                }
+            }
+        }
+    ]
+}
