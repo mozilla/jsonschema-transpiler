@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_oneof_atomic() {
+fn avro_test_oneof_atomic() {
     let input_data = r#"
     {
       "oneOf": [
@@ -28,7 +28,7 @@ fn test_oneof_atomic() {
 }
 
 #[test]
-fn test_oneof_atomic_with_null() {
+fn avro_test_oneof_atomic_with_null() {
     let input_data = r#"
     {
       "oneOf": [
@@ -56,7 +56,7 @@ fn test_oneof_atomic_with_null() {
 }
 
 #[test]
-fn test_incompatible_oneof_atomic() {
+fn avro_test_incompatible_oneof_atomic() {
     let input_data = r#"
     {
       "oneOf": [
@@ -81,7 +81,7 @@ fn test_incompatible_oneof_atomic() {
 }
 
 #[test]
-fn test_incompatible_oneof_atomic_with_null() {
+fn avro_test_incompatible_oneof_atomic_with_null() {
     let input_data = r#"
     {
       "oneOf": [
@@ -112,7 +112,7 @@ fn test_incompatible_oneof_atomic_with_null() {
 }
 
 #[test]
-fn test_oneof_object_with_atomics() {
+fn avro_test_oneof_object_with_atomics() {
     let input_data = r#"
     {
       "oneOf": [
@@ -163,7 +163,7 @@ fn test_oneof_object_with_atomics() {
 }
 
 #[test]
-fn test_oneof_object_merge() {
+fn avro_test_oneof_object_merge() {
     let input_data = r#"
     {
       "oneOf": [
@@ -218,7 +218,7 @@ fn test_oneof_object_merge() {
 }
 
 #[test]
-fn test_oneof_object_merge_with_complex() {
+fn avro_test_oneof_object_merge_with_complex() {
     let input_data = r#"
     {
       "oneOf": [
@@ -308,7 +308,7 @@ fn test_oneof_object_merge_with_complex() {
 }
 
 #[test]
-fn test_incompatible_oneof_atomic_and_object() {
+fn avro_test_incompatible_oneof_atomic_and_object() {
     let input_data = r#"
     {
       "oneOf": [
@@ -338,7 +338,7 @@ fn test_incompatible_oneof_atomic_and_object() {
 }
 
 #[test]
-fn test_incompatible_oneof_object() {
+fn avro_test_incompatible_oneof_object() {
     let input_data = r#"
     {
       "oneOf": [
@@ -373,7 +373,7 @@ fn test_incompatible_oneof_object() {
 }
 
 #[test]
-fn test_incompatible_oneof_object_with_complex() {
+fn avro_test_incompatible_oneof_object_with_complex() {
     let input_data = r#"
     {
       "oneOf": [

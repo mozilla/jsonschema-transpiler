@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_map_with_atomics() {
+fn avro_test_map_with_atomics() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -27,7 +27,7 @@ fn test_map_with_atomics() {
 }
 
 #[test]
-fn test_map_with_complex() {
+fn avro_test_map_with_complex() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -70,7 +70,7 @@ fn test_map_with_complex() {
 }
 
 #[test]
-fn test_map_with_pattern_properties() {
+fn avro_test_map_with_pattern_properties() {
     let input_data = r#"
     {
       "additionalProperties": false,
@@ -97,7 +97,7 @@ fn test_map_with_pattern_properties() {
 }
 
 #[test]
-fn test_map_with_pattern_and_additional_properties() {
+fn avro_test_map_with_pattern_and_additional_properties() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -126,7 +126,7 @@ fn test_map_with_pattern_and_additional_properties() {
 }
 
 #[test]
-fn test_incompatible_map_with_pattern_properties() {
+fn avro_test_incompatible_map_with_pattern_properties() {
     let input_data = r#"
     {
       "additionalProperties": false,
@@ -156,7 +156,7 @@ fn test_incompatible_map_with_pattern_properties() {
 }
 
 #[test]
-fn test_incompatible_map_with_pattern_and_additional_properties() {
+fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
     let input_data = r#"
     {
       "additionalProperties": {

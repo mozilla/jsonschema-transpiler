@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_allof_object() {
+fn avro_test_allof_object() {
     let input_data = r#"
     {
       "allOf": [

@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_atomic() {
+fn avro_test_atomic() {
     let input_data = r#"
     {
       "type": "integer"
@@ -21,7 +21,7 @@ fn test_atomic() {
 }
 
 #[test]
-fn test_atomic_with_null() {
+fn avro_test_atomic_with_null() {
     let input_data = r#"
     {
       "type": [
@@ -45,7 +45,7 @@ fn test_atomic_with_null() {
 }
 
 #[test]
-fn test_incompatible_atomic_multitype() {
+fn avro_test_incompatible_atomic_multitype() {
     let input_data = r#"
     {
       "type": [
@@ -65,7 +65,7 @@ fn test_incompatible_atomic_multitype() {
 }
 
 #[test]
-fn test_incompatible_atomic_multitype_with_null() {
+fn avro_test_incompatible_atomic_multitype_with_null() {
     let input_data = r#"
     {
       "type": [

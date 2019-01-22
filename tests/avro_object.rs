@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_object_with_atomics_is_sorted() {
+fn avro_test_object_with_atomics_is_sorted() {
     let input_data = r#"
     {
       "properties": {
@@ -53,7 +53,7 @@ fn test_object_with_atomics_is_sorted() {
 }
 
 #[test]
-fn test_object_with_atomics_required() {
+fn avro_test_object_with_atomics_required() {
     let input_data = r#"
     {
       "properties": {
@@ -100,7 +100,7 @@ fn test_object_with_atomics_required() {
 }
 
 #[test]
-fn test_object_with_atomics_required_with_null() {
+fn avro_test_object_with_atomics_required_with_null() {
     let input_data = r#"
     {
       "properties": {
@@ -150,7 +150,7 @@ fn test_object_with_atomics_required_with_null() {
 }
 
 #[test]
-fn test_object_with_complex() {
+fn avro_test_object_with_complex() {
     let input_data = r#"
     {
       "properties": {

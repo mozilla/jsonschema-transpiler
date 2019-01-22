@@ -3,7 +3,7 @@ use converter::convert_avro_direct;
 use serde_json::Value;
 
 #[test]
-fn test_array_with_atomics() {
+fn avro_test_array_with_atomics() {
     let input_data = r#"
     {
       "items": {
@@ -27,7 +27,7 @@ fn test_array_with_atomics() {
 }
 
 #[test]
-fn test_array_with_complex() {
+fn avro_test_array_with_complex() {
     let input_data = r#"
     {
       "items": {

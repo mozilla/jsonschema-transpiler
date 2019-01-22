@@ -34,14 +34,7 @@ fn format_json(obj: Value) -> String {
     pretty.replace("\n", "\n    ")
 }
 
-fn generate_tests(input: PathBuf, output: &Path) {
-    let file = File::open(input).unwrap();
-    let reader = BufReader::new(file);
-    let suite: TestSuite = serde_json::from_reader(reader).unwrap();
-    println!("{:?}", suite);
-
-    let destination = output.join(format!("{}.rs", suite.name));
-    let mut outfile = File::create(&destination).unwrap();
+fn write_avro_tests(mut outfile: File, suite: TestSuite) {
     write!(
         outfile,
         r#"
@@ -53,7 +46,7 @@ use serde_json::Value;
         let formatted = format!(
             r##"
 #[test]
-fn {name}() {{
+fn avro_{name}() {{
     let input_data = r#"
     {input_data}
     "#;
@@ -71,6 +64,17 @@ fn {name}() {{
         );
         write!(outfile, "{}", formatted).unwrap()
     }
+}
+
+fn generate_tests(input: PathBuf, output: &Path) {
+    let file = File::open(input).unwrap();
+    let reader = BufReader::new(file);
+    let suite: TestSuite = serde_json::from_reader(reader).unwrap();
+    println!("{:?}", suite);
+
+    let avro_dst = output.join(format!("avro_{}.rs", suite.name));
+    let mut avro_file = File::create(&avro_dst).unwrap();
+    write_avro_tests(avro_file, suite)
 }
 
 fn main() {
