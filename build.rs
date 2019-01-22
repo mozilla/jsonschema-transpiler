@@ -44,7 +44,7 @@ fn generate_tests(input: PathBuf, output: &Path) {
     let mut outfile = File::create(&destination).unwrap();
     write!(
         outfile,
-r#"
+        r#"
 use converter::convert_avro_direct;
 use serde_json::Value;
 "#
