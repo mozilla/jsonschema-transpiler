@@ -1,5 +1,5 @@
 [package]
-name = "telemetry_schema_transpiler"
+name = "jsonschema_transpiler"
 version = "0.1.0"
 authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 edition = "2018"
