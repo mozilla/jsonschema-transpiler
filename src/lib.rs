@@ -25,3 +25,7 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     };
     json!(element)
 }
+
+pub fn convert_bigquery_direct(input: &Value, name: String) -> Value {
+    unimplemented!()
+}
