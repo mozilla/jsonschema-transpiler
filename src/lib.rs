@@ -26,6 +26,35 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     json!(element)
 }
 
-pub fn convert_bigquery_direct(input: &Value, name: String) -> Value {
-    unimplemented!()
+/// Convert JSONSchema into a BigQuery compatible schema
+///
+/// ## Notes:
+/// It's probably useful to pass the entire subtree to the current node in the
+/// tree in order to make sense of context.
+pub fn convert_bigquery_direct(input: &Value) -> Value {
+    let (dtype, mode): (String, String) = match &input["type"] {
+        // if the type is a string, the mapping is straightforward
+        Value::String(dtype) => {
+            // arrays are a special-case that should be returned when seen
+            if dtype.as_str() == "array" {
+                // TODO: what happens to arrays of optional integers?
+                let value: Value = convert_bigquery_direct(&input["items"]);
+                let dtype: String = value["type"].as_str().unwrap().to_owned();
+                (dtype, "REPEATED".into())
+            } else {
+                let mapped_dtype = match dtype.as_str() {
+                    "integer" => "INTEGER",
+                    "number" => "FLOAT",
+                    "boolean" => "BOOLEAN",
+                    "string" => "STRING",
+                    "object" => "RECORD",
+                    _ => panic!(),
+                };
+                (mapped_dtype.into(), "REQUIRED".into())
+            }
+        }
+        Value::Array(lst) => ("foo".into(), "bar".into()),
+        _ => panic!(),
+    };
+    json!({"foo": "bar"})
 }
