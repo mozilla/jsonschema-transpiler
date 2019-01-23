@@ -1,9 +1,9 @@
 
-use converter::convert_avro_direct;
+use converter::convert_bigquery_direct;
 use serde_json::Value;
 
 #[test]
-fn avro_test_allof_object() {
+fn bigquery_test_allof_object() {
     let input_data = r#"
     {
       "allOf": [
@@ -37,23 +37,26 @@ fn avro_test_allof_object() {
     {
       "fields": [
         {
+          "mode": "NULLABLE",
           "name": "field_1",
-          "type": "int"
+          "type": "INTEGER"
         },
         {
+          "mode": "NULLABLE",
           "name": "field_2",
-          "type": "string"
+          "type": "STRING"
         },
         {
+          "mode": "REQUIRED",
           "name": "field_3",
-          "type": "boolean"
+          "type": "BOOLEAN"
         }
       ],
-      "name": "root",
-      "type": "record"
+      "mode": "REQUIRED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }

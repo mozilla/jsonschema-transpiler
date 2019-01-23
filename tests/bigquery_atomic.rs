@@ -1,9 +1,9 @@
 
-use converter::convert_avro_direct;
+use converter::convert_bigquery_direct;
 use serde_json::Value;
 
 #[test]
-fn avro_test_atomic() {
+fn bigquery_test_atomic() {
     let input_data = r#"
     {
       "type": "integer"
@@ -11,17 +11,17 @@ fn avro_test_atomic() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "int"
+      "mode": "REQUIRED",
+      "type": "INTEGER"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_atomic_with_null() {
+fn bigquery_test_atomic_with_null() {
     let input_data = r#"
     {
       "type": [
@@ -32,20 +32,17 @@ fn avro_test_atomic_with_null() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": [
-        "int",
-        "null"
-      ]
+      "mode": "NULLABLE",
+      "type": "INTEGER"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_atomic_multitype() {
+fn bigquery_test_incompatible_atomic_multitype() {
     let input_data = r#"
     {
       "type": [
@@ -56,16 +53,17 @@ fn avro_test_incompatible_atomic_multitype() {
     "#;
     let expected_data = r#"
     {
-      "type": "string"
+      "mode": "REQUIRED",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_atomic_multitype_with_null() {
+fn bigquery_test_incompatible_atomic_multitype_with_null() {
     let input_data = r#"
     {
       "type": [
@@ -77,10 +75,11 @@ fn avro_test_incompatible_atomic_multitype_with_null() {
     "#;
     let expected_data = r#"
     {
-      "type": "string"
+      "mode": "NULLABLE",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }

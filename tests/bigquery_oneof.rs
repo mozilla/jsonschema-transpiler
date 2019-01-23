@@ -1,9 +1,9 @@
 
-use converter::convert_avro_direct;
+use converter::convert_bigquery_direct;
 use serde_json::Value;
 
 #[test]
-fn avro_test_oneof_atomic() {
+fn bigquery_test_oneof_atomic() {
     let input_data = r#"
     {
       "oneOf": [
@@ -18,17 +18,17 @@ fn avro_test_oneof_atomic() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "int"
+      "mode": "REQUIRED",
+      "type": "INTEGER"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_oneof_atomic_with_null() {
+fn bigquery_test_oneof_atomic_with_null() {
     let input_data = r#"
     {
       "oneOf": [
@@ -43,20 +43,17 @@ fn avro_test_oneof_atomic_with_null() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": [
-        "null",
-        "int"
-      ]
+      "mode": "NULLABLE",
+      "type": "INTEGER"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_oneof_atomic() {
+fn bigquery_test_incompatible_oneof_atomic() {
     let input_data = r#"
     {
       "oneOf": [
@@ -71,17 +68,17 @@ fn avro_test_incompatible_oneof_atomic() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "string"
+      "mode": "REQUIRED",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_oneof_atomic_with_null() {
+fn bigquery_test_incompatible_oneof_atomic_with_null() {
     let input_data = r#"
     {
       "oneOf": [
@@ -99,20 +96,17 @@ fn avro_test_incompatible_oneof_atomic_with_null() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": [
-        "null",
-        "string"
-      ]
+      "mode": "NULLABLE",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_oneof_object_with_atomics() {
+fn bigquery_test_oneof_object_with_atomics() {
     let input_data = r#"
     {
       "oneOf": [
@@ -145,25 +139,27 @@ fn avro_test_oneof_object_with_atomics() {
     {
       "fields": [
         {
+          "mode": "NULLABLE",
           "name": "field_1",
-          "type": "int"
+          "type": "INTEGER"
         },
         {
+          "mode": "NULLABLE",
           "name": "field_2",
-          "type": "int"
+          "type": "INTEGER"
         }
       ],
-      "name": "root",
-      "type": "record"
+      "mode": "REQUIRED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_oneof_object_merge() {
+fn bigquery_test_oneof_object_merge() {
     let input_data = r#"
     {
       "oneOf": [
@@ -196,29 +192,32 @@ fn avro_test_oneof_object_merge() {
     {
       "fields": [
         {
+          "mode": "NULLABLE",
           "name": "field_1",
-          "type": "int"
+          "type": "INTEGER"
         },
         {
+          "mode": "NULLABLE",
           "name": "field_2",
-          "type": "boolean"
+          "type": "BOOLEAN"
         },
         {
+          "mode": "NULLABLE",
           "name": "field_3",
-          "type": "float"
+          "type": "FLOAT"
         }
       ],
-      "name": "root",
-      "type": "record"
+      "mode": "REQUIRED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_oneof_object_merge_with_complex() {
+fn bigquery_test_oneof_object_merge_with_complex() {
     let input_data = r#"
     {
       "oneOf": [
@@ -272,43 +271,49 @@ fn avro_test_oneof_object_merge_with_complex() {
     {
       "fields": [
         {
+          "mode": "NULLABLE",
           "name": "field_4",
-          "type": "int"
+          "type": "BOOLEAN"
         },
         {
+          "mode": "NULLABLE",
           "name": "field_5",
-          "type": "boolean"
+          "type": "FLOAT"
         },
         {
           "fields": [
             {
+              "mode": "NULLABLE",
               "name": "field_1",
-              "type": "int"
+              "type": "INTEGER"
             },
             {
+              "mode": "NULLABLE",
               "name": "field_2",
-              "type": "boolean"
+              "type": "BOOLEAN"
             },
             {
+              "mode": "NULLABLE",
               "name": "field_3",
-              "type": "float"
+              "type": "FLOAT"
             }
           ],
+          "mode": "NULLABLE",
           "name": "namespace_1",
-          "type": "record"
+          "type": "RECORD"
         }
       ],
-      "name": "root",
-      "type": "record"
+      "mode": "REQUIRED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_oneof_atomic_and_object() {
+fn bigquery_test_incompatible_oneof_atomic_and_object() {
     let input_data = r#"
     {
       "oneOf": [
@@ -328,17 +333,17 @@ fn avro_test_incompatible_oneof_atomic_and_object() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "string"
+      "mode": "REQUIRED",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_oneof_object() {
+fn bigquery_test_incompatible_oneof_object() {
     let input_data = r#"
     {
       "oneOf": [
@@ -363,17 +368,17 @@ fn avro_test_incompatible_oneof_object() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "string"
+      "mode": "REQUIRED",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_oneof_object_with_complex() {
+fn bigquery_test_incompatible_oneof_object_with_complex() {
     let input_data = r#"
     {
       "oneOf": [
@@ -414,11 +419,11 @@ fn avro_test_incompatible_oneof_object_with_complex() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "string"
+      "mode": "REQUIRED",
+      "type": "STRING"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }

@@ -1,9 +1,9 @@
 
-use converter::convert_avro_direct;
+use converter::convert_bigquery_direct;
 use serde_json::Value;
 
 #[test]
-fn avro_test_map_with_atomics() {
+fn bigquery_test_map_with_atomics() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -14,20 +14,29 @@ fn avro_test_map_with_atomics() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "type": "int"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "INTEGER"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_map_with_complex() {
+fn bigquery_test_map_with_complex() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -46,31 +55,41 @@ fn avro_test_map_with_complex() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "fields": [
-          {
-            "name": "field_1",
-            "type": "string"
-          },
-          {
-            "name": "field_2",
-            "type": "int"
-          }
-        ],
-        "name": "TODO: ???",
-        "type": "record"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "fields": [
+            {
+              "mode": "NULLABLE",
+              "name": "field_1",
+              "type": "STRING"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_2",
+              "type": "INTEGER"
+            }
+          ],
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "RECORD"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_map_with_pattern_properties() {
+fn bigquery_test_map_with_pattern_properties() {
     let input_data = r#"
     {
       "additionalProperties": false,
@@ -84,20 +103,29 @@ fn avro_test_map_with_pattern_properties() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "type": "int"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "INTEGER"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_map_with_pattern_and_additional_properties() {
+fn bigquery_test_map_with_pattern_and_additional_properties() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -113,20 +141,29 @@ fn avro_test_map_with_pattern_and_additional_properties() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "type": "int"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "INTEGER"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_map_with_pattern_properties() {
+fn bigquery_test_incompatible_map_with_pattern_properties() {
     let input_data = r#"
     {
       "additionalProperties": false,
@@ -143,20 +180,29 @@ fn avro_test_incompatible_map_with_pattern_properties() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "type": "string"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "STRING"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }
 
 #[test]
-fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
+fn bigquery_test_incompatible_map_with_pattern_and_additional_properties() {
     let input_data = r#"
     {
       "additionalProperties": {
@@ -172,14 +218,23 @@ fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
     "#;
     let expected_data = r#"
     {
-      "name": "root",
-      "type": "map",
-      "values": {
-        "type": "string"
-      }
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "key",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "value",
+          "type": "STRING"
+        }
+      ],
+      "mode": "REPEATED",
+      "type": "RECORD"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
 }

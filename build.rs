@@ -110,7 +110,7 @@ fn generate_tests(input: PathBuf, output: &Path) {
 
     let bq_dst = output.join(format!("bigquery_{}.rs", suite.name));
     let bq_file = File::create(&bq_dst).unwrap();
-    write_avro_tests(bq_file, &suite);
+    write_bigquery_tests(bq_file, &suite);
 }
 
 fn main() {
