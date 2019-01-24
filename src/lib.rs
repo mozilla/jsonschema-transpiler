@@ -1,4 +1,6 @@
 use serde_json::{json, Value};
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 // This uses the Value interface for converting values, which is not strongly typed.
 pub fn convert_avro_direct(input: &Value, name: String) -> Value {
@@ -53,7 +55,23 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
                 (mapped_dtype.into(), "REQUIRED".into())
             }
         }
-        Value::Array(lst) => ("foo".into(), "bar".into()),
+        // handle multi-types
+        Value::Array(vec) => {
+            let mut set: HashSet<&str> =
+                HashSet::from_iter(vec.into_iter().map(|x| x.as_str().unwrap()));
+            let mode = if set.contains("null") {
+                set.remove("null");
+                "NULLABLE"
+            } else {
+                "REQUIRED"
+            };
+            let dtype = if set.len() > 1 {
+                "STRING"
+            } else {
+                set.iter().next().unwrap()
+            };
+            (dtype.into(), mode.into())
+        }
         _ => panic!(),
     };
     json!({"foo": "bar"})
