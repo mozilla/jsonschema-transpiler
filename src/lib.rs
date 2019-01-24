@@ -28,6 +28,26 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     json!(element)
 }
 
+fn match_simple_bq_types(dtype: &str, ctx: &Value) -> (String, String) {
+    // arrays are a special-case that should be returned when seen
+    if dtype == "array" {
+        // TODO: what happens to arrays of optional integers?
+        let value: Value = convert_bigquery_direct(&ctx["items"]);
+        let dtype: String = value["type"].as_str().unwrap().to_owned();
+        (dtype, "REPEATED".into())
+    } else {
+        let mapped_dtype = match dtype {
+            "integer" => "INTEGER",
+            "number" => "FLOAT",
+            "boolean" => "BOOLEAN",
+            "string" => "STRING",
+            "object" => "RECORD",
+            _ => panic!(),
+        };
+        (mapped_dtype.into(), "REQUIRED".into())
+    }
+}
+
 /// Convert JSONSchema into a BigQuery compatible schema
 ///
 /// ## Notes:
@@ -36,25 +56,7 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
 pub fn convert_bigquery_direct(input: &Value) -> Value {
     let (dtype, mode): (String, String) = match &input["type"] {
         // if the type is a string, the mapping is straightforward
-        Value::String(dtype) => {
-            // arrays are a special-case that should be returned when seen
-            if dtype.as_str() == "array" {
-                // TODO: what happens to arrays of optional integers?
-                let value: Value = convert_bigquery_direct(&input["items"]);
-                let dtype: String = value["type"].as_str().unwrap().to_owned();
-                (dtype, "REPEATED".into())
-            } else {
-                let mapped_dtype = match dtype.as_str() {
-                    "integer" => "INTEGER",
-                    "number" => "FLOAT",
-                    "boolean" => "BOOLEAN",
-                    "string" => "STRING",
-                    "object" => "RECORD",
-                    _ => panic!(),
-                };
-                (mapped_dtype.into(), "REQUIRED".into())
-            }
-        }
+        Value::String(dtype) => match_simple_bq_types(dtype.as_str(), input),
         // handle multi-types
         Value::Array(vec) => {
             let mut set: HashSet<&str> =
@@ -66,11 +68,13 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
                 "REQUIRED"
             };
             let dtype = if set.len() > 1 {
-                "STRING"
+                "STRING".into()
             } else {
-                set.iter().next().unwrap()
+                let rest = set.iter().next().unwrap();
+                let (dtype, _) = match_simple_bq_types(rest, input);
+                dtype
             };
-            (dtype.into(), mode.into())
+            (dtype, mode.into())
         }
         _ => panic!(),
     };
