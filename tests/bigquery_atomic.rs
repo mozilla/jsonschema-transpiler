@@ -17,7 +17,7 @@ fn bigquery_test_atomic() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn bigquery_test_atomic_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn bigquery_test_incompatible_atomic_multitype() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -81,5 +81,5 @@ fn bigquery_test_incompatible_atomic_multitype_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }

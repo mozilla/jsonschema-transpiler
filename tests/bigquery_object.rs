@@ -53,7 +53,7 @@ fn bigquery_test_object_with_atomics_is_sorted() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn bigquery_test_object_with_atomics_required() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn bigquery_test_object_with_atomics_required_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -206,5 +206,5 @@ fn bigquery_test_object_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }

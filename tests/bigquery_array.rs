@@ -20,7 +20,7 @@ fn bigquery_test_array_with_atomics() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }
 
 #[test]
@@ -61,5 +61,5 @@ fn bigquery_test_array_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }

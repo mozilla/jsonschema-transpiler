@@ -1,4 +1,6 @@
 use serde_json::{json, Value};
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 // This uses the Value interface for converting values, which is not strongly typed.
 pub fn convert_avro_direct(input: &Value, name: String) -> Value {
@@ -26,6 +28,58 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     json!(element)
 }
 
-pub fn convert_bigquery_direct(input: &Value, name: String) -> Value {
-    unimplemented!()
+fn match_simple_bq_types(dtype: &str, ctx: &Value) -> (String, String) {
+    // arrays are a special-case that should be returned when seen
+    if dtype == "array" {
+        // TODO: what happens to arrays of optional integers?
+        let value: Value = convert_bigquery_direct(&ctx["items"]);
+        let dtype: String = value["type"].as_str().unwrap().to_owned();
+        (dtype, "REPEATED".into())
+    } else {
+        let mapped_dtype = match dtype {
+            "integer" => "INTEGER",
+            "number" => "FLOAT",
+            "boolean" => "BOOLEAN",
+            "string" => "STRING",
+            "object" => "RECORD",
+            _ => panic!(),
+        };
+        (mapped_dtype.into(), "REQUIRED".into())
+    }
+}
+
+/// Convert JSONSchema into a BigQuery compatible schema
+///
+/// ## Notes:
+/// It's probably useful to pass the entire subtree to the current node in the
+/// tree in order to make sense of context.
+pub fn convert_bigquery_direct(input: &Value) -> Value {
+    let (dtype, mode): (String, String) = match &input["type"] {
+        // if the type is a string, the mapping is straightforward
+        Value::String(dtype) => match_simple_bq_types(dtype.as_str(), input),
+        // handle multi-types
+        Value::Array(vec) => {
+            let mut set: HashSet<&str> =
+                HashSet::from_iter(vec.into_iter().map(|x| x.as_str().unwrap()));
+            let mode = if set.contains("null") {
+                set.remove("null");
+                "NULLABLE"
+            } else {
+                "REQUIRED"
+            };
+            let dtype = if set.len() > 1 {
+                "STRING".into()
+            } else {
+                let rest = set.iter().next().unwrap();
+                let (dtype, _) = match_simple_bq_types(rest, input);
+                dtype
+            };
+            (dtype, mode.into())
+        }
+        _ => panic!(),
+    };
+    json!({
+        "type": dtype,
+        "mode": mode,
+    })
 }
