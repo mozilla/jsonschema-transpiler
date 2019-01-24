@@ -74,5 +74,8 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
         }
         _ => panic!(),
     };
-    json!({"foo": "bar"})
+    json!({
+        "type": dtype,
+        "mode": mode,
+    })
 }

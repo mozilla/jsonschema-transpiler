@@ -87,7 +87,7 @@ fn bigquery_{name}() {{
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery_direct(&input, "root".to_string()));
+    assert_eq!(expected, convert_bigquery_direct(&input));
 }}
 "##,
             name = case.name,
