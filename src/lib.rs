@@ -1,4 +1,4 @@
-use serde_json::{json, Value, Map};
+use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
@@ -81,11 +81,35 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
     if dtype == "RECORD" {
         match &input["properties"].as_object() {
             Some(properties) => {
-                let mut fields: Vec<Value> = Vec::from_iter(properties.into_iter().map(|(k, v)| {
-                    let mut field: Value = convert_bigquery_direct(v);
-                    field.as_object_mut().unwrap().insert("name".to_string(), json!(k));
-                    json!(field)
-                }));
+                let required: HashSet<String> = match input["required"].as_array() {
+                    Some(array) => HashSet::from_iter(
+                        array
+                            .to_vec()
+                            .into_iter()
+                            .map(|v| v.as_str().unwrap().to_string()),
+                    ),
+                    None => HashSet::new(),
+                };
+                let mut fields: Vec<Value> =
+                    Vec::from_iter(properties.into_iter().map(|(k, v)| {
+                        let mut field: Value = convert_bigquery_direct(v);
+                        let mode: String = field["mode"].as_str().unwrap().into();
+
+                        // create a mutable reference to the processed value
+                        let object = field.as_object_mut().unwrap();
+                        object.insert("name".to_string(), json!(k));
+
+                        // ignore the mode of the field unless defined in `required` keyword field
+                        if mode != "REPEATED" {
+                            if required.contains(k) && mode != "NULLABLE" {
+                                object.insert("mode".to_string(), json!("REQUIRED"));
+                            } else {
+                                object.insert("mode".to_string(), json!("NULLABLE"));
+                            }
+                        }
+                        // return this record
+                        json!(object)
+                    }));
                 fields.sort_by_key(|x| x["name"].as_str().unwrap().to_string());
                 json!({
                     "type": dtype,
