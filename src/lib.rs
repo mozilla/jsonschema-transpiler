@@ -118,7 +118,15 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
         match &input["properties"].as_object() {
             Some(properties) => handle_record(properties, dtype, mode, input),
             None => {
-                unimplemented!();
+                match &input["items"].as_object() {
+                    Some(_) => {
+                        let mut field: Value = convert_bigquery_direct(&input["items"]);
+                        let object = field.as_object_mut().unwrap();
+                        object.insert("mode".to_string(), json!("REPEATED"));
+                        json!(object)
+                    },
+                    None => unimplemented!()
+                }
             }
         }
     } else {
