@@ -1,3 +1,9 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::iter::FromIterator;
@@ -105,6 +111,15 @@ fn handle_record(
         "mode": mode,
         "fields": fields,
     })
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct BigQueryRecord {
+    #[serde(rename = "type")]
+    dtype: String,
+    mode: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fields: Option<Vec<Box<BigQueryRecord>>>,
 }
 
 struct ConsistencyState {
@@ -232,4 +247,42 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
             "mode": mode,
         })
     }
+}
+
+#[test]
+fn test_bigquery_record_single_level() {
+    let x = BigQueryRecord {
+        dtype: "INTEGER".into(),
+        mode: "NULLABLE".into(),
+        fields: None,
+    };
+    let value = json!(x);
+    assert_eq!(value, json!({"type": "INTEGER", "mode": "NULLABLE"}))
+}
+
+#[test]
+fn test_bigquery_record_nested() {
+    let x = BigQueryRecord {
+        dtype: "INTEGER".into(),
+        mode: "NULLABLE".into(),
+        fields: Some(vec![Box::new(BigQueryRecord {
+            dtype: "STRING".into(),
+            mode: "NULLABLE".into(),
+            fields: None,
+        })]),
+    };
+    let value = json!(x);
+    assert_eq!(
+        value,
+        json!({
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "fields": [
+                {
+                    "type": "STRING",
+                    "mode": "NULLABLE",
+                }
+            ]
+        })
+    )
 }
