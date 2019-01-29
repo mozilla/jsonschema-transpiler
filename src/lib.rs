@@ -1,5 +1,5 @@
 use serde_json::{json, Map, Value};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::iter::FromIterator;
 
 // This uses the Value interface for converting values, which is not strongly typed.
@@ -107,6 +107,98 @@ fn handle_record(
     })
 }
 
+struct ConsistencyState {
+    dtype: String,
+    mode: String,
+    consistent: bool,
+}
+
+impl Default for ConsistencyState {
+    fn default() -> Self {
+        ConsistencyState {
+            dtype: "STRING".into(),
+            mode: "NULLABLE".into(),
+            consistent: true,
+        }
+    }
+}
+
+// Resolve the output of oneOf by finding a super-set of the schemas. This defaults to STRING otherwise.
+fn handle_oneof(values: &Vec<Value>) -> Value {
+    let elements: Vec<Value> = Vec::from_iter(
+        values
+            .into_iter()
+            .map(|value| convert_bigquery_direct(&value)),
+    );
+
+    let nullable: bool = elements
+        .iter()
+        .all(|el| el["mode"].as_str().unwrap() == "NULLABLE");
+
+    // filter null values and other types
+    let filtered: Vec<Value> = Vec::from_iter(
+        elements
+            .into_iter()
+            .filter_map(Option::Some)
+            .filter(|x| !x["type"].is_null()),
+    );
+
+    // iterate over the entire document tree and collect values per node
+    let mut resolution_table: HashMap<String, ConsistencyState> = HashMap::new();
+
+    let mut queue: VecDeque<(String, Value)> = VecDeque::new();
+    queue.extend(filtered.into_iter().map(|el| ("".into(), el)));
+
+    while !queue.is_empty() {
+        let (namespace, node) = queue.pop_front().unwrap();
+        let key = match node["name"].as_str() {
+            Some(name) => name.to_string(),
+            None => "__ROOT__".into(),
+        };
+        let dtype = node["type"].as_str().unwrap().into();
+        let mode = node["mode"].as_str().unwrap().into();
+
+        // check for consistency
+        if let Some(state) = resolution_table.get_mut(&key) {
+            if !state.consistent
+                || state.dtype != dtype
+                || (state.mode == "REPEATING") ^ (mode == "REPEATING")
+            {
+                state.dtype = "STRING".into();
+                state.mode = "NULLABLE".into();
+                state.consistent = false;
+            } else if dtype == "NULLABLE" {
+                state.mode = dtype;
+            };
+        } else {
+            let state = ConsistencyState {
+                dtype: dtype,
+                mode: mode,
+                consistent: true,
+            };
+            resolution_table.insert(key.clone(), state);
+        };
+
+        if let Some(fields) = node["fields"].as_array() {
+            for field in fields {
+                let namespace = if namespace != "" {
+                    format!("{}.{}", namespace, key.clone())
+                } else {
+                    key.clone()
+                };
+                queue.push_back((namespace, json!(field)));
+            }
+        };
+    }
+
+    // TODO: build the final document
+    if resolution_table.iter().any(|(_, state)| !state.consistent) {
+        return json!({"type": "STRING", "mode": "NULLABLE"});
+    }
+
+    unimplemented!()
+}
+
 /// Convert JSONSchema into a BigQuery compatible schema
 pub fn convert_bigquery_direct(input: &Value) -> Value {
     let (dtype, mode): (String, String) = match &input["type"] {
@@ -124,8 +216,13 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
                         let object = field.as_object_mut().unwrap();
                         object.insert("mode".to_string(), json!("REPEATED"));
                         json!(object)
-                    },
-                    None => unimplemented!()
+                    }
+                    None => {
+                        // The schema doesn't contain properties or items, but
+                        // contains additionalProperties and/or patternProperties.
+                        // Handle this case as a map-type.
+                        unimplemented!()
+                    }
                 }
             }
         }

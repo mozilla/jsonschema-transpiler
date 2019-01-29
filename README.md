@@ -39,3 +39,27 @@ Consider the case when all fields within an object are treated as `NULLABLE` unl
 This is technically correct behavior because an object property can be missing unless required.
 We can also assume the opposite perspective and treat fields as `REQUIRED` unless type is a multi-type including `null`.
 This is more explicit, but would be wrong in the case where the property was actually optional.
+
+
+#### `oneOf` keyword
+
+One of the features of JSONSchema is the ability to handle variant types through the use of the `oneOf` keyword.
+For example, a particular field in a document could be treated as both an integer and an array of integers:
+
+```json
+{"oneOf": [{"type": "integer"}, {"type": "array", "items": {"type": "integer"}}]}
+```
+
+This would validate against the following JSON elements:
+
+```json
+42
+[1, 1, 2, 3, 5]
+```
+
+The case provided is actually a degenerate one -- in most binary data formats, we do not have the ability to express a simple and complex element as a union.
+We treat this sub-document as a string and let the consumer of the data handle further data processing.
+
+However, this keyword makes sense when matching against objects that share common properties.
+In this case, we would take the super-set of all of sub-schemas in order to find a common representation.
+This process is done via a conflict-resolution procedure that determines whether there is a valid common representation.
