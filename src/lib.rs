@@ -115,6 +115,8 @@ fn handle_record(
 
 #[derive(Serialize, Deserialize, Debug)]
 struct BigQueryRecord {
+    #[serde(skip_serializing_if = "BigQueryRecord::is_root")]
+    name: String,
     #[serde(rename = "type")]
     dtype: String,
     mode: String,
@@ -249,23 +251,38 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
     }
 }
 
+
+#[test]
+fn test_bigquery_record_skips_root() {
+    let x = BigQueryRecord {
+        name: "__ROOT__".into(),
+        dtype: "INTEGER".into(),
+        mode: "NULLABLE".into(),
+        fields: None,
+    };
+    assert_eq!(json!(x), json!({"type": "INTEGER", "mode": "NULLABLE"}))
+}
+
 #[test]
 fn test_bigquery_record_single_level() {
     let x = BigQueryRecord {
+        name: "field_name".into(),
         dtype: "INTEGER".into(),
         mode: "NULLABLE".into(),
         fields: None,
     };
     let value = json!(x);
-    assert_eq!(value, json!({"type": "INTEGER", "mode": "NULLABLE"}))
+    assert_eq!(value, json!({"name": "field_name", "type": "INTEGER", "mode": "NULLABLE"}))
 }
 
 #[test]
 fn test_bigquery_record_nested() {
     let x = BigQueryRecord {
+        name: "__ROOT__".into(),
         dtype: "INTEGER".into(),
         mode: "NULLABLE".into(),
         fields: Some(vec![Box::new(BigQueryRecord {
+            name: "field_name".into(),
             dtype: "STRING".into(),
             mode: "NULLABLE".into(),
             fields: None,
@@ -279,6 +296,7 @@ fn test_bigquery_record_nested() {
             "mode": "NULLABLE",
             "fields": [
                 {
+                    "name": "field_name",
                     "type": "STRING",
                     "mode": "NULLABLE",
                 }
