@@ -34,14 +34,7 @@ fn format_json(obj: Value) -> String {
     pretty.replace("\n", "\n    ")
 }
 
-fn write_avro_tests(mut outfile: File, suite: &TestSuite) {
-    write!(
-        outfile,
-        r#"
-use converter::convert_avro_direct;
-use serde_json::Value;
-"#
-    );
+fn write_avro_tests(mut outfile: &File, suite: &TestSuite) {
     for case in &suite.tests {
         let formatted = format!(
             r##"
@@ -66,14 +59,7 @@ fn avro_{name}() {{
     }
 }
 
-fn write_bigquery_tests(mut outfile: File, suite: &TestSuite) {
-    write!(
-        outfile,
-        r#"
-use converter::convert_bigquery_direct;
-use serde_json::Value;
-"#
-    );
+fn write_bigquery_tests(mut outfile: &File, suite: &TestSuite) {
     for case in &suite.tests {
         let formatted = format!(
             r##"
@@ -98,27 +84,35 @@ fn bigquery_{name}() {{
     }
 }
 
-fn generate_tests(input: PathBuf, output: &Path) {
-    let file = File::open(input).unwrap();
-    let reader = BufReader::new(file);
-    let suite: TestSuite = serde_json::from_reader(reader).unwrap();
-    println!("{:?}", suite);
-
-    let avro_dst = output.join(format!("avro_{}.rs", suite.name));
-    let avro_file = File::create(&avro_dst).unwrap();
-    write_avro_tests(avro_file, &suite);
-
-    let bq_dst = output.join(format!("bigquery_{}.rs", suite.name));
-    let bq_file = File::create(&bq_dst).unwrap();
-    write_bigquery_tests(bq_file, &suite);
-}
-
 fn main() {
-    let test_directory = "tests";
     let test_cases = "tests/resources";
+
+    let mut avro_fp = File::create("tests/avro.rs").unwrap();
+    let mut bq_fp = File::create("tests/bigquery.rs").unwrap();
+
+    write!(
+        avro_fp,
+        r#"
+use converter::convert_avro_direct;
+use serde_json::Value;
+"#
+    );
+
+    write!(
+        bq_fp,
+        r#"
+use converter::convert_bigquery_direct;
+use serde_json::Value;
+"#
+    );
+
     for entry in fs::read_dir(test_cases).unwrap() {
         let path = entry.unwrap().path();
         println!("Test file: {:?}", path);
-        generate_tests(path, Path::new(test_directory));
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let suite: TestSuite = serde_json::from_reader(reader).unwrap();
+        write_avro_tests(&avro_fp, &suite);
+        write_bigquery_tests(&bq_fp, &suite)
     }
 }
