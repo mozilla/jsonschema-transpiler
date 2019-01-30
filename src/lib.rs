@@ -124,6 +124,52 @@ struct BigQueryRecord {
     fields: Option<Vec<Box<BigQueryRecord>>>,
 }
 
+impl BigQueryRecord {
+    fn is_root(name: &str) -> bool {
+        name == "__ROOT__"
+    }
+    
+    /// Insert a field into a BigQuery schema
+    /// 
+    /// # Arguments
+    /// * `key` - A vector of field names to determine the location in the schema
+    /// * `value` - The record to insert into the schema
+    fn insert(&mut self, keys: &mut Vec<&str>, value: BigQueryRecord) {
+        let mut node = self;
+        let name: String = keys.pop().unwrap().into();
+        for (i, key) in keys.iter().enumerate() {
+            // the first key is at the same level as the root node
+            if i == 0 || key == &"__ROOT__" {
+                continue;
+            }
+            if node.fields.is_none() {
+                node.fields = Some(Vec::new());
+            }
+            // find the child element, or create it
+            let index = node.fields.unwrap().binary_search_by_key(&key.to_string(), |x| x.name.to_string());
+            node = match index {
+                Ok(idx) => {
+                    &mut *node.fields.unwrap().get_mut(idx).unwrap()
+                },
+                Err(_) => {
+                    let mut child = BigQueryRecord {
+                        name: key.to_string(),
+                        dtype: "RECORD".into(),
+                        mode: "REQUIRED".into(),
+                        fields: None,
+                    };
+                    node.fields.unwrap().push(Box::new(child));
+                    &mut child
+                }
+            }
+        }
+        if node.fields.is_none() {
+            node.fields = Some(Vec::new());
+        }
+        node.fields.unwrap().push(Box::new(value));
+    }
+}
+
 struct ConsistencyState {
     dtype: String,
     mode: String,
@@ -212,6 +258,9 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
     if resolution_table.iter().any(|(_, state)| !state.consistent) {
         return json!({"type": "STRING", "mode": "NULLABLE"});
     }
+
+    let mut source = Vec::from_iter(resolution_table.into_iter());
+    source.sort_by_key(|(k, _)| k.to_string());
 
     unimplemented!()
 }
