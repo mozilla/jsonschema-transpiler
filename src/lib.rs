@@ -128,45 +128,59 @@ impl BigQueryRecord {
     fn is_root(name: &str) -> bool {
         name == "__ROOT__"
     }
-    
-    /// Insert a field into a BigQuery schema
-    /// 
-    /// # Arguments
-    /// * `key` - A vector of field names to determine the location in the schema
-    /// * `value` - The record to insert into the schema
-    fn insert(&mut self, keys: &mut Vec<&str>, value: BigQueryRecord) {
-        let mut node = self;
-        let name: String = keys.pop().unwrap().into();
-        for (i, key) in keys.iter().enumerate() {
-            // the first key is at the same level as the root node
-            if i == 0 || key == &"__ROOT__" {
-                continue;
-            }
-            if node.fields.is_none() {
-                node.fields = Some(Vec::new());
-            }
-            // find the child element, or create it
-            let index = node.fields.unwrap().binary_search_by_key(&key.to_string(), |x| x.name.to_string());
-            node = match index {
-                Ok(idx) => {
-                    &mut *node.fields.unwrap().get_mut(idx).unwrap()
-                },
-                Err(_) => {
-                    let mut child = BigQueryRecord {
-                        name: key.to_string(),
-                        dtype: "RECORD".into(),
-                        mode: "REQUIRED".into(),
-                        fields: None,
-                    };
-                    node.fields.unwrap().push(Box::new(child));
-                    &mut child
+
+    fn insert_helper(&mut self, keys: &mut VecDeque<&str>, value: BigQueryRecord) {
+        // traverse the document tree, creating records if necessary
+        // check if the current node has fields
+        if keys.is_empty() {
+            return;
+        }
+        let key = keys.pop_front().unwrap();
+        match &mut self.fields {
+            Some(fields) => {
+                if let Ok(index) =
+                    fields.binary_search_by_key(&key.to_string(), |x| x.name.to_string())
+                {
+                    // the field exists, and it's the key that we're looking for
+                    let mut field = fields.get_mut(index).unwrap();
+                    if keys.is_empty() {
+                        std::mem::replace(&mut *field, Box::new(value));
+                    } else {
+                        field.insert_helper(keys, value);
+                    }
                 }
             }
-        }
-        if node.fields.is_none() {
-            node.fields = Some(Vec::new());
-        }
-        node.fields.unwrap().push(Box::new(value));
+            None => {
+                if keys.is_empty() {
+                    self.fields = Some(vec![Box::new(value)]);
+                    return;
+                }
+                let mut node = BigQueryRecord {
+                    name: key.to_string(),
+                    dtype: "RECORD".into(),
+                    mode: "REQUIRED".into(),
+                    fields: None,
+                };
+                node.insert_helper(keys, value);
+                self.fields = Some(vec![Box::new(node)]);
+            }
+        };
+    }
+
+    /// Insert a field into a BigQuery schema
+    ///
+    /// # Arguments
+    /// * `key` - The position in the schema to insert the record
+    /// * `value` - The record to insert into the schema
+    ///
+    /// # Example
+    /// The key can take on the following shape:
+    /// `__ROOT__.foo.bar`
+    fn insert(&mut self, key: String, value: BigQueryRecord) {
+        let mut keys: VecDeque<&str> = VecDeque::from_iter(key.split("."));
+        // pop the __ROOT__ off the front, which is unnecessary
+        keys.pop_front();
+        self.insert_helper(&mut keys, value);
     }
 }
 
@@ -216,7 +230,7 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
         let (namespace, node) = queue.pop_front().unwrap();
         let key = match node["name"].as_str() {
             Some(name) => name.to_string(),
-            None => "__ROOT__".into(),
+            None => "__ROOT__".to_string(),
         };
         let dtype = node["type"].as_str().unwrap().into();
         let mode = node["mode"].as_str().unwrap().into();
@@ -300,7 +314,6 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
     }
 }
 
-
 #[test]
 fn test_bigquery_record_skips_root() {
     let x = BigQueryRecord {
@@ -321,7 +334,10 @@ fn test_bigquery_record_single_level() {
         fields: None,
     };
     let value = json!(x);
-    assert_eq!(value, json!({"name": "field_name", "type": "INTEGER", "mode": "NULLABLE"}))
+    assert_eq!(
+        value,
+        json!({"name": "field_name", "type": "INTEGER", "mode": "NULLABLE"})
+    )
 }
 
 #[test]
@@ -352,4 +368,63 @@ fn test_bigquery_record_nested() {
             ]
         })
     )
+}
+
+#[test]
+fn test_bigquery_record_insertion() {
+    let mut root = BigQueryRecord {
+        name: "__ROOT__".into(),
+        dtype: "RECORD".into(),
+        mode: "NULLABLE".into(),
+        fields: None,
+    };
+    let foo = BigQueryRecord {
+        name: "foo".into(),
+        dtype: "RECORD".into(),
+        mode: "NULLABLE".into(),
+        fields: None,
+    };
+    let bar = BigQueryRecord {
+        name: "bar".into(),
+        dtype: "INTEGER".into(),
+        mode: "NULLABLE".into(),
+        fields: None,
+    };
+    &root.insert("__ROOT__.foo".into(), foo);
+    assert_eq!(
+        json!(root),
+        json!({
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [
+                {
+                    "name": "foo",
+                    "type": "RECORD",
+                    "mode": "NULLABLE",
+                }
+            ]
+        })
+    );
+    root.insert("__ROOT__.foo.bar".into(), bar);
+    assert_eq!(
+        json!(root),
+        json!({
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [
+                {
+                    "name": "foo",
+                    "type": "RECORD",
+                    "mode": "NULLABLE",
+                    "fields": [
+                        {
+                            "name": "bar",
+                            "type": "INTEGER",
+                            "mode": "NULLABLE",
+                        }
+                    ]
+                }
+            ]
+        })
+    );
 }
