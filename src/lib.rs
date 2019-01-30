@@ -176,7 +176,7 @@ impl BigQueryRecord {
     /// # Example
     /// The key can take on the following shape:
     /// `__ROOT__.foo.bar`
-    fn insert(&mut self, key: String, value: BigQueryRecord) {
+    pub fn insert(&mut self, key: String, value: BigQueryRecord) {
         let mut keys: VecDeque<&str> = VecDeque::from_iter(key.split("."));
         // pop the __ROOT__ off the front, which is unnecessary
         keys.pop_front();
@@ -184,7 +184,30 @@ impl BigQueryRecord {
     }
 }
 
+impl From<ConsistencyState> for BigQueryRecord {
+    fn from(state: ConsistencyState) -> Self {
+        BigQueryRecord {
+            name: state.name,
+            dtype: state.dtype,
+            mode: state.mode,
+            fields: None,
+        }
+    }
+}
+
+impl From<&mut ConsistencyState> for BigQueryRecord {
+    fn from(state: &mut ConsistencyState) -> Self {
+        BigQueryRecord {
+            name: state.name.to_string(),
+            dtype: state.dtype.to_string(),
+            mode: state.mode.to_string(),
+            fields: None,
+        }
+    }
+}
+
 struct ConsistencyState {
+    name: String,
     dtype: String,
     mode: String,
     consistent: bool,
@@ -193,6 +216,7 @@ struct ConsistencyState {
 impl Default for ConsistencyState {
     fn default() -> Self {
         ConsistencyState {
+            name: "__TEMP__".into(),
             dtype: "STRING".into(),
             mode: "NULLABLE".into(),
             consistent: true,
@@ -249,6 +273,7 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
             };
         } else {
             let state = ConsistencyState {
+                name: key.clone(),
                 dtype: dtype,
                 mode: mode,
                 consistent: true,
@@ -268,15 +293,25 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
         };
     }
 
-    // TODO: build the final document
+    // build the final document
     if resolution_table.iter().any(|(_, state)| !state.consistent) {
         return json!({"type": "STRING", "mode": "NULLABLE"});
     }
 
+    let mut root: BigQueryRecord = resolution_table.get_mut("__ROOT__".into()).unwrap().into();
+    if root.mode != "REPEATED" && nullable {
+        root.mode = "NULLABLE".into()
+    }
+    resolution_table.remove("__ROOT__".into());
+
     let mut source = Vec::from_iter(resolution_table.into_iter());
     source.sort_by_key(|(k, _)| k.to_string());
 
-    unimplemented!()
+    for (key, value) in source {
+        root.insert(key, value.into());
+    }
+
+    json!(root)
 }
 
 /// Convert JSONSchema into a BigQuery compatible schema
