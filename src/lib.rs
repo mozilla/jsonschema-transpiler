@@ -61,24 +61,21 @@ impl JSONSchemaType {
     }
 
     /// Create typing context about a JSONSchema object
-    /// 
+    ///
     /// # Arguments
     /// * `value` - A serde_json::Value containing a schema
     pub fn from_value(node: &Value) -> JSONSchemaType {
-        match node["type"] {
-            Value::String(dtype) => {
-                JSONSchemaType {
-                    kind: JSONSchemaType::kind_from_string(dtype), 
-                    nullable: false
-                }
+        match &node["type"] {
+            Value::String(dtype) => JSONSchemaType {
+                kind: JSONSchemaType::kind_from_string(dtype.as_str()),
+                nullable: false,
             },
             Value::Array(multitype) => {
-                let mut set: HashSet<JSONSchemaKind> = 
-                    HashSet::from_iter(
-                        multitype
+                let mut set: HashSet<JSONSchemaKind> = HashSet::from_iter(
+                    multitype
                         .into_iter()
-                        .map(|s| JSONSchemaType::kind_from_string(s.as_str().unwrap().into()))
-                    );
+                        .map(|s| JSONSchemaType::kind_from_string(s.as_str().unwrap().into())),
+                );
                 let mut json_type = JSONSchemaType::new();
                 if set.contains(&JSONSchemaKind::Null) {
                     json_type.nullable = true;
@@ -90,9 +87,8 @@ impl JSONSchemaType {
                     json_type.kind = set.into_iter().next().unwrap();
                 }
                 json_type
-
-            },
-            Value::Null => {
+            }
+            _ => {
                 let kind = if !node["properties"].is_null() {
                     JSONSchemaKind::Object
                 } else if !node["allOf"].is_null() {
@@ -102,13 +98,16 @@ impl JSONSchemaType {
                 } else {
                     JSONSchemaKind::Unknown
                 };
-                JSONSchemaType {kind: kind, nullable: false}
+                JSONSchemaType {
+                    kind: kind,
+                    nullable: false,
+                }
             }
         }
     }
 
-    fn kind_from_string(dtype: String) -> JSONSchemaKind {
-        match dtype.as_str() {
+    fn kind_from_string(dtype: &str) -> JSONSchemaKind {
+        match dtype {
             "null" => JSONSchemaKind::Null,
             "boolean" => JSONSchemaKind::Boolean,
             "integer" => JSONSchemaKind::Integer,
@@ -116,7 +115,7 @@ impl JSONSchemaType {
             "string" => JSONSchemaKind::String,
             "object" => JSONSchemaKind::Object,
             "array" => JSONSchemaKind::Array,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
@@ -125,22 +124,28 @@ impl JSONSchemaType {
             JSONSchemaKind::Boolean => "BOOLEAN",
             JSONSchemaKind::Integer => "INTEGER",
             _ => "STRING",
-        }
+        };
         type_str.into()
     }
 
     pub fn as_bq_mode(&self) -> String {
-        unimplemented!()
+        let mode = if self.kind == JSONSchemaKind::Array {
+            "REPEATED"
+        } else if self.nullable {
+            "NULLABLE"
+        } else {
+            "REQUIRED"
+        };
+        mode.into()
     }
 }
-
 
 /// Convert JSONSchema into a BigQuery compatible schema
 pub fn convert_bigquery_direct(input: &Value) -> Value {
     let json_type = JSONSchemaType::from_value(input);
     match json_type.kind {
         JSONSchemaKind::Object => match &input["properties"].as_object() {
-            Some(properties) => handle_record(properties, mode, input),
+            Some(properties) => handle_record(properties, json_type.as_bq_mode(), input),
             None => {
                 // The schema doesn't contain properties or items, but
                 // contains additionalProperties and/or patternProperties.
@@ -176,7 +181,17 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
         }
         JSONSchemaKind::AllOf => unimplemented!(),
         JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
-        _ => unimplemented!(),
+        JSONSchemaKind::Unknown => {
+            // handle unknown document types as a string-type (or potentially drop it)
+            json!({
+                "type": "STRING",
+                "mode": "NULLABLE",
+            })
+        }
+        _ => json!({
+            "type": json_type.as_bq_type(),
+            "mode": json_type.as_bq_mode(),
+        }),
     }
 }
 
