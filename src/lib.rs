@@ -123,6 +123,10 @@ impl JSONSchemaType {
         let type_str = match self.kind {
             JSONSchemaKind::Boolean => "BOOLEAN",
             JSONSchemaKind::Integer => "INTEGER",
+            JSONSchemaKind::Number => "FLOAT",
+            JSONSchemaKind::String => "STRING",
+            JSONSchemaKind::Object => "RECORD",
+            // Array does not have a corresponding type in bq
             _ => "STRING",
         };
         type_str.into()
@@ -131,7 +135,7 @@ impl JSONSchemaType {
     pub fn as_bq_mode(&self) -> String {
         let mode = if self.kind == JSONSchemaKind::Array {
             "REPEATED"
-        } else if self.nullable {
+        } else if self.nullable || self.kind == JSONSchemaKind::Null {
             "NULLABLE"
         } else {
             "REQUIRED"
@@ -163,12 +167,16 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
                         extras.push(json!(additional_props));
                     }
                 }
+                let mut value = handle_oneof(&extras);
+                if let Some(object) = value.as_object_mut() {
+                    object.insert("name".into(), json!("value"));
+                }
                 json!({
                     "type": "RECORD",
                     "mode": "REPEATED",
                     "fields": [
                         {"name": "key", "type": "STRING", "mode": "REQUIRED"},
-                        handle_oneof(&extras)
+                        value,
                     ]
                 })
             }
@@ -181,13 +189,6 @@ pub fn convert_bigquery_direct(input: &Value) -> Value {
         }
         JSONSchemaKind::AllOf => unimplemented!(),
         JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
-        JSONSchemaKind::Unknown => {
-            // handle unknown document types as a string-type (or potentially drop it)
-            json!({
-                "type": "STRING",
-                "mode": "NULLABLE",
-            })
-        }
         _ => json!({
             "type": json_type.as_bq_type(),
             "mode": json_type.as_bq_mode(),
@@ -344,29 +345,20 @@ impl Default for ConsistencyState {
 
 // Resolve the output of oneOf by finding a super-set of the schemas. This defaults to STRING otherwise.
 fn handle_oneof(values: &Vec<Value>) -> Value {
+    let nullable: bool = values.iter().any(|v| JSONSchemaType::from_value(v).nullable);
+
     let elements: Vec<Value> = Vec::from_iter(
         values
             .into_iter()
-            .map(|value| convert_bigquery_direct(&value)),
-    );
-
-    let nullable: bool = elements
-        .iter()
-        .all(|el| el["mode"].as_str().unwrap() == "NULLABLE");
-
-    // filter null values and other types
-    let filtered: Vec<Value> = Vec::from_iter(
-        elements
-            .into_iter()
-            .filter_map(Option::Some)
-            .filter(|x| !x["type"].is_null()),
+            .filter(|v| JSONSchemaType::from_value(v).kind != JSONSchemaKind::Null)
+            .map(|v| convert_bigquery_direct(&v)),
     );
 
     // iterate over the entire document tree and collect values per node
     let mut resolution_table: HashMap<String, ConsistencyState> = HashMap::new();
 
     let mut queue: VecDeque<(String, Value)> = VecDeque::new();
-    queue.extend(filtered.into_iter().map(|el| ("".into(), el)));
+    queue.extend(elements.into_iter().map(|el| ("".into(), el)));
 
     while !queue.is_empty() {
         let (namespace, node) = queue.pop_front().unwrap();
@@ -413,7 +405,8 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
 
     // build the final document
     if resolution_table.iter().any(|(_, state)| !state.consistent) {
-        return json!({"type": "STRING", "mode": "NULLABLE"});
+        let mode = if nullable {"NULLABLE"} else {"REQUIRED"};
+        return json!({"type": "STRING", "mode": mode.to_string()});
     }
 
     let mut root: BigQueryRecord = resolution_table.get_mut("__ROOT__".into()).unwrap().into();
