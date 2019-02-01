@@ -19,8 +19,6 @@
 //     fields: Option<List<Box<AvroField>>>
 // }
 extern crate converter;
-use converter::convert_avro_direct;
-use serde_json::Value;
 
 fn main() {
     println!("hello world!");

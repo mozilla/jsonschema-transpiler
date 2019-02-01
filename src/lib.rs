@@ -3,7 +3,6 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::iter::FromIterator;
@@ -246,7 +245,7 @@ impl BigQueryRecord {
                     fields.binary_search_by_key(&key.to_string(), |x| x.name.to_string())
                 {
                     // the field exists, and it's the key that we're looking for
-                    let mut field = fields.get_mut(index).unwrap();
+                    let field = fields.get_mut(index).unwrap();
                     if keys.is_empty() {
                         std::mem::replace(&mut *field, Box::new(value));
                     } else {
