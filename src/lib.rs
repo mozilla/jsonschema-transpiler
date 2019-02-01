@@ -34,110 +34,151 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     json!(element)
 }
 
-/// Convert JSONSchema into a BigQuery compatible schema
-pub fn convert_bigquery_direct(input: &Value) -> Value {
-    let (dtype, mode): (String, String) = match &input["type"] {
-        Value::String(dtype) => match_bq_atomic_type(dtype.as_str(), input),
-        Value::Array(vec) => match_bq_multi_type(vec, input),
-        _ => panic!(),
-    };
-    let json_type: Option<&str> = {
-        if !input["type"].is_null() {
-            input["type"].as_str()
-        } else if !input["properties"].is_null() {
-            Some("object")
-        } else if !input["allOf"].is_null() {
-            Some("allOf")
-        } else if !input["oneOf"].is_null() {
-            Some("oneOf")
-        } else {
-            None
+#[derive(Eq, PartialEq, Hash)]
+enum JSONSchemaKind {
+    Null,
+    Boolean,
+    Integer,
+    Number,
+    String,
+    Object,
+    Array,
+    AllOf,
+    OneOf,
+    Unknown,
+}
+
+struct JSONSchemaType {
+    kind: JSONSchemaKind,
+    nullable: bool,
+}
+
+impl JSONSchemaType {
+    pub fn new() -> Self {
+        JSONSchemaType {
+            kind: JSONSchemaKind::Unknown,
+            nullable: false,
         }
-    };
-    match json_type {
-        Some(type_value) => match type_value {
-            "object" => match &input["properties"].as_object() {
-                Some(properties) => handle_record(properties, mode, input),
-                None => {
-                    // The schema doesn't contain properties or items, but
-                    // contains additionalProperties and/or patternProperties.
-                    // Handle this case as a map-type.
-                    let mut extras: Vec<Value> = Vec::new();
-                    if let Some(pattern_props) = &input.get("patternProperties") {
-                        if let Some(object) = pattern_props.as_object() {
-                            for value in object.values() {
-                                extras.push(json!(value));
-                            }
-                        }
-                    }
-                    if let Some(additional_props) = &input.get("additionalProperties") {
-                        if additional_props.is_object() {
-                            extras.push(json!(additional_props));
-                        }
-                    }
-                    json!({
-                        "type": "RECORD",
-                        "mode": "REPEATED",
-                        "fields": [
-                            {"name": "key", "type": "STRING", "mode": "REQUIRED"},
-                            handle_oneof(&extras)
-                        ]
-                    })
+    }
+
+    /// Create typing context about a JSONSchema object
+    /// 
+    /// # Arguments
+    /// * `value` - A serde_json::Value containing a schema
+    pub fn from_value(node: &Value) -> JSONSchemaType {
+        match node["type"] {
+            Value::String(dtype) => {
+                JSONSchemaType {
+                    kind: JSONSchemaType::kind_from_string(dtype), 
+                    nullable: false
                 }
             },
-            "array" => {
-                let mut field: Value = convert_bigquery_direct(&input["items"]);
-                let object = field.as_object_mut().unwrap();
-                object.insert("mode".to_string(), json!("REPEATED"));
-                json!(object)
+            Value::Array(multitype) => {
+                let mut set: HashSet<JSONSchemaKind> = 
+                    HashSet::from_iter(
+                        multitype
+                        .into_iter()
+                        .map(|s| JSONSchemaType::kind_from_string(s.as_str().unwrap().into()))
+                    );
+                let mut json_type = JSONSchemaType::new();
+                if set.contains(&JSONSchemaKind::Null) {
+                    json_type.nullable = true;
+                    set.remove(&JSONSchemaKind::Null);
+                };
+                if set.len() > 1 {
+                    json_type.kind = JSONSchemaKind::Unknown;
+                } else {
+                    json_type.kind = set.into_iter().next().unwrap();
+                }
+                json_type
+
+            },
+            Value::Null => {
+                let kind = if !node["properties"].is_null() {
+                    JSONSchemaKind::Object
+                } else if !node["allOf"].is_null() {
+                    JSONSchemaKind::AllOf
+                } else if !node["oneOf"].is_null() {
+                    JSONSchemaKind::OneOf
+                } else {
+                    JSONSchemaKind::Unknown
+                };
+                JSONSchemaType {kind: kind, nullable: false}
             }
-            "allOf" => unimplemented!(),
-            "oneOf" => handle_oneof(&input["oneOf"].as_array().unwrap()),
-            _ => json!({
-                "type": dtype,
-                "mode": mode,
-            }),
+        }
+    }
+
+    fn kind_from_string(dtype: String) -> JSONSchemaKind {
+        match dtype.as_str() {
+            "null" => JSONSchemaKind::Null,
+            "boolean" => JSONSchemaKind::Boolean,
+            "integer" => JSONSchemaKind::Integer,
+            "number" => JSONSchemaKind::Number,
+            "string" => JSONSchemaKind::String,
+            "object" => JSONSchemaKind::Object,
+            "array" => JSONSchemaKind::Array,
+            _ => panic!()
+        }
+    }
+
+    pub fn as_bq_type(&self) -> String {
+        let type_str = match self.kind {
+            JSONSchemaKind::Boolean => "BOOLEAN",
+            JSONSchemaKind::Integer => "INTEGER",
+            _ => "STRING",
+        }
+        type_str.into()
+    }
+
+    pub fn as_bq_mode(&self) -> String {
+        unimplemented!()
+    }
+}
+
+
+/// Convert JSONSchema into a BigQuery compatible schema
+pub fn convert_bigquery_direct(input: &Value) -> Value {
+    let json_type = JSONSchemaType::from_value(input);
+    match json_type.kind {
+        JSONSchemaKind::Object => match &input["properties"].as_object() {
+            Some(properties) => handle_record(properties, mode, input),
+            None => {
+                // The schema doesn't contain properties or items, but
+                // contains additionalProperties and/or patternProperties.
+                // Handle this case as a map-type.
+                let mut extras: Vec<Value> = Vec::new();
+                if let Some(pattern_props) = &input.get("patternProperties") {
+                    if let Some(object) = pattern_props.as_object() {
+                        for value in object.values() {
+                            extras.push(json!(value));
+                        }
+                    }
+                }
+                if let Some(additional_props) = &input.get("additionalProperties") {
+                    if additional_props.is_object() {
+                        extras.push(json!(additional_props));
+                    }
+                }
+                json!({
+                    "type": "RECORD",
+                    "mode": "REPEATED",
+                    "fields": [
+                        {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+                        handle_oneof(&extras)
+                    ]
+                })
+            }
         },
-        None => convert_bigquery_direct(&json!({ "properties": input })),
+        JSONSchemaKind::Array => {
+            let mut field: Value = convert_bigquery_direct(&input["items"]);
+            let object = field.as_object_mut().unwrap();
+            object.insert("mode".to_string(), json!("REPEATED"));
+            json!(object)
+        }
+        JSONSchemaKind::AllOf => unimplemented!(),
+        JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
+        _ => unimplemented!(),
     }
-}
-
-fn match_bq_atomic_type(dtype: &str, ctx: &Value) -> (String, String) {
-    // arrays are a special-case that should be returned when seen
-    if dtype == "array" {
-        // TODO: what happens to arrays of optional integers?
-        let value: Value = convert_bigquery_direct(&ctx["items"]);
-        let dtype: String = value["type"].as_str().unwrap().to_owned();
-        (dtype, "REPEATED".into())
-    } else {
-        let mapped_dtype = match dtype {
-            "integer" => "INTEGER",
-            "number" => "FLOAT",
-            "boolean" => "BOOLEAN",
-            "string" => "STRING",
-            "object" => "RECORD",
-            _ => panic!(),
-        };
-        (mapped_dtype.into(), "REQUIRED".into())
-    }
-}
-
-fn match_bq_multi_type(vec: &Vec<Value>, ctx: &Value) -> (String, String) {
-    let mut set: HashSet<&str> = HashSet::from_iter(vec.into_iter().map(|x| x.as_str().unwrap()));
-    let mode = if set.contains("null") {
-        set.remove("null");
-        "NULLABLE"
-    } else {
-        "REQUIRED"
-    };
-    let dtype = if set.len() > 1 {
-        "STRING".into()
-    } else {
-        let rest = set.iter().next().unwrap();
-        let (dtype, _) = match_bq_atomic_type(rest, ctx);
-        dtype
-    };
-    (dtype, mode.into())
 }
 
 fn handle_record(properties: &Map<String, Value>, mode: String, ctx: &Value) -> Value {
