@@ -33,7 +33,7 @@ pub fn convert_avro_direct(input: &Value, name: String) -> Value {
     json!(element)
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 enum JSONSchemaKind {
     Null,
     Boolean,
@@ -66,9 +66,12 @@ impl JSONSchemaType {
     /// * `value` - A serde_json::Value containing a schema
     pub fn from_value(node: &Value) -> JSONSchemaType {
         match &node["type"] {
-            Value::String(dtype) => JSONSchemaType {
-                kind: JSONSchemaType::kind_from_string(dtype.as_str()),
-                nullable: false,
+            Value::String(dtype) => {
+                let kind = JSONSchemaType::kind_from_string(dtype.as_str());
+                JSONSchemaType {
+                    kind: kind,
+                    nullable: kind == JSONSchemaKind::Null,
+                }
             },
             Value::Array(multitype) => {
                 let mut set: HashSet<JSONSchemaKind> = HashSet::from_iter(
@@ -373,12 +376,12 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
         if let Some(state) = resolution_table.get_mut(&key) {
             if !state.consistent
                 || state.dtype != dtype
-                || (state.mode == "REPEATING") ^ (mode == "REPEATING")
+                || (state.mode == "REPEATING") & (mode != "REPEATING")
             {
                 state.dtype = "STRING".into();
                 state.mode = "NULLABLE".into();
                 state.consistent = false;
-            } else if dtype == "NULLABLE" {
+            } else if mode == "NULLABLE" {
                 state.mode = dtype;
             };
         } else {
