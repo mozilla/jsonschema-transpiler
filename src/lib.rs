@@ -270,6 +270,8 @@ impl BigQueryRecord {
                     } else {
                         field.insert_helper(keys, value);
                     }
+                } else {
+                    fields.push(Box::new(value));
                 }
             }
             None => {
@@ -300,7 +302,7 @@ impl BigQueryRecord {
     /// `__ROOT__.foo.bar`
     pub fn insert(&mut self, key: String, value: BigQueryRecord) {
         let mut keys: VecDeque<&str> = VecDeque::from_iter(key.split("."));
-        // pop the __ROOT__ off the front, which is unnecessary
+        // pop the __ROOT__ off the front, which may be unnecessary in the future
         keys.pop_front();
         self.insert_helper(&mut keys, value);
     }
@@ -365,10 +367,16 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
 
     while !queue.is_empty() {
         let (namespace, node) = queue.pop_front().unwrap();
-        let key = match node["name"].as_str() {
+        let name = match node["name"].as_str() {
             Some(name) => name.to_string(),
             None => "__ROOT__".to_string(),
         };
+        let key = if namespace != "" {
+            format!("{}.{}", namespace, name.clone())
+        } else {
+            name.clone()
+        };
+
         let dtype = node["type"].as_str().unwrap().into();
         let mode = node["mode"].as_str().unwrap().into();
 
@@ -382,11 +390,11 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
                 state.mode = "NULLABLE".into();
                 state.consistent = false;
             } else if mode == "NULLABLE" {
-                state.mode = dtype;
+                state.mode = mode;
             };
         } else {
             let state = ConsistencyState {
-                name: key.clone(),
+                name: name.clone(),
                 dtype: dtype,
                 mode: mode,
                 consistent: true,
@@ -396,12 +404,7 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
 
         if let Some(fields) = node["fields"].as_array() {
             for field in fields {
-                let namespace = if namespace != "" {
-                    format!("{}.{}", namespace, key.clone())
-                } else {
-                    key.clone()
-                };
-                queue.push_back((namespace, json!(field)));
+                queue.push_back((key.clone(), json!(field)));
             }
         };
     }
