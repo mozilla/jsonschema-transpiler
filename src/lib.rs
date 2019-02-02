@@ -46,7 +46,7 @@ impl JSONSchemaType {
                     kind: kind,
                     nullable: kind == JSONSchemaKind::Null,
                 }
-            },
+            }
             Value::Array(multitype) => {
                 let mut set: HashSet<JSONSchemaKind> = HashSet::from_iter(
                     multitype
@@ -119,94 +119,6 @@ impl JSONSchemaType {
         };
         mode.into()
     }
-}
-
-/// Convert JSONSchema into a BigQuery compatible schema
-pub fn convert_bigquery_direct(input: &Value) -> Value {
-    let json_type = JSONSchemaType::from_value(input);
-    match json_type.kind {
-        JSONSchemaKind::Object => match &input["properties"].as_object() {
-            Some(properties) => handle_record(properties, json_type.as_bq_mode(), input),
-            None => {
-                // The schema doesn't contain properties or items, but
-                // contains additionalProperties and/or patternProperties.
-                // Handle this case as a map-type.
-                let mut extras: Vec<Value> = Vec::new();
-                if let Some(pattern_props) = &input.get("patternProperties") {
-                    if let Some(object) = pattern_props.as_object() {
-                        for value in object.values() {
-                            extras.push(json!(value));
-                        }
-                    }
-                }
-                if let Some(additional_props) = &input.get("additionalProperties") {
-                    if additional_props.is_object() {
-                        extras.push(json!(additional_props));
-                    }
-                }
-                let mut value = handle_oneof(&extras);
-                if let Some(object) = value.as_object_mut() {
-                    object.insert("name".into(), json!("value"));
-                }
-                json!({
-                    "type": "RECORD",
-                    "mode": "REPEATED",
-                    "fields": [
-                        {"name": "key", "type": "STRING", "mode": "REQUIRED"},
-                        value,
-                    ]
-                })
-            }
-        },
-        JSONSchemaKind::Array => {
-            let mut field: Value = convert_bigquery_direct(&input["items"]);
-            let object = field.as_object_mut().unwrap();
-            object.insert("mode".to_string(), json!("REPEATED"));
-            json!(object)
-        }
-        JSONSchemaKind::AllOf => unimplemented!(),
-        JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
-        _ => json!({
-            "type": json_type.as_bq_type(),
-            "mode": json_type.as_bq_mode(),
-        }),
-    }
-}
-
-fn handle_record(properties: &Map<String, Value>, mode: String, ctx: &Value) -> Value {
-    let required: HashSet<String> = match ctx["required"].as_array() {
-        Some(array) => HashSet::from_iter(
-            array
-                .to_vec()
-                .into_iter()
-                .map(|v| v.as_str().unwrap().to_string()),
-        ),
-        None => HashSet::new(),
-    };
-    let mut fields: Vec<Value> = Vec::from_iter(properties.into_iter().map(|(k, v)| {
-        let mut field: Value = convert_bigquery_direct(v);
-        let mode: String = field["mode"].as_str().unwrap().into();
-
-        // create a mutable reference to the processed value
-        let object = field.as_object_mut().unwrap();
-        object.insert("name".to_string(), json!(k));
-
-        // ignore the mode of the field unless defined in `required` keyword field
-        if mode != "REPEATED" {
-            if required.contains(k) && mode != "NULLABLE" {
-                object.insert("mode".to_string(), json!("REQUIRED"));
-            } else {
-                object.insert("mode".to_string(), json!("NULLABLE"));
-            }
-        }
-        json!(object)
-    }));
-    fields.sort_by_key(|x| x["name"].as_str().unwrap().to_string());
-    json!({
-        "type": "RECORD",
-        "mode": mode,
-        "fields": fields,
-    })
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -322,15 +234,107 @@ impl Default for ConsistencyState {
     }
 }
 
+/// Convert JSONSchema into a BigQuery compatible schema
+pub fn convert_bigquery(input: &Value) -> Value {
+    let json_type = JSONSchemaType::from_value(input);
+    match json_type.kind {
+        JSONSchemaKind::Object => match &input["properties"].as_object() {
+            Some(properties) => handle_record(properties, json_type.as_bq_mode(), input),
+            None => handle_map(input),
+        },
+        JSONSchemaKind::Array => {
+            let mut field: Value = convert_bigquery(&input["items"]);
+            let object = field.as_object_mut().unwrap();
+            object.insert("mode".to_string(), json!("REPEATED"));
+            json!(object)
+        }
+        JSONSchemaKind::AllOf => unimplemented!(),
+        JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
+        _ => json!({
+            "type": json_type.as_bq_type(),
+            "mode": json_type.as_bq_mode(),
+        }),
+    }
+}
+
+fn handle_record(properties: &Map<String, Value>, mode: String, ctx: &Value) -> Value {
+    let required: HashSet<String> = match ctx["required"].as_array() {
+        Some(array) => HashSet::from_iter(
+            array
+                .to_vec()
+                .into_iter()
+                .map(|v| v.as_str().unwrap().to_string()),
+        ),
+        None => HashSet::new(),
+    };
+    let mut fields: Vec<Value> = Vec::from_iter(properties.into_iter().map(|(k, v)| {
+        let mut field: Value = convert_bigquery(v);
+        let mode: String = field["mode"].as_str().unwrap().into();
+
+        // create a mutable reference to the processed value
+        let object = field.as_object_mut().unwrap();
+        object.insert("name".to_string(), json!(k));
+
+        // ignore the mode of the field unless defined in `required` keyword field
+        if mode != "REPEATED" {
+            if required.contains(k) && mode != "NULLABLE" {
+                object.insert("mode".to_string(), json!("REQUIRED"));
+            } else {
+                object.insert("mode".to_string(), json!("NULLABLE"));
+            }
+        }
+        json!(object)
+    }));
+    fields.sort_by_key(|x| x["name"].as_str().unwrap().to_string());
+    json!({
+        "type": "RECORD",
+        "mode": mode,
+        "fields": fields,
+    })
+}
+
+fn handle_map(input: &Value) -> Value {
+    // The schema doesn't contain properties or items, but
+    // contains additionalProperties and/or patternProperties.
+    // Handle this case as a map-type.
+    let mut extras: Vec<Value> = Vec::new();
+    if let Some(pattern_props) = &input.get("patternProperties") {
+        if let Some(object) = pattern_props.as_object() {
+            for value in object.values() {
+                extras.push(json!(value));
+            }
+        }
+    }
+    if let Some(additional_props) = &input.get("additionalProperties") {
+        if additional_props.is_object() {
+            extras.push(json!(additional_props));
+        }
+    }
+    let mut value = handle_oneof(&extras);
+    if let Some(object) = value.as_object_mut() {
+        object.insert("name".into(), json!("value"));
+    }
+    json!({
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "fields": [
+            {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+            value,
+        ]
+    })
+}
+
 // Resolve the output of oneOf by finding a super-set of the schemas. This defaults to STRING otherwise.
 fn handle_oneof(values: &Vec<Value>) -> Value {
-    let nullable: bool = values.iter().any(|v| JSONSchemaType::from_value(v).nullable);
+    let nullable: bool = values
+        .iter()
+        .any(|v| JSONSchemaType::from_value(v).nullable);
 
     let elements: Vec<Value> = Vec::from_iter(
         values
             .into_iter()
             .filter(|v| JSONSchemaType::from_value(v).kind != JSONSchemaKind::Null)
-            .map(|v| convert_bigquery_direct(&v)),
+            .map(|v| convert_bigquery(&v)),
     );
 
     // iterate over the entire document tree and collect values per node
@@ -385,7 +389,7 @@ fn handle_oneof(values: &Vec<Value>) -> Value {
 
     // build the final document
     if resolution_table.iter().any(|(_, state)| !state.consistent) {
-        let mode = if nullable {"NULLABLE"} else {"REQUIRED"};
+        let mode = if nullable { "NULLABLE" } else { "REQUIRED" };
         return json!({"type": "STRING", "mode": mode.to_string()});
     }
 
