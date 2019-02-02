@@ -87,16 +87,16 @@ fn bigquery_{name}() {{
 fn main() {
     let test_cases = "tests/resources";
 
-    let mut avro_fp = File::create("tests/avro.rs").unwrap();
+    // let mut avro_fp = File::create("tests/avro.rs").unwrap();
     let mut bq_fp = File::create("tests/bigquery.rs").unwrap();
 
-    write!(
-        avro_fp,
-        r#"
-use converter::convert_avro_direct;
-use serde_json::Value;
-"#
-    );
+//     write!(
+//         avro_fp,
+//         r#"
+// use converter::convert_avro_direct;
+// use serde_json::Value;
+// "#
+//     );
 
     write!(
         bq_fp,
@@ -112,7 +112,7 @@ use serde_json::Value;
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let suite: TestSuite = serde_json::from_reader(reader).unwrap();
-        write_avro_tests(&avro_fp, &suite);
+        // write_avro_tests(&avro_fp, &suite);
         write_bigquery_tests(&bq_fp, &suite)
     }
 }
