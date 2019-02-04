@@ -2,13 +2,16 @@ extern crate clap;
 extern crate converter;
 
 use clap::{App, Arg};
+use serde_json::Value;
+use std::fs::File;
+use std::io::{BufReader};
 
 fn main() {
     let matches = App::new("jst")
         .version("0.1")
         .author("Anthony Miyaguchi <amiyaguchi@mozilla.com>")
         .arg(
-            Arg::with_name("from_file")
+            Arg::with_name("from-file")
                 .short("f")
                 .long("from-file")
                 .value_name("FILE")
@@ -16,5 +19,14 @@ fn main() {
         )
         .get_matches();
 
-    println!("Value of input: {}", matches.value_of("from_file").unwrap());
+    if let Some(path) = matches.value_of("from-file") {
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let data: Value = serde_json::from_reader(reader).unwrap();
+        let output = converter::convert_bigquery(&data);
+        let pretty = serde_json::to_string_pretty(&output).unwrap();
+        println!("{}", pretty);
+    } else {
+        panic!("Missing application handling!");
+    }
 }
