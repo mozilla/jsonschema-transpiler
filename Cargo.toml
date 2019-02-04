@@ -8,6 +8,7 @@ edition = "2018"
 name = "converter"
 
 [dependencies]
+clap = "*"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
