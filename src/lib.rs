@@ -242,12 +242,7 @@ pub fn convert_bigquery(input: &Value) -> Value {
             Some(properties) => handle_record(properties, json_type.as_bq_mode(), input),
             None => handle_map(input),
         },
-        JSONSchemaKind::Array => {
-            let mut field: Value = convert_bigquery(&input["items"]);
-            let object = field.as_object_mut().unwrap();
-            object.insert("mode".to_string(), json!("REPEATED"));
-            json!(object)
-        }
+        JSONSchemaKind::Array => handle_array(input),
         JSONSchemaKind::AllOf => unimplemented!(),
         JSONSchemaKind::OneOf => handle_oneof(&input["oneOf"].as_array().unwrap()),
         _ => json!({
@@ -322,6 +317,13 @@ fn handle_map(input: &Value) -> Value {
             value,
         ]
     })
+}
+
+fn handle_array(input: &Value) -> Value {
+    let mut field: Value = convert_bigquery(&input["items"]);
+    let object = field.as_object_mut().unwrap();
+    object.insert("mode".to_string(), json!("REPEATED"));
+    json!(object)
 }
 
 // Resolve the output of oneOf by finding a super-set of the schemas. This defaults to STRING otherwise.
