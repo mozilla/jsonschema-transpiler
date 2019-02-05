@@ -4,7 +4,7 @@ extern crate converter;
 use clap::{App, Arg};
 use serde_json::Value;
 use std::fs::File;
-use std::io::{BufReader};
+use std::io::BufReader;
 
 fn main() {
     let matches = App::new("jst")
