@@ -2,6 +2,16 @@ use serde_json::json;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+enum Atom {
+    Boolean,
+    Integer,
+    Number,
+    String,
+    JSON,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct Object {
     fields: HashMap<String, Box<Field>>,
 }
@@ -38,7 +48,7 @@ impl Map {
         Map {
             key: Box::new(Field {
                 name: Some(key),
-                data_type: Type::String,
+                data_type: Type::Atom(Atom::String),
                 nullable: false,
             }),
             value: Box::new(value),
@@ -49,14 +59,13 @@ impl Map {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 enum Type {
-    Boolean,
-    Integer,
-    Number,
-    String,
+    Atom(Atom),
     Object(Object),
     Map(Map),
     Array(Array),
-    Json,
+    // Union
+    // Intersection
+    // Not
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -66,6 +75,21 @@ struct Field {
     data_type: Type,
     name: Option<String>,
     nullable: bool,
+}
+
+#[test]
+fn test_serialize_atom() {
+    let atom = Field {
+        data_type: Type::Atom(Atom::Integer),
+        name: Some("test-int".into()),
+        nullable: true,
+    };
+    let expect = json!({
+        "type": {"atom": "integer"},
+        "name": "test-int",
+        "nullable": true,
+    });
+    assert_eq!(expect, json!(atom));
 }
 
 #[test]
@@ -79,7 +103,7 @@ fn test_serialize_object() {
         object.fields.insert(
             "test-int".into(),
             Box::new(Field {
-                data_type: Type::Integer,
+                data_type: Type::Atom(Atom::Integer),
                 name: Some("test-int".into()),
                 nullable: false,
             }),
@@ -87,7 +111,7 @@ fn test_serialize_object() {
         object.fields.insert(
             "test-bool".into(),
             Box::new(Field {
-                data_type: Type::Boolean,
+                data_type: Type::Atom(Atom::Boolean),
                 name: Some("test-bool".into()),
                 nullable: false,
             }),
@@ -101,12 +125,12 @@ fn test_serialize_object() {
                 "fields": {
                     "test-int": {
                         "name": "test-int",
-                        "type": "integer",
+                        "type": {"atom": "integer"},
                         "nullable": false
                     },
                     "test-bool": {
                         "name": "test-bool",
-                        "type": "boolean",
+                        "type": {"atom": "boolean"},
                         "nullable": false
                     }
                 }
@@ -119,7 +143,7 @@ fn test_serialize_object() {
 #[test]
 fn test_serialize_map() {
     let atom = Field {
-        data_type: Type::Integer,
+        data_type: Type::Atom(Atom::Integer),
         name: Some("test-value".into()),
         nullable: false,
     };
@@ -136,12 +160,12 @@ fn test_serialize_map() {
                 "key": {
                     "name": "test-key",
                     "nullable": false,
-                    "type": "string",
+                    "type": {"atom": "string"},
                 },
                 "value": {
                     "name": "test-value",
                     "nullable": false,
-                    "type": "integer",
+                    "type": {"atom": "integer"},
                 }
             }
         }
