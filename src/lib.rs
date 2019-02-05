@@ -3,6 +3,8 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+mod ast;
+
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::iter::FromIterator;
