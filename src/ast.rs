@@ -59,6 +59,7 @@ impl Map {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 enum Type {
+    Null,
     Atom(Atom),
     Object(Object),
     Map(Map),
@@ -75,6 +76,21 @@ struct Tag {
     data_type: Type,
     name: Option<String>,
     nullable: bool,
+}
+
+#[test]
+fn test_serialize_null() {
+    let null_tag = Tag {
+        data_type: Type::Null,
+        name: None,
+        nullable: false,
+    };
+    let expect = json!({
+        "type": "null",
+        "name": null,
+        "nullable": false,
+    });
+    assert_eq!(expect, json!(null_tag))
 }
 
 #[test]
