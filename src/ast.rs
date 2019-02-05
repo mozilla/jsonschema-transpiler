@@ -72,40 +72,40 @@ struct Field {
 fn test_serialize_object() {
     let mut field = Field {
         data_type: Type::Object(Object::new()),
-        name: Some("test_object".into()),
+        name: Some("test-object".into()),
         nullable: false,
     };
     if let Type::Object(object) = &mut field.data_type {
         object.fields.insert(
-            "test_int".into(),
+            "test-int".into(),
             Box::new(Field {
                 data_type: Type::Integer,
-                name: Some("test_int".into()),
+                name: Some("test-int".into()),
                 nullable: false,
             }),
         );
         object.fields.insert(
-            "test_bool".into(),
+            "test-bool".into(),
             Box::new(Field {
                 data_type: Type::Boolean,
-                name: Some("test_bool".into()),
+                name: Some("test-bool".into()),
                 nullable: false,
             }),
         );
     }
     let expect = json!({
-        "name": "test_object",
+        "name": "test-object",
         "nullable": false,
         "type": {
             "object": {
                 "fields": {
-                    "test_int": {
-                        "name": "test_int",
+                    "test-int": {
+                        "name": "test-int",
                         "type": "integer",
                         "nullable": false
                     },
-                    "test_bool": {
-                        "name": "test_bool",
+                    "test-bool": {
+                        "name": "test-bool",
                         "type": "boolean",
                         "nullable": false
                     }
@@ -120,26 +120,26 @@ fn test_serialize_object() {
 fn test_serialize_map() {
     let atom = Field {
         data_type: Type::Integer,
-        name: Some("test_value".into()),
+        name: Some("test-value".into()),
         nullable: false,
     };
     let field = Field {
-        data_type: Type::Map(Map::new("test_key".into(), atom)),
-        name: Some("test_map".into()),
+        data_type: Type::Map(Map::new("test-key".into(), atom)),
+        name: Some("test-map".into()),
         nullable: true,
     };
     let expect = json!({
-        "name": "test_map",
+        "name": "test-map",
         "nullable": true,
         "type": {
             "map": {
                 "key": {
-                    "name": "test_key",
+                    "name": "test-key",
                     "nullable": false,
                     "type": "string",
                 },
                 "value": {
-                    "name": "test_value",
+                    "name": "test-value",
                     "nullable": false,
                     "type": "integer",
                 }
