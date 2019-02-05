@@ -175,5 +175,29 @@ fn test_serialize_map() {
 
 #[test]
 fn test_serialize_array() {
-    unimplemented!()
+    // represent multi-set with nulls
+    let atom = Field {
+        data_type: Type::Atom(Atom::Integer),
+        name: Some("test-int".into()),
+        nullable: true,
+    };
+    let field = Field {
+        data_type: Type::Array(Array::new(atom)),
+        name: Some("test-array".into()),
+        nullable: false,
+    };
+    let expect = json!({
+        "type": {
+            "array": {
+                "items": {
+                    "name": "test-int",
+                    "type": {"atom": "integer"},
+                    "nullable": true,
+                }
+            }
+        },
+        "name": "test-array",
+        "nullable": false
+    });
+    assert_eq!(expect, json!(field))
 }
