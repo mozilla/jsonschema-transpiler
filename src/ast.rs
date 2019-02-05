@@ -13,7 +13,7 @@ enum Atom {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Object {
-    fields: HashMap<String, Box<Field>>,
+    fields: HashMap<String, Box<Tag>>,
 }
 
 impl Object {
@@ -26,11 +26,11 @@ impl Object {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Array {
-    items: Box<Field>,
+    items: Box<Tag>,
 }
 
 impl Array {
-    fn new(items: Field) -> Self {
+    fn new(items: Tag) -> Self {
         Array {
             items: Box::new(items),
         }
@@ -39,14 +39,14 @@ impl Array {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Map {
-    key: Box<Field>,
-    value: Box<Field>,
+    key: Box<Tag>,
+    value: Box<Tag>,
 }
 
 impl Map {
-    fn new(key: String, value: Field) -> Self {
+    fn new(key: String, value: Tag) -> Self {
         Map {
-            key: Box::new(Field {
+            key: Box::new(Tag {
                 name: Some(key),
                 data_type: Type::Atom(Atom::String),
                 nullable: false,
@@ -70,7 +70,7 @@ enum Type {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
-struct Field {
+struct Tag {
     #[serde(rename = "type")]
     data_type: Type,
     name: Option<String>,
@@ -79,7 +79,7 @@ struct Field {
 
 #[test]
 fn test_serialize_atom() {
-    let atom = Field {
+    let atom = Tag {
         data_type: Type::Atom(Atom::Integer),
         name: Some("test-int".into()),
         nullable: true,
@@ -94,7 +94,7 @@ fn test_serialize_atom() {
 
 #[test]
 fn test_serialize_object() {
-    let mut field = Field {
+    let mut field = Tag {
         data_type: Type::Object(Object::new()),
         name: Some("test-object".into()),
         nullable: false,
@@ -102,7 +102,7 @@ fn test_serialize_object() {
     if let Type::Object(object) = &mut field.data_type {
         object.fields.insert(
             "test-int".into(),
-            Box::new(Field {
+            Box::new(Tag {
                 data_type: Type::Atom(Atom::Integer),
                 name: Some("test-int".into()),
                 nullable: false,
@@ -110,7 +110,7 @@ fn test_serialize_object() {
         );
         object.fields.insert(
             "test-bool".into(),
-            Box::new(Field {
+            Box::new(Tag {
                 data_type: Type::Atom(Atom::Boolean),
                 name: Some("test-bool".into()),
                 nullable: false,
@@ -142,12 +142,12 @@ fn test_serialize_object() {
 
 #[test]
 fn test_serialize_map() {
-    let atom = Field {
+    let atom = Tag {
         data_type: Type::Atom(Atom::Integer),
         name: Some("test-value".into()),
         nullable: false,
     };
-    let field = Field {
+    let field = Tag {
         data_type: Type::Map(Map::new("test-key".into(), atom)),
         name: Some("test-map".into()),
         nullable: true,
@@ -176,12 +176,12 @@ fn test_serialize_map() {
 #[test]
 fn test_serialize_array() {
     // represent multi-set with nulls
-    let atom = Field {
+    let atom = Tag {
         data_type: Type::Atom(Atom::Integer),
         name: Some("test-int".into()),
         nullable: true,
     };
-    let field = Field {
+    let field = Tag {
         data_type: Type::Array(Array::new(atom)),
         name: Some("test-array".into()),
         nullable: false,
