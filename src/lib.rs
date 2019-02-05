@@ -4,6 +4,7 @@ extern crate serde;
 extern crate serde_json;
 
 mod ast;
+mod bigquery;
 
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
