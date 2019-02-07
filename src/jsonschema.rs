@@ -1,3 +1,5 @@
+/// A JSON Schema serde module derived from the v4 spec.
+/// Refer to http://json-schema.org/draft-04/schema for spec details.
 use serde_json::Value;
 use std::collections::HashMap;
 
