@@ -39,7 +39,7 @@ pub struct Record {
     fields: HashMap<String, Box<Tag>>,
 }
 
-// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
+/// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub struct Tag {
@@ -59,13 +59,6 @@ mod fields_as_vec {
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
-    // The signature of a serialize_with function must follow the pattern:
-    //
-    //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
-    //    where
-    //        S: Serializer
-    //
-    // although it may also be generic over the input types T.
     pub fn serialize<S>(map: &HashMap<String, Box<Tag>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -77,13 +70,6 @@ mod fields_as_vec {
         seq.end()
     }
 
-    // The signature of a deserialize_with function must follow the pattern:
-    //
-    //    fn deserialize<'de, D>(D) -> Result<T, D::Error>
-    //    where
-    //        D: Deserializer<'de>
-    //
-    // although it may also be generic over the output types T.
     pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Box<Tag>>, D::Error>
     where
         D: Deserializer<'de>,
