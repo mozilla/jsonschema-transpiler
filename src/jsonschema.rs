@@ -61,7 +61,7 @@ struct Tag {
     #[serde(skip_serializing_if = "Option::is_none")]
     all_of: Option<AllOf>,
     #[serde(flatten)]
-    extra: Option<HashMap<String, Value>>,
+    extra: HashMap<String, Value>,
 }
 
 struct JSONSchema {
@@ -96,7 +96,8 @@ fn test_deserialize_type_null() {
         "type": "null"
     });
     let schema: Tag = serde_json::from_value(data).unwrap();
-    assert_eq!(schema.data_type.as_str().unwrap(), "null")
+    assert_eq!(schema.data_type.as_str().unwrap(), "null");
+    assert!(schema.extra.is_empty());
 }
 
 #[test]
@@ -216,4 +217,13 @@ fn test_deserialize_type_all_of() {
     assert_eq!(all_of.len(), 2);
     assert_eq!(all_of[0].data_type, json!("integer"));
     assert_eq!(all_of[1].data_type, json!("null"));
+}
+
+#[test]
+fn test_deserialize_extras() {
+    let data = json!({
+        "meta": "hello world!"
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    assert_eq!(schema.extra["meta"], json!("hello world!"))
 }
