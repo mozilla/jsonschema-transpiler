@@ -57,6 +57,11 @@ impl Map {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+struct Union {
+    items: Vec<Box<Tag>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 enum Type {
     Null,
@@ -64,7 +69,7 @@ enum Type {
     Object(Object),
     Map(Map),
     Array(Array),
-    // Union
+    Union(Union),
     // Intersection
     // Not
 }
@@ -220,4 +225,33 @@ fn test_serialize_array() {
         "nullable": false
     });
     assert_eq!(expect, json!(field))
+}
+
+#[test]
+fn test_serialize_union() {
+    let test_int = Tag {
+        data_type: Type::Atom(Atom::Integer),
+        ..Default::default()
+    };
+    let test_null = Tag {
+        ..Default::default()
+    };
+    let union = Tag {
+        data_type: Type::Union(Union {
+            items: vec![Box::new(test_int), Box::new(test_null)],
+        }),
+        ..Default::default()
+    };
+    let expect = json!({
+        "type": {
+            "union": {
+                "items": [
+                    {"type": {"atom": "integer"}, "nullable": false},
+                    {"type": "null", "nullable": false},
+                ]
+            }
+        },
+        "nullable": false
+    });
+    assert_eq!(expect, json!(union))
 }
