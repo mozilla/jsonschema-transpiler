@@ -1,11 +1,9 @@
-use serde::de::{self, Deserialize, Deserializer};
-use serde::ser::{self, Serialize, Serializer};
 use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-enum SimpleType {
+#[serde(rename_all = "camelCase")]
+enum Type {
     Null,
     Boolean,
     Number,
@@ -22,88 +20,67 @@ enum AdditionalProperties {
     Object(Box<Tag>),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 struct Object {
+    #[serde(skip_serializing_if = "Option::is_none")]
     properties: Option<HashMap<String, Box<Tag>>>,
-    #[serde(flatten, rename = "camelCase")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     additional_properties: Option<AdditionalProperties>,
-    #[serde(flatten, rename = "camelCase")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pattern_properties: Option<Box<Tag>>,
 }
 
 /// Represent an array of subschemas
 type TagArray = Vec<Box<Tag>>;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Array {
-    items: TagArray,
-}
-
 type OneOf = TagArray;
 type AllOf = TagArray;
 
-#[derive(Debug)]
-enum Type {
-    Simple(SimpleType),
-    Multi(Vec<SimpleType>),
+#[derive(Serialize, Deserialize, Debug, Default)]
+struct Array {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    items: Option<TagArray>,
 }
 
-impl Serialize for Type {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Type::Simple(atom) => SimpleType::serialize(atom, serializer),
-            Type::Multi(list) => Vec::<SimpleType>::serialize(list, serializer),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let v = Value::deserialize(deserializer)?;
-        if let Ok(atom) = SimpleType::deserialize(&v) {
-            return Ok(Type::Simple(atom));
-        } else if let Ok(list) = Vec::<SimpleType>::deserialize(&v) {
-            return Ok(Type::Multi(list));
-        } else {
-            return Err(de::Error::custom("Error deserializing type!"));
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase", tag = "type")]
 struct Tag {
-    #[serde(flatten, rename = "type")]
-    data_type: Type,
+    #[serde(rename = "type")]
+    data_type: Value,
     #[serde(flatten)]
-    object: Option<Object>,
+    object: Object,
+    #[serde(flatten)]
+    items: Array,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    one_of: Option<OneOf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    all_of: Option<AllOf>,
     #[serde(flatten)]
     extra: Option<HashMap<String, Value>>,
-    #[serde(flatten, rename = "camelCase")]
-    one_of: Option<OneOf>,
-    #[serde(flatten, rename = "camelCase")]
-    all_of: Option<AllOf>,
 }
+
+pub struct JSONSchema {
+    data: Tag,
+}
+
+impl JSONSchema {
+    pub fn from_value(value: Value) -> Self {
+        unimplemented!()
+    }
+}
+
+// TODO: impl Into<ast::AST> for JSONSchema
 
 use serde_json::json;
 
 #[test]
 fn test_serialize_type_null() {
     let schema = Tag {
-        data_type: Type::Simple(SimpleType::Null),
-        object: None,
-        extra: None,
-        one_of: None,
-        all_of: None,
+        data_type: json!("integer"),
+        ..Default::default()
     };
     let expect = json!({
-        "type": "null"
+        "type": "integer"
     });
     assert_eq!(expect, json!(schema))
 }
@@ -114,8 +91,25 @@ fn test_deserialize_type_null() {
         "type": "null"
     });
     let schema: Tag = serde_json::from_value(data).unwrap();
-    match schema.data_type {
-        Type::Simple(SimpleType::Null) => (),
-        _ => panic!(),
-    };
+    assert_eq!(schema.data_type.as_str().unwrap(), "null")
+}
+
+#[test]
+fn test_deserialize_type_object() {
+    panic!()
+}
+
+#[test]
+fn test_deserialize_type_array() {
+    panic!()
+}
+
+#[test]
+fn test_deserialize_type_one_of() {
+    panic!()
+}
+
+#[test]
+fn test_deserialize_type_all_of() {
+    panic!()
 }
