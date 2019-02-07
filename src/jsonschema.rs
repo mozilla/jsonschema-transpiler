@@ -32,6 +32,8 @@ struct Object {
     additional_properties: Option<AdditionalProperties>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pattern_properties: Option<Box<Tag>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required: Option<Vec<String>>,
 }
 
 /// Represent an array of subschemas. This is also known as a `schemaArray`.
@@ -107,13 +109,15 @@ fn test_deserialize_type_object() {
         "properties": {
             "test-int": {"type": "integer"},
             "test-null": {"type": "null"}
-        }
+        },
+        "required": ["test-int"]
     });
     let schema: Tag = serde_json::from_value(data).unwrap();
     let props = schema.object.properties.unwrap();
     assert_eq!(props.len(), 2);
     let test_int = props.get("test-int").unwrap();
     assert_eq!(test_int.data_type, json!("integer"));
+    assert_eq!(schema.object.required.unwrap(), vec!["test-int"]);
 }
 
 #[test]
