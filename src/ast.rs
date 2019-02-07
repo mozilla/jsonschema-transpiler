@@ -69,11 +69,18 @@ enum Type {
     // Not
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+impl Default for Type {
+    fn default() -> Self {
+        Type::Null
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(tag = "type")]
 struct Tag {
     #[serde(rename = "type")]
     data_type: Type,
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     nullable: bool,
 }
@@ -81,13 +88,10 @@ struct Tag {
 #[test]
 fn test_serialize_null() {
     let null_tag = Tag {
-        data_type: Type::Null,
-        name: None,
-        nullable: false,
+        ..Default::default()
     };
     let expect = json!({
         "type": "null",
-        "name": null,
         "nullable": false,
     });
     assert_eq!(expect, json!(null_tag))
