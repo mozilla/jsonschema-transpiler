@@ -101,6 +101,22 @@ fn test_deserialize_type_null() {
 
 #[test]
 fn test_deserialize_type_object() {
+    let data = json!({
+        "type": "object",
+        "properties": {
+            "test-int": {"type": "integer"},
+            "test-null": {"type": "null"}
+        }
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let props = schema.object.properties.unwrap();
+    assert_eq!(props.len(), 2);
+    let test_int = props.get("test-int").unwrap();
+    assert_eq!(test_int.data_type, json!("integer"));
+}
+
+#[test]
+fn test_deserialize_type_object_additional_properties() {
     let data_true = json!({
         "type": "object",
         "additionalProperties": true
@@ -133,22 +149,6 @@ fn test_deserialize_type_object() {
             _ => panic!(),
         }
     };
-}
-
-#[test]
-fn test_deserialize_type_object_additional_properties() {
-    let data = json!({
-        "type": "object",
-        "properties": {
-            "test-int": {"type": "integer"},
-            "test-null": {"type": "null"}
-        }
-    });
-    let schema: Tag = serde_json::from_value(data).unwrap();
-    let props = schema.object.properties.unwrap();
-    assert_eq!(props.len(), 2);
-    let test_int = props.get("test-int").unwrap();
-    assert_eq!(test_int.data_type, json!("integer"));
 }
 
 #[test]
