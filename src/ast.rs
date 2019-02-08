@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
-enum Atom {
+pub enum Atom {
     Boolean,
     Integer,
     Number,
@@ -12,12 +12,12 @@ enum Atom {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Object {
+pub struct Object {
     fields: HashMap<String, Box<Tag>>,
 }
 
 impl Object {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Object {
             fields: HashMap::new(),
         }
@@ -25,12 +25,12 @@ impl Object {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Array {
+pub struct Array {
     items: Box<Tag>,
 }
 
 impl Array {
-    fn new(items: Tag) -> Self {
+    pub fn new(items: Tag) -> Self {
         Array {
             items: Box::new(items),
         }
@@ -38,13 +38,13 @@ impl Array {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Map {
+pub struct Map {
     key: Box<Tag>,
     value: Box<Tag>,
 }
 
 impl Map {
-    fn new(key: String, value: Tag) -> Self {
+    pub fn new(key: String, value: Tag) -> Self {
         Map {
             key: Box::new(Tag {
                 name: Some(key),
@@ -57,13 +57,21 @@ impl Map {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Union {
+pub struct Union {
     items: Vec<Box<Tag>>,
+}
+
+impl Union {
+    pub fn new(items: Vec<Tag>) -> Self {
+        Union {
+            items: items.into_iter().map(Box::new).collect(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
-enum Type {
+pub enum Type {
     Null,
     Atom(Atom),
     Object(Object),
@@ -82,12 +90,22 @@ impl Default for Type {
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(tag = "type")]
-struct Tag {
+pub struct Tag {
     #[serde(rename = "type")]
     data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     nullable: bool,
+}
+
+impl Tag {
+    pub fn new(data_type: Type, name: Option<String>, nullable: bool) -> Self {
+        Tag {
+            data_type: data_type,
+            name: name,
+            nullable: nullable,
+        }
+    }
 }
 
 #[test]
