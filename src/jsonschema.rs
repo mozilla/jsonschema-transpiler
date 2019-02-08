@@ -3,12 +3,14 @@
 use serde_json::Value;
 use std::collections::HashMap;
 
+use super::ast;
+
 /// The type enumeration does not contain any data and is used to determine
 /// available fields in the flattened tag. In JSONSchema parlance, these are
 /// known as `simpleTypes`.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-enum Type {
+enum Atom {
     Null,
     Boolean,
     Number,
@@ -16,6 +18,11 @@ enum Type {
     String,
     Object,
     Array,
+}
+
+enum Type {
+    Atom(Atom),
+    List(Vec<Atom>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -68,17 +75,63 @@ struct Tag {
     extra: HashMap<String, Value>,
 }
 
+impl Tag {
+    pub fn get_type(&self) -> Type {
+        match &self.data_type {
+            Value::String(string) => {
+                let atom: Atom = serde_json::from_str(&string).unwrap();
+                Type::Atom(atom)
+            }
+            Value::Array(array) => {
+                let list: Vec<Atom> = array
+                    .iter()
+                    .map(|v| serde_json::from_value(json!(v)).unwrap())
+                    .collect();
+                Type::List(list)
+            }
+            _ => Type::Atom(Atom::Object),
+        }
+    }
+
+    fn into_atom(&self, data_type: Atom) -> ast::Tag {
+        match data_type {
+            Atom::Null => ast::Tag::new(ast::Type::Null, None, false),
+            Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
+            Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
+            Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
+            Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
+            Atom::Object => unimplemented!(),
+            Atom::Array => unimplemented!(),
+        }
+    }
+}
+
+impl Into<ast::Tag> for Tag {
+    fn into(self) -> ast::Tag {
+        match self.get_type() {
+            Type::Atom(atom) => self.into_atom(atom),
+            Type::List(list) => {
+                let mut items: Vec<ast::Tag> = Vec::new();
+                for atom in list {
+                    items.push(self.into_atom(atom));
+                }
+                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, false)
+            }
+        }
+    }
+}
+
 struct JSONSchema {
     data: Tag,
 }
 
 impl JSONSchema {
     pub fn from_value(value: Value) -> Self {
-        unimplemented!()
+        JSONSchema {
+            data: serde_json::from_value(value).unwrap(),
+        }
     }
 }
-
-// TODO: impl Into<ast::AST> for JSONSchema
 
 use serde_json::json;
 
