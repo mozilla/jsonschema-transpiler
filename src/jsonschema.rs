@@ -76,7 +76,7 @@ struct Tag {
 }
 
 impl Tag {
-    pub fn get_type(&self) -> Type {
+    fn get_type(&self) -> Type {
         match &self.data_type {
             Value::String(string) => {
                 let atom: Atom = serde_json::from_str(&string).unwrap();
@@ -93,14 +93,63 @@ impl Tag {
         }
     }
 
-    fn into_atom(&self, data_type: Atom) -> ast::Tag {
+    pub fn type_into_ast(&self) -> ast::Tag {
+        match self.get_type() {
+            Type::Atom(atom) => self.atom_into_ast(atom),
+            Type::List(list) => {
+                let mut items: Vec<ast::Tag> = Vec::new();
+                for atom in list {
+                    items.push(self.atom_into_ast(atom));
+                }
+                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, false)
+            }
+        }
+    }
+
+    fn atom_into_ast(&self, data_type: Atom) -> ast::Tag {
         match data_type {
             Atom::Null => ast::Tag::new(ast::Type::Null, None, false),
             Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
             Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
-            Atom::Object => unimplemented!(),
+            Atom::Object => match &self.object.properties {
+                Some(properties) => {
+                    let mut fields: HashMap<String, Box<ast::Tag>> = HashMap::new();
+                    for (key, value) in properties {
+                        fields.insert(key.to_string(), Box::new(value.type_into_ast()));
+                    }
+                    ast::Tag::new(ast::Type::Object(ast::Object::new(fields)), None, false)
+                }
+                None => {
+                    // handle maps
+                    match (
+                        &self.object.additional_properties,
+                        &self.object.pattern_properties,
+                    ) {
+                        (Some(AdditionalProperties::Object(add)), Some(pat)) => {
+                            let value = ast::Tag::new(
+                                ast::Type::Union(ast::Union::new(vec![
+                                    add.type_into_ast(),
+                                    pat.type_into_ast(),
+                                ])),
+                                None,
+                                false,
+                            );
+
+                            ast::Tag::new(ast::Type::Map(ast::Map::new(None, value)), None, false)
+                        }
+                        (Some(AdditionalProperties::Object(tag)), None) | (None, Some(tag)) => {
+                            ast::Tag::new(
+                                ast::Type::Map(ast::Map::new(None, tag.type_into_ast())),
+                                None,
+                                false,
+                            )
+                        }
+                        _ => ast::Tag::new(ast::Type::Atom(ast::Atom::JSON), None, false),
+                    }
+                }
+            },
             Atom::Array => unimplemented!(),
         }
     }
@@ -108,16 +157,7 @@ impl Tag {
 
 impl Into<ast::Tag> for Tag {
     fn into(self) -> ast::Tag {
-        match self.get_type() {
-            Type::Atom(atom) => self.into_atom(atom),
-            Type::List(list) => {
-                let mut items: Vec<ast::Tag> = Vec::new();
-                for atom in list {
-                    items.push(self.into_atom(atom));
-                }
-                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, false)
-            }
-        }
+        self.type_into_ast()
     }
 }
 

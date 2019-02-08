@@ -17,10 +17,8 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new() -> Self {
-        Object {
-            fields: HashMap::new(),
-        }
+    pub fn new(fields: HashMap<String, Box<Tag>>) -> Self {
+        Object { fields: fields }
     }
 }
 
@@ -44,10 +42,10 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new(key: String, value: Tag) -> Self {
+    pub fn new(key: Option<String>, value: Tag) -> Self {
         Map {
             key: Box::new(Tag {
-                name: Some(key),
+                name: key,
                 data_type: Type::Atom(Atom::String),
                 nullable: false,
             }),
@@ -138,7 +136,7 @@ fn test_serialize_atom() {
 #[test]
 fn test_serialize_object() {
     let mut field = Tag {
-        data_type: Type::Object(Object::new()),
+        data_type: Type::Object(Object::new(HashMap::new())),
         name: Some("test-object".into()),
         nullable: false,
     };
@@ -191,7 +189,7 @@ fn test_serialize_map() {
         nullable: false,
     };
     let field = Tag {
-        data_type: Type::Map(Map::new("test-key".into(), atom)),
+        data_type: Type::Map(Map::new(Some("test-key".into()), atom)),
         name: Some("test-map".into()),
         nullable: true,
     };
