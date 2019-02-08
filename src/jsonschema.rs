@@ -161,18 +161,6 @@ impl Into<ast::Tag> for Tag {
     }
 }
 
-struct JSONSchema {
-    data: Tag,
-}
-
-impl JSONSchema {
-    pub fn from_value(value: Value) -> Self {
-        JSONSchema {
-            data: serde_json::from_value(value).unwrap(),
-        }
-    }
-}
-
 use serde_json::json;
 
 #[test]
