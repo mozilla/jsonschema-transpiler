@@ -146,11 +146,33 @@ impl Tag {
                                 false,
                             )
                         }
-                        _ => ast::Tag::new(ast::Type::Atom(ast::Atom::JSON), None, false),
+                        _ => {
+                            // handle oneOf
+                            match &self.one_of {
+                                Some(vec) => {
+                                    let items =
+                                        vec.iter().map(|item| item.type_into_ast()).collect();
+                                    ast::Tag::new(
+                                        ast::Type::Union(ast::Union::new(items)),
+                                        None,
+                                        false,
+                                    )
+                                }
+                                None => {
+                                    ast::Tag::new(ast::Type::Atom(ast::Atom::JSON), None, false)
+                                }
+                            }
+                        }
                     }
                 }
             },
-            Atom::Array => unimplemented!(),
+            Atom::Array => {
+                if let Some(items) = &self.array.items {
+                    ast::Tag::new(ast::Type::Array(ast::Array::new(items.type_into_ast())), None, false)
+                } else {
+                    panic!("array missing item")
+                }
+            },
         }
     }
 }
