@@ -26,9 +26,9 @@ enum Type {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
 enum AdditionalProperties {
-    True,
-    False,
+    Bool(bool),
     Object(Box<Tag>),
 }
 
@@ -79,7 +79,7 @@ impl Tag {
     fn get_type(&self) -> Type {
         match &self.data_type {
             Value::String(string) => {
-                let atom: Atom = serde_json::from_str(&string).unwrap();
+                let atom: Atom = serde_json::from_value(json!(string)).unwrap();
                 Type::Atom(atom)
             }
             Value::Array(array) => {
@@ -176,6 +176,24 @@ fn test_serialize_type_null() {
 }
 
 #[test]
+fn test_serialize_type_object_additional_properties_bool() {
+    // check that the untagged attribute is working correctly
+    let schema = Tag {
+        data_type: json!("object"),
+        object: Object {
+            additional_properties: Some(AdditionalProperties::Bool(true)),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let expect = json!({
+        "type": "object",
+        "additionalProperties": true,
+    });
+    assert_eq!(expect, json!(schema))
+}
+
+#[test]
 fn test_deserialize_type_null() {
     let data = json!({
         "type": "null"
@@ -211,9 +229,11 @@ fn test_deserialize_type_object_additional_properties() {
     });
     if let Ok(schema) = serde_json::from_value::<Tag>(data_true) {
         match schema.object.additional_properties {
-            Some(AdditionalProperties::True) => (),
+            Some(AdditionalProperties::Bool(true)) => (),
             _ => panic!(),
         }
+    } else {
+        panic!()
     };
     let data_false = json!({
         "type": "object",
@@ -221,21 +241,25 @@ fn test_deserialize_type_object_additional_properties() {
     });
     if let Ok(schema) = serde_json::from_value::<Tag>(data_false) {
         match schema.object.additional_properties {
-            Some(AdditionalProperties::False) => (),
+            Some(AdditionalProperties::Bool(false)) => (),
             _ => panic!(),
         }
+    } else {
+        panic!()
     };
-    let data_false = json!({
+    let data_object = json!({
         "type": "object",
         "additionalProperties": {"type": "integer"}
     });
-    if let Ok(schema) = serde_json::from_value::<Tag>(data_false) {
+    if let Ok(schema) = serde_json::from_value::<Tag>(data_object) {
         match schema.object.additional_properties {
             Some(AdditionalProperties::Object(object)) => {
                 assert_eq!(object.data_type, json!("integer"))
             }
             _ => panic!(),
         }
+    } else {
+        panic!()
     };
 }
 
@@ -313,4 +337,169 @@ fn test_deserialize_extras() {
     });
     let schema: Tag = serde_json::from_value(data).unwrap();
     assert_eq!(schema.extra["meta"], json!("hello world!"))
+}
+
+#[test]
+fn test_into_ast_atom_null() {
+    let data = json!({
+        "type": "null"
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+        "type": "null",
+        "nullable": false,
+    });
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_atom_integer() {
+    let data = json!({
+        "type": "integer"
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+        "type": {"atom": "integer"},
+        "nullable": false,
+    });
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_list() {
+    let data = json!({
+        "type": ["null", "integer"]
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+        "type": {
+            "union": {
+                "items": [
+                    {"type": "null", "nullable": false},
+                    {"type": {"atom": "integer"}, "nullable": false},
+                ]
+            }
+        },
+        "nullable": false,
+    });
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_object() {
+    // test using an atom and a nested object
+    let data = json!({
+    "type": "object",
+    "properties": {
+        "test-int": {"type": "integer"},
+        "test-obj": {
+            "type": "object",
+            "properties": {
+                "test-null": {"type": "null"}
+            }}}});
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+    "nullable": false,
+    "type": {
+        "object": {
+            "fields": {
+                "test-int": {
+                    "type": {"atom": "integer"},
+                    "nullable": false,
+                },
+                "test-obj": {
+                    "nullable": false,
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "test-null": {
+                                    "type": "null",
+                                    "nullable": false,
+                                }}}}}}}}});
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_object_map() {
+    let data = json!({
+        "type": "object",
+        "additionalProperties": {
+            "type": "object",
+            "properties": {
+                "test-int": {"type": "integer"}
+            }
+        }
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+    "nullable": false,
+    "type": {
+        "map": {
+            "key": {
+                "nullable": false,
+                "type": {"atom": "string"}
+            },
+            "value": {
+                "nullable": false,
+                "type": {
+                    "object": {
+                        "fields": {
+                            "test-int": {
+                                "nullable": false,
+                                "type": {"atom": "integer"}
+                            }}}}}}}});
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_array() {
+    let data = json!({
+        "type": "array",
+        "items": {
+            "type": "integer"
+        }
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+    "nullable": false,
+    "type": {
+        "array": {
+            "items": {
+                "nullable": false,
+                "type": {"atom": "integer"}
+            }}}});
+    assert_eq!(expect, json!(ast))
+}
+
+#[test]
+fn test_into_ast_one_of() {
+    let data = json!({
+        "oneOf": [
+            {"type": "integer"},
+            {"type": "null"}
+        ],
+    });
+    let schema: Tag = serde_json::from_value(data).unwrap();
+    let ast: ast::Tag = schema.into();
+    let expect = json!({
+    "nullable": false,
+    "type": {
+        "union": {
+            "items": [
+                {
+                    "nullable": false,
+                    "type": {"atom": "integer"},
+                },
+                {
+                    "nullable": false,
+                    "type": "null"
+                }
+            ]}}});
+    assert_eq!(expect, json!(ast))
 }
