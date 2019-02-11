@@ -60,7 +60,7 @@ struct Array {
 /// Container for the main body of the schema.
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase", tag = "type")]
-struct Tag {
+pub struct Tag {
     #[serde(rename = "type", default)]
     data_type: Value,
     #[serde(flatten)]
@@ -174,12 +174,6 @@ impl Tag {
                 }
             },
         }
-    }
-}
-
-impl Into<ast::Tag> for Tag {
-    fn into(self) -> ast::Tag {
-        self.type_into_ast()
     }
 }
 

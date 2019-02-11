@@ -1,5 +1,6 @@
 use serde_json::json;
 use std::collections::HashMap;
+use super::jsonschema;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -65,6 +66,10 @@ impl Union {
             items: items.into_iter().map(Box::new).collect(),
         }
     }
+
+    fn collapse(&self) -> Tag {
+        unimplemented!()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -103,6 +108,20 @@ impl Tag {
             name: name,
             nullable: nullable,
         }
+    }
+
+    fn infer_name(&mut self) {
+        unimplemented!()
+    }
+
+    fn infer_nullability(&mut self) {
+        unimplemented!()
+    }
+}
+
+impl From<jsonschema::Tag> for Tag {
+    fn from(tag: jsonschema::Tag) -> Self {
+        tag.type_into_ast()
     }
 }
 
