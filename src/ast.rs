@@ -1,6 +1,6 @@
+use super::jsonschema;
 use serde_json::json;
 use std::collections::HashMap;
-use super::jsonschema;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -67,8 +67,149 @@ impl Union {
         }
     }
 
-    fn collapse(&self) -> Tag {
-        unimplemented!()
+    fn collapse(&self) -> Type {
+        let nullable: bool = self.items.iter().any(|x| x.is_null());
+        if self.items.iter().all(|x| x.is_atom()) {
+            unimplemented!()
+        } else if self.items.iter().all(|x| x.is_object()) {
+            unimplemented!()
+        } else if self.items.iter().all(|x| x.is_map()) {
+            unimplemented!()
+        } else if self.items.iter().all(|x| x.is_array()) {
+            unimplemented!()
+        } else {
+            Type::Atom(Atom::JSON)
+        }
+    }
+}
+
+#[test]
+fn test_union_collapse_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_atom_repeats() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "integer"}},
+            {"type": {"atom": "integer"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_nullable_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": "null"},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Tag = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype.data_type {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_type_conflict() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "string"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "JSON",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_object_merge() {
+    let data = json!({
+    "union": {
+        "items": [
+            {
+                "type": {
+                    "object": {
+                        "fields": {
+                            "atom_0": {"type": {"atom": "boolean"}},
+                            "atom_1": {"type": {"atom": "integer"}},
+                        }}}},
+            {
+                "type": {
+                    "object": {
+                        "fields": {
+                            "atom_1": {"type": {"atom": "integer"}},
+                            "atom_2": {"type": {"atom": "string"}},
+                        }}}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+    "object": {
+        "fields": {
+            "atom_0": {"type": {"atom": "boolean"}},
+            "atom_1": {"type": {"atom": "integer"}},
+            "atom_2": {"type": {"atom": "string"}},
+        }}});
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_object_conflict() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "string"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "JSON",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse()))
+    } else {
+        panic!()
     }
 }
 
@@ -98,6 +239,7 @@ pub struct Tag {
     data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(default)]
     nullable: bool,
 }
 
@@ -110,13 +252,66 @@ impl Tag {
         }
     }
 
-    fn infer_name(&mut self) {
-        unimplemented!()
+    pub fn is_null(&self) -> bool {
+        match self.data_type {
+            Type::Null => true,
+            _ => false,
+        }
     }
 
-    fn infer_nullability(&mut self) {
-        unimplemented!()
+    pub fn is_atom(&self) -> bool {
+        match self.data_type {
+            Type::Atom(_) => true,
+            _ => false,
+        }
     }
+
+    pub fn is_object(&self) -> bool {
+        match self.data_type {
+            Type::Object(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_map(&self) -> bool {
+        match self.data_type {
+            Type::Map(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        match self.data_type {
+            Type::Array(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_union(&self) -> bool {
+        match self.data_type {
+            Type::Array(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Assign names to tags from parent Tags.
+    fn infer_name(&mut self) {
+        match &mut self.data_type {
+            Type::Object(object) => {
+                for (key, value) in object.fields.iter_mut() {
+                    if let None = value.name {
+                        value.name = Some(key.to_string());
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+
+    // Infer whether the current node can be set to null
+    // fn infer_nullability(&mut self) {
+    //     unimplemented!()
+    // }
 }
 
 impl From<jsonschema::Tag> for Tag {
