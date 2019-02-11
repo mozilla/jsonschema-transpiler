@@ -168,11 +168,15 @@ impl Tag {
             },
             Atom::Array => {
                 if let Some(items) = &self.array.items {
-                    ast::Tag::new(ast::Type::Array(ast::Array::new(items.type_into_ast())), None, false)
+                    ast::Tag::new(
+                        ast::Type::Array(ast::Array::new(items.type_into_ast())),
+                        None,
+                        false,
+                    )
                 } else {
                     panic!("array missing item")
                 }
-            },
+            }
         }
     }
 }
