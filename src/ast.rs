@@ -67,18 +67,53 @@ impl Union {
         }
     }
 
-    fn collapse(&self) -> Type {
+    fn collapse(&self) -> Tag {
         let nullable: bool = self.items.iter().any(|x| x.is_null());
-        if self.items.iter().all(|x| x.is_atom()) {
+
+        if self.items.is_empty() {
+            panic!("empty union is not allowed")
+        } else if self.items.len() == 1 {
+            return Tag {
+                name: None,
+                nullable: nullable,
+                data_type: self.items[0].data_type,
+            };
+        }
+
+        let items: Vec<&Box<Tag>> = self.items.iter().filter(|x| !x.is_null()).collect();
+
+        let data_type: Type = if items.iter().all(|x| x.is_atom()) {
+            let mut iter = items.into_iter();
+            let head: &Box<Tag> = iter.next().unwrap();
+            iter.fold(head.data_type, |acc, x| match (acc, x.data_type) {
+                (Type::Atom(left), Type::Atom(right)) => {
+                    let atom = match (left, right) {
+                        (Atom::Boolean, Atom::Boolean) => Atom::Boolean,
+                        (Atom::Integer, Atom::Integer) => Atom::Integer,
+                        (Atom::Number, Atom::Number)
+                        | (Atom::Integer, Atom::Number)
+                        | (Atom::Number, Atom::Integer) => Atom::Number,
+                        (Atom::String, Atom::String) => Atom::String,
+                        _ => Atom::JSON,
+                    };
+                    Type::Atom(atom)
+                }
+                _ => Type::Atom(Atom::JSON),
+            })
+        } else if items.iter().all(|x| x.is_object()) {
             unimplemented!()
-        } else if self.items.iter().all(|x| x.is_object()) {
+        } else if items.iter().all(|x| x.is_map()) {
             unimplemented!()
-        } else if self.items.iter().all(|x| x.is_map()) {
-            unimplemented!()
-        } else if self.items.iter().all(|x| x.is_array()) {
+        } else if items.iter().all(|x| x.is_array()) {
             unimplemented!()
         } else {
             Type::Atom(Atom::JSON)
+        };
+
+        Tag {
+            name: None,
+            nullable: nullable,
+            data_type: data_type,
         }
     }
 }
