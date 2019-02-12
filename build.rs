@@ -63,7 +63,7 @@ fn main() {
 
     write!(
         bq_fp,
-        r#"use converter::convert_bigquery;
+        r#"use jst::convert_bigquery;
 use serde_json::Value;
 "#
     )

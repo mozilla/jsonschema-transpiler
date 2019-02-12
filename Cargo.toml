@@ -5,7 +5,7 @@ authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 edition = "2018"
 
 [lib]
-name = "converter"
+name = "jst"
 
 [dependencies]
 clap = "*"
