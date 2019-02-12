@@ -1,5 +1,5 @@
 use super::jsonschema;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -263,16 +263,22 @@ impl Tag {
                     if let None = value.name {
                         value.name = Some(key.to_string());
                     }
+                    value.infer_name()
                 }
             }
+            Type::Map(map) => {
+                if let None = map.key.name {
+                    map.key.name = Some("key".into());
+                }
+                if let None = map.value.name {
+                    map.value.name = Some("value".into());
+                }
+                map.value.infer_name()
+            }
+            Type::Array(array) => array.items.infer_name(),
             _ => (),
         }
     }
-
-    // Infer whether the current node can be set to null
-    // fn infer_nullability(&mut self) {
-    //     unimplemented!()
-    // }
 }
 
 impl From<jsonschema::Tag> for Tag {
@@ -628,4 +634,28 @@ fn test_union_collapse_map_nullable_atom() {
     } else {
         panic!()
     }
+}
+
+#[test]
+fn test_tag_infer_name_object() {
+    let data = json!({
+    "type": {
+        "object": {
+            "fields": {
+                "atom_0": {"type": {"atom": "integer"}},
+                "atom_1": {"type": {"atom": "integer"}},
+                "atom_2": {"type": {"atom": "integer"}},
+            }}}});
+    let mut tag: Tag = serde_json::from_value(data).unwrap();
+    tag.infer_name();
+    let expect = json!({
+    "nullable": false,
+    "type": {
+        "object": {
+            "fields": {
+                "atom_0": {"name": "atom_0", "type": {"atom": "integer"}, "nullable": false},
+                "atom_1": {"name": "atom_1", "type": {"atom": "integer"}, "nullable": false},
+                "atom_2": {"name": "atom_2", "type": {"atom": "integer"}, "nullable": false},
+            }}}});
+    assert_eq!(expect, json!(tag));
 }
