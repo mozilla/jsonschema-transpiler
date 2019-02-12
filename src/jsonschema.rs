@@ -60,7 +60,7 @@ struct Array {
 /// Container for the main body of the schema.
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase", tag = "type")]
-struct Tag {
+pub struct Tag {
     #[serde(rename = "type", default)]
     data_type: Value,
     #[serde(flatten)]
@@ -115,9 +115,9 @@ impl Tag {
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
-                    let mut fields: HashMap<String, Box<ast::Tag>> = HashMap::new();
+                    let mut fields: HashMap<String, ast::Tag> = HashMap::new();
                     for (key, value) in properties {
-                        fields.insert(key.to_string(), Box::new(value.type_into_ast()));
+                        fields.insert(key.to_string(), value.type_into_ast());
                     }
                     ast::Tag::new(ast::Type::Object(ast::Object::new(fields)), None, false)
                 }
@@ -168,18 +168,16 @@ impl Tag {
             },
             Atom::Array => {
                 if let Some(items) = &self.array.items {
-                    ast::Tag::new(ast::Type::Array(ast::Array::new(items.type_into_ast())), None, false)
+                    ast::Tag::new(
+                        ast::Type::Array(ast::Array::new(items.type_into_ast())),
+                        None,
+                        false,
+                    )
                 } else {
                     panic!("array missing item")
                 }
-            },
+            }
         }
-    }
-}
-
-impl Into<ast::Tag> for Tag {
-    fn into(self) -> ast::Tag {
-        self.type_into_ast()
     }
 }
 
