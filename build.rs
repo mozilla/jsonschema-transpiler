@@ -59,12 +59,11 @@ fn bigquery_{name}() {{
 
 fn main() {
     let test_cases = "tests/resources";
-    let mut bq_fp = File::create("tests/bigquery.rs").unwrap();
+    let mut bq_fp = File::create("tests/transpile_bigquery.rs").unwrap();
 
     write!(
         bq_fp,
-        r#"
-use converter::convert_bigquery;
+        r#"use jst::convert_bigquery;
 use serde_json::Value;
 "#
     )

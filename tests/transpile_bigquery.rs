@@ -1,5 +1,4 @@
-
-use converter::convert_bigquery;
+use jst::convert_bigquery;
 use serde_json::Value;
 
 #[test]

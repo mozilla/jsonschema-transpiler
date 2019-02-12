@@ -1,3 +1,4 @@
+use super::ast;
 use serde::de::{self, Deserialize, Deserializer};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -114,179 +115,183 @@ mod fields_as_vec {
     }
 }
 
-use serde_json::json;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
 
-#[test]
-fn test_serialize_atom() {
-    let atom = Tag {
-        name: None,
-        data_type: Box::new(Type::Atom(Atom::Bool)),
-        mode: Mode::Nullable,
-    };
-    let expect = json!({
-        "type": "BOOL",
-        "mode": "NULLABLE",
-    });
-    assert_eq!(expect, json!(atom))
-}
+    #[test]
+    fn test_serialize_atom() {
+        let atom = Tag {
+            name: None,
+            data_type: Box::new(Type::Atom(Atom::Bool)),
+            mode: Mode::Nullable,
+        };
+        let expect = json!({
+            "type": "BOOL",
+            "mode": "NULLABLE",
+        });
+        assert_eq!(expect, json!(atom))
+    }
 
-#[test]
-fn test_deserialize_atom() {
-    let atom: Tag = serde_json::from_value(json!({
-        "name": "test-int",
-        "mode": "REPEATED",
-        "type": "INT64"
-    }))
-    .unwrap();
-
-    match atom.name {
-        Some(name) => assert_eq!(name, "test-int"),
-        _ => panic!(),
-    };
-    match *atom.data_type {
-        Type::Atom(Atom::Int64) => (),
-        _ => panic!(),
-    };
-    match atom.mode {
-        Mode::Repeated => (),
-        _ => panic!(),
-    };
-}
-
-#[test]
-fn test_serialize_record() {
-    let atom = Tag {
-        name: Some("test-int".into()),
-        data_type: Box::new(Type::Atom(Atom::Int64)),
-        mode: Mode::Nullable,
-    };
-
-    let mut record = Record {
-        fields: HashMap::new(),
-    };
-    record.fields.insert("test-int".into(), Box::new(atom));
-
-    let root = Tag {
-        name: None,
-        data_type: Box::new(Type::Record(record)),
-        mode: Mode::Nullable,
-    };
-
-    let expect = json!({
-        "type": "RECORD",
-        "mode": "NULLABLE",
-        "fields": [{
+    #[test]
+    fn test_deserialize_atom() {
+        let atom: Tag = serde_json::from_value(json!({
             "name": "test-int",
-            "type": "INT64",
-            "mode": "NULLABLE"
-        }]
-    });
+            "mode": "REPEATED",
+            "type": "INT64"
+        }))
+        .unwrap();
 
-    assert_eq!(expect, json!(root))
-}
+        match atom.name {
+            Some(name) => assert_eq!(name, "test-int"),
+            _ => panic!(),
+        };
+        match *atom.data_type {
+            Type::Atom(Atom::Int64) => (),
+            _ => panic!(),
+        };
+        match atom.mode {
+            Mode::Repeated => (),
+            _ => panic!(),
+        };
+    }
 
-#[test]
-fn test_deserialize_record() {
-    let record: Tag = serde_json::from_value(json!({
-        "type": "RECORD",
-        "mode": "NULLABLE",
-        "fields": [{
-            "name": "test-int",
-            "type": "INT64",
-            "mode": "NULLABLE"
-        }]
-    }))
-    .unwrap();
+    #[test]
+    fn test_serialize_record() {
+        let atom = Tag {
+            name: Some("test-int".into()),
+            data_type: Box::new(Type::Atom(Atom::Int64)),
+            mode: Mode::Nullable,
+        };
 
-    let test_int = match &*record.data_type {
-        Type::Record(record) => record.fields.get("test-int").unwrap(),
-        _ => panic!(),
-    };
-    match *test_int.data_type {
-        Type::Atom(Atom::Int64) => (),
-        _ => panic!(),
-    };
-}
+        let mut record = Record {
+            fields: HashMap::new(),
+        };
+        record.fields.insert("test-int".into(), Box::new(atom));
 
-#[test]
-fn test_serialize_nested_record() {
-    let atom = Tag {
-        name: Some("test-int".into()),
-        data_type: Box::new(Type::Atom(Atom::Int64)),
-        mode: Mode::Nullable,
-    };
+        let root = Tag {
+            name: None,
+            data_type: Box::new(Type::Record(record)),
+            mode: Mode::Nullable,
+        };
 
-    let mut record_b = Record {
-        fields: HashMap::new(),
-    };
-    record_b.fields.insert("test-int".into(), Box::new(atom));
-
-    let tag_b = Tag {
-        name: Some("test-record-b".into()),
-        data_type: Box::new(Type::Record(record_b)),
-        mode: Mode::Nullable,
-    };
-
-    let mut record_a = Record {
-        fields: HashMap::new(),
-    };
-    record_a
-        .fields
-        .insert("test-record-b".into(), Box::new(tag_b));
-
-    let root = Tag {
-        name: Some("test-record-a".into()),
-        data_type: Box::new(Type::Record(record_a)),
-        mode: Mode::Nullable,
-    };
-
-    let expect = json!({
-        "name": "test-record-a",
-        "type": "RECORD",
-        "mode": "NULLABLE",
-        "fields": [{
-            "name": "test-record-b",
+        let expect = json!({
             "type": "RECORD",
+            "mode": "NULLABLE",
             "fields": [{
                 "name": "test-int",
                 "type": "INT64",
                 "mode": "NULLABLE"
-            }],
-            "mode": "NULLABLE"
-        }]
-    });
+            }]
+        });
 
-    assert_eq!(expect, json!(root))
-}
+        assert_eq!(expect, json!(root))
+    }
 
-#[test]
-fn test_deserialize_nested_record() {
-    let data = json!({
-        "name": "test-record-a",
-        "type": "RECORD",
-        "mode": "NULLABLE",
-        "fields": [{
-            "name": "test-record-b",
+    #[test]
+    fn test_deserialize_record() {
+        let record: Tag = serde_json::from_value(json!({
             "type": "RECORD",
+            "mode": "NULLABLE",
             "fields": [{
                 "name": "test-int",
                 "type": "INT64",
                 "mode": "NULLABLE"
-            }],
-            "mode": "NULLABLE"
-        }]
-    });
-    let record_a: Tag = serde_json::from_value(data).unwrap();
-    let record_b = match &*record_a.data_type {
-        Type::Record(record) => record.fields.get("test-record-b").unwrap(),
-        _ => panic!(),
-    };
-    let test_int = match &*record_b.data_type {
-        Type::Record(record) => record.fields.get("test-int").unwrap(),
-        _ => panic!(),
-    };
-    match *test_int.data_type {
-        Type::Atom(Atom::Int64) => (),
-        _ => panic!(),
+            }]
+        }))
+        .unwrap();
+
+        let test_int = match &*record.data_type {
+            Type::Record(record) => record.fields.get("test-int").unwrap(),
+            _ => panic!(),
+        };
+        match *test_int.data_type {
+            Type::Atom(Atom::Int64) => (),
+            _ => panic!(),
+        };
+    }
+
+    #[test]
+    fn test_serialize_nested_record() {
+        let atom = Tag {
+            name: Some("test-int".into()),
+            data_type: Box::new(Type::Atom(Atom::Int64)),
+            mode: Mode::Nullable,
+        };
+
+        let mut record_b = Record {
+            fields: HashMap::new(),
+        };
+        record_b.fields.insert("test-int".into(), Box::new(atom));
+
+        let tag_b = Tag {
+            name: Some("test-record-b".into()),
+            data_type: Box::new(Type::Record(record_b)),
+            mode: Mode::Nullable,
+        };
+
+        let mut record_a = Record {
+            fields: HashMap::new(),
+        };
+        record_a
+            .fields
+            .insert("test-record-b".into(), Box::new(tag_b));
+
+        let root = Tag {
+            name: Some("test-record-a".into()),
+            data_type: Box::new(Type::Record(record_a)),
+            mode: Mode::Nullable,
+        };
+
+        let expect = json!({
+            "name": "test-record-a",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [{
+                "name": "test-record-b",
+                "type": "RECORD",
+                "fields": [{
+                    "name": "test-int",
+                    "type": "INT64",
+                    "mode": "NULLABLE"
+                }],
+                "mode": "NULLABLE"
+            }]
+        });
+
+        assert_eq!(expect, json!(root))
+    }
+
+    #[test]
+    fn test_deserialize_nested_record() {
+        let data = json!({
+            "name": "test-record-a",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [{
+                "name": "test-record-b",
+                "type": "RECORD",
+                "fields": [{
+                    "name": "test-int",
+                    "type": "INT64",
+                    "mode": "NULLABLE"
+                }],
+                "mode": "NULLABLE"
+            }]
+        });
+        let record_a: Tag = serde_json::from_value(data).unwrap();
+        let record_b = match &*record_a.data_type {
+            Type::Record(record) => record.fields.get("test-record-b").unwrap(),
+            _ => panic!(),
+        };
+        let test_int = match &*record_b.data_type {
+            Type::Record(record) => record.fields.get("test-int").unwrap(),
+            _ => panic!(),
+        };
+        match *test_int.data_type {
+            Type::Atom(Atom::Int64) => (),
+            _ => panic!(),
+        }
     }
 }

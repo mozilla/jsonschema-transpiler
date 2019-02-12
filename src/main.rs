@@ -1,5 +1,5 @@
 extern crate clap;
-extern crate converter;
+extern crate jst;
 
 use clap::{App, Arg};
 use serde_json::Value;
@@ -23,7 +23,7 @@ fn main() {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let data: Value = serde_json::from_reader(reader).unwrap();
-        let output = converter::convert_bigquery(&data);
+        let output = jst::convert_bigquery(&data);
         let pretty = serde_json::to_string_pretty(&output).unwrap();
         println!("{}", pretty);
     } else {
