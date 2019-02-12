@@ -1,4 +1,3 @@
-
 use converter::convert_bigquery;
 use serde_json::Value;
 
