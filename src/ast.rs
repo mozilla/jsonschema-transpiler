@@ -174,189 +174,6 @@ impl Union {
     }
 }
 
-#[test]
-fn test_union_collapse_atom() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": {"atom": "integer"}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "atom": "integer",
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_atom_repeats() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": {"atom": "integer"}},
-            {"type": {"atom": "integer"}},
-            {"type": {"atom": "integer"}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "atom": "integer",
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_nullable_atom() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": "null"},
-            {"type": {"atom": "integer"}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "atom": "integer",
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_type_conflict() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": {"atom": "string"}},
-            {"type": {"atom": "integer"}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "atom": "json",
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_object_merge() {
-    let data = json!({
-    "union": {
-        "items": [
-            {
-                "type": {
-                    "object": {
-                        "fields": {
-                            "atom_0": {"type": {"atom": "boolean"}},
-                            "atom_1": {"type": {"atom": "integer"}},
-                        }}}},
-            {
-                "type": {
-                    "object": {
-                        "fields": {
-                            "atom_1": {"type": {"atom": "integer"}},
-                            "atom_2": {"type": {"atom": "string"}},
-                        }}}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-    "object": {
-        "fields": {
-            "atom_0": {"type": {"atom": "boolean"}, "nullable": false},
-            "atom_1": {"type": {"atom": "integer"}, "nullable": false},
-            "atom_2": {"type": {"atom": "string"}, "nullable": false},
-        }}});
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_object_conflict() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": {"atom": "string"}},
-            {"type": {"atom": "integer"}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "atom": "json",
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_array_nullable_atom() {
-    let data = json!({
-    "union": {
-        "items": [
-            {"type": {"array": {"items": {"type": {"atom": "integer"}}}}},
-            {"type": {"array": {"items": {"type": "null"}}}},
-        ]}});
-    let dtype: Type = serde_json::from_value(data).unwrap();
-    let expect = json!({
-        "array": {"items": {"type": {"atom": "integer"}, "nullable": true}}
-    });
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
-#[test]
-fn test_union_collapse_map_nullable_atom() {
-    let dtype = Type::Union(Union::new(vec![
-        Tag::new(
-            Type::Map(Map::new(
-                None,
-                Tag::new(Type::Atom(Atom::Integer), None, false),
-            )),
-            None,
-            false,
-        ),
-        Tag::new(
-            Type::Map(Map::new(None, Tag::new(Type::Null, None, false))),
-            None,
-            false,
-        ),
-    ]));
-    let expect = json!({
-    "map": {
-        "key": {
-            "type": {"atom": "string"},
-            "nullable": false,
-        },
-        "value": {
-            "type": {"atom": "integer"},
-            "nullable": true,
-        }}});
-    if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse().data_type))
-    } else {
-        panic!()
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
@@ -628,4 +445,187 @@ fn test_serialize_union() {
         "nullable": false
     });
     assert_eq!(expect, json!(union))
+}
+
+#[test]
+fn test_union_collapse_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_atom_repeats() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "integer"}},
+            {"type": {"atom": "integer"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_nullable_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": "null"},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "integer",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_type_conflict() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "string"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "json",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_object_merge() {
+    let data = json!({
+    "union": {
+        "items": [
+            {
+                "type": {
+                    "object": {
+                        "fields": {
+                            "atom_0": {"type": {"atom": "boolean"}},
+                            "atom_1": {"type": {"atom": "integer"}},
+                        }}}},
+            {
+                "type": {
+                    "object": {
+                        "fields": {
+                            "atom_1": {"type": {"atom": "integer"}},
+                            "atom_2": {"type": {"atom": "string"}},
+                        }}}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+    "object": {
+        "fields": {
+            "atom_0": {"type": {"atom": "boolean"}, "nullable": false},
+            "atom_1": {"type": {"atom": "integer"}, "nullable": false},
+            "atom_2": {"type": {"atom": "string"}, "nullable": false},
+        }}});
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_object_conflict() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"atom": "string"}},
+            {"type": {"atom": "integer"}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "atom": "json",
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_array_nullable_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"array": {"items": {"type": {"atom": "integer"}}}}},
+            {"type": {"array": {"items": {"type": "null"}}}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "array": {"items": {"type": {"atom": "integer"}, "nullable": true}}
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_map_nullable_atom() {
+    let dtype = Type::Union(Union::new(vec![
+        Tag::new(
+            Type::Map(Map::new(
+                None,
+                Tag::new(Type::Atom(Atom::Integer), None, false),
+            )),
+            None,
+            false,
+        ),
+        Tag::new(
+            Type::Map(Map::new(None, Tag::new(Type::Null, None, false))),
+            None,
+            false,
+        ),
+    ]));
+    let expect = json!({
+    "map": {
+        "key": {
+            "type": {"atom": "string"},
+            "nullable": false,
+        },
+        "value": {
+            "type": {"atom": "integer"},
+            "nullable": true,
+        }}});
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
 }
