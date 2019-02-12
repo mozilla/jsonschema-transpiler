@@ -115,9 +115,9 @@ impl Tag {
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
-                    let mut fields: HashMap<String, Box<ast::Tag>> = HashMap::new();
+                    let mut fields: HashMap<String, ast::Tag> = HashMap::new();
                     for (key, value) in properties {
-                        fields.insert(key.to_string(), Box::new(value.type_into_ast()));
+                        fields.insert(key.to_string(), value.type_into_ast());
                     }
                     ast::Tag::new(ast::Type::Object(ast::Object::new(fields)), None, false)
                 }

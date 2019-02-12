@@ -2,7 +2,7 @@ use super::jsonschema;
 use serde_json::json;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Atom {
     Boolean,
@@ -12,18 +12,20 @@ pub enum Atom {
     JSON,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Object {
     fields: HashMap<String, Box<Tag>>,
 }
 
 impl Object {
-    pub fn new(fields: HashMap<String, Box<Tag>>) -> Self {
-        Object { fields: fields }
+    pub fn new(fields: HashMap<String, Tag>) -> Self {
+        let boxed: HashMap<String, Box<Tag>> =
+            fields.into_iter().map(|(k, v)| (k, Box::new(v))).collect();
+        Object { fields: boxed }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Array {
     items: Box<Tag>,
 }
@@ -36,7 +38,7 @@ impl Array {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Map {
     key: Box<Tag>,
     value: Box<Tag>,
@@ -55,7 +57,7 @@ impl Map {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Union {
     items: Vec<Box<Tag>>,
 }
@@ -67,6 +69,13 @@ impl Union {
         }
     }
 
+    /// Collapse a union of types into a structurally compatible type.
+    ///
+    /// Typically, variant types are not allowed in a table schema. If a variant type
+    /// type is found, it will be converted into a JSON type. Because of the ambiguity
+    /// around finding structure in a JSON blob, the union of any type with JSON will
+    /// be consumed by the JSON type. In a similar fashion, a table schema is determined
+    /// to be nullable or required via occurances of null types in unions.
     fn collapse(&self) -> Tag {
         let nullable: bool = self.items.iter().any(|x| x.is_null());
 
@@ -76,36 +85,83 @@ impl Union {
             return Tag {
                 name: None,
                 nullable: nullable,
-                data_type: self.items[0].data_type,
+                data_type: self.items[0].data_type.clone(),
             };
         }
 
         let items: Vec<&Box<Tag>> = self.items.iter().filter(|x| !x.is_null()).collect();
 
         let data_type: Type = if items.iter().all(|x| x.is_atom()) {
-            let mut iter = items.into_iter();
-            let head: &Box<Tag> = iter.next().unwrap();
-            iter.fold(head.data_type, |acc, x| match (acc, x.data_type) {
-                (Type::Atom(left), Type::Atom(right)) => {
-                    let atom = match (left, right) {
-                        (Atom::Boolean, Atom::Boolean) => Atom::Boolean,
-                        (Atom::Integer, Atom::Integer) => Atom::Integer,
-                        (Atom::Number, Atom::Number)
-                        | (Atom::Integer, Atom::Number)
-                        | (Atom::Number, Atom::Integer) => Atom::Number,
-                        (Atom::String, Atom::String) => Atom::String,
-                        _ => Atom::JSON,
-                    };
-                    Type::Atom(atom)
-                }
-                _ => Type::Atom(Atom::JSON),
-            })
+            items
+                .into_iter()
+                .fold(Type::Null, |acc, x| match (acc, &x.data_type) {
+                    (Type::Null, Type::Atom(atom)) => Type::Atom(*atom),
+                    (Type::Atom(left), Type::Atom(right)) => {
+                        let atom = match (left, right) {
+                            (Atom::Boolean, Atom::Boolean) => Atom::Boolean,
+                            (Atom::Integer, Atom::Integer) => Atom::Integer,
+                            (Atom::Number, Atom::Number)
+                            | (Atom::Integer, Atom::Number)
+                            | (Atom::Number, Atom::Integer) => Atom::Number,
+                            (Atom::String, Atom::String) => Atom::String,
+                            _ => Atom::JSON,
+                        };
+                        Type::Atom(atom)
+                    }
+                    _ => Type::Atom(Atom::JSON),
+                })
         } else if items.iter().all(|x| x.is_object()) {
-            unimplemented!()
+            items
+                .into_iter()
+                .fold(Type::Null, |acc, x| match (&acc, &x.data_type) {
+                    (Type::Null, Type::Object(object)) => Type::Object(object.clone()),
+                    (Type::Object(left), Type::Object(right)) => {
+                        // union each sub-property, recursively collapse, and rebuild
+                        let mut union: HashMap<String, Vec<Tag>> = HashMap::new();
+                        for (key, value) in &left.fields {
+                            union.insert(key.to_string(), vec![*value.clone()]);
+                        }
+                        for (key, value) in &right.fields {
+                            if let Some(vec) = union.get_mut(key) {
+                                vec.push(*value.clone())
+                            } else {
+                                union.insert(key.to_string(), vec![*value.clone()]);
+                            }
+                        }
+                        let result: HashMap<String, Tag> = union
+                            .into_iter()
+                            .map(|(k, v)| (k, Union::new(v).collapse()))
+                            .collect();
+                        // Atom::JSON is a catch-all value and makes for inconsistent objects
+                        let is_consistent = !result.iter().any(|(_, v)| match v.data_type {
+                            Type::Atom(Atom::JSON) => true,
+                            _ => false,
+                        });
+                        match is_consistent {
+                            true => Type::Object(Object::new(result)),
+                            false => Type::Atom(Atom::JSON),
+                        }
+                    }
+                    _ => Type::Atom(Atom::JSON),
+                })
         } else if items.iter().all(|x| x.is_map()) {
-            unimplemented!()
+            let tags: Vec<Tag> = items
+                .into_iter()
+                .map(|x| match &x.data_type {
+                    Type::Map(map) => *map.value.clone(),
+                    _ => panic!(),
+                })
+                .collect();
+            Type::Map(Map::new(None, Union::new(tags).collapse()))
         } else if items.iter().all(|x| x.is_array()) {
-            unimplemented!()
+            let tags: Vec<Tag> = items
+                .into_iter()
+                .map(|x| match &x.data_type {
+                    Type::Array(array) => *array.items.clone(),
+                    _ => panic!(),
+                })
+                .collect();
+            Type::Array(Array::new(Union::new(tags).collapse()))
         } else {
             Type::Atom(Atom::JSON)
         };
@@ -130,7 +186,7 @@ fn test_union_collapse_atom() {
         "atom": "integer",
     });
     if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse()))
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
@@ -150,7 +206,7 @@ fn test_union_collapse_atom_repeats() {
         "atom": "integer",
     });
     if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse()))
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
@@ -164,12 +220,12 @@ fn test_union_collapse_nullable_atom() {
             {"type": "null"},
             {"type": {"atom": "integer"}},
         ]}});
-    let dtype: Tag = serde_json::from_value(data).unwrap();
+    let dtype: Type = serde_json::from_value(data).unwrap();
     let expect = json!({
         "atom": "integer",
     });
-    if let Type::Union(union) = dtype.data_type {
-        assert_eq!(expect, json!(union.collapse()))
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
@@ -185,10 +241,10 @@ fn test_union_collapse_type_conflict() {
         ]}});
     let dtype: Type = serde_json::from_value(data).unwrap();
     let expect = json!({
-        "atom": "JSON",
+        "atom": "json",
     });
     if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse()))
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
@@ -218,12 +274,12 @@ fn test_union_collapse_object_merge() {
     let expect = json!({
     "object": {
         "fields": {
-            "atom_0": {"type": {"atom": "boolean"}},
-            "atom_1": {"type": {"atom": "integer"}},
-            "atom_2": {"type": {"atom": "string"}},
+            "atom_0": {"type": {"atom": "boolean"}, "nullable": false},
+            "atom_1": {"type": {"atom": "integer"}, "nullable": false},
+            "atom_2": {"type": {"atom": "string"}, "nullable": false},
         }}});
     if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse()))
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
@@ -239,16 +295,69 @@ fn test_union_collapse_object_conflict() {
         ]}});
     let dtype: Type = serde_json::from_value(data).unwrap();
     let expect = json!({
-        "atom": "JSON",
+        "atom": "json",
     });
     if let Type::Union(union) = dtype {
-        assert_eq!(expect, json!(union.collapse()))
+        assert_eq!(expect, json!(union.collapse().data_type))
     } else {
         panic!()
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[test]
+fn test_union_collapse_array_nullable_atom() {
+    let data = json!({
+    "union": {
+        "items": [
+            {"type": {"array": {"items": {"type": {"atom": "integer"}}}}},
+            {"type": {"array": {"items": {"type": "null"}}}},
+        ]}});
+    let dtype: Type = serde_json::from_value(data).unwrap();
+    let expect = json!({
+        "array": {"items": {"type": {"atom": "integer"}, "nullable": true}}
+    });
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[test]
+fn test_union_collapse_map_nullable_atom() {
+    let dtype = Type::Union(Union::new(vec![
+        Tag::new(
+            Type::Map(Map::new(
+                None,
+                Tag::new(Type::Atom(Atom::Integer), None, false),
+            )),
+            None,
+            false,
+        ),
+        Tag::new(
+            Type::Map(Map::new(None, Tag::new(Type::Null, None, false))),
+            None,
+            false,
+        ),
+    ]));
+    let expect = json!({
+    "map": {
+        "key": {
+            "type": {"atom": "string"},
+            "nullable": false,
+        },
+        "value": {
+            "type": {"atom": "integer"},
+            "nullable": true,
+        }}});
+    if let Type::Union(union) = dtype {
+        assert_eq!(expect, json!(union.collapse().data_type))
+    } else {
+        panic!()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
     Null,
@@ -267,7 +376,7 @@ impl Default for Type {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(tag = "type")]
 pub struct Tag {
     #[serde(rename = "type")]
