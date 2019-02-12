@@ -13,7 +13,7 @@ pub enum Atom {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Object {
-    fields: HashMap<String, Box<Tag>>,
+    pub fields: HashMap<String, Box<Tag>>,
 }
 
 impl Object {
@@ -26,7 +26,7 @@ impl Object {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Array {
-    items: Box<Tag>,
+    pub items: Box<Tag>,
 }
 
 impl Array {
@@ -39,8 +39,8 @@ impl Array {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Map {
-    key: Box<Tag>,
-    value: Box<Tag>,
+    pub key: Box<Tag>,
+    pub value: Box<Tag>,
 }
 
 impl Map {
@@ -75,7 +75,7 @@ impl Union {
     /// around finding structure in a JSON blob, the union of any type with JSON will
     /// be consumed by the JSON type. In a similar fashion, a table schema is determined
     /// to be nullable or required via occurances of null types in unions.
-    fn collapse(&self) -> Tag {
+    pub fn collapse(&self) -> Tag {
         let nullable: bool = self.items.iter().any(|x| x.is_null());
 
         if self.items.is_empty() {
@@ -136,9 +136,10 @@ impl Union {
                             Type::Atom(Atom::JSON) => true,
                             _ => false,
                         });
-                        match is_consistent {
-                            true => Type::Object(Object::new(result)),
-                            false => Type::Atom(Atom::JSON),
+                        if is_consistent {
+                            Type::Object(Object::new(result))
+                        } else {
+                            Type::Atom(Atom::JSON)
                         }
                     }
                     _ => Type::Atom(Atom::JSON),
@@ -196,11 +197,11 @@ impl Default for Type {
 #[serde(tag = "type")]
 pub struct Tag {
     #[serde(rename = "type")]
-    data_type: Type,
+    pub data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
+    pub name: Option<String>,
     #[serde(default)]
-    nullable: bool,
+    pub nullable: bool,
 }
 
 impl Tag {
@@ -255,7 +256,7 @@ impl Tag {
     }
 
     /// Assign names to tags from parent Tags.
-    fn infer_name(&mut self) {
+    pub fn infer_name(&mut self) {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
@@ -282,7 +283,9 @@ impl Tag {
 
 impl From<jsonschema::Tag> for Tag {
     fn from(tag: jsonschema::Tag) -> Self {
-        tag.type_into_ast()
+        let mut tag = tag.type_into_ast();
+        tag.infer_name();
+        tag
     }
 }
 
