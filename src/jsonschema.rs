@@ -430,15 +430,18 @@ mod tests {
             "object": {
                 "fields": {
                     "test-int": {
+                        "name": "test-int",
                         "type": {"atom": "integer"},
                         "nullable": false,
                     },
                     "test-obj": {
+                        "name": "test-obj",
                         "nullable": false,
                         "type": {
                             "object": {
                                 "fields": {
                                     "test-null": {
+                                        "name": "test-null",
                                         "type": "null",
                                         "nullable": false,
                                     }}}}}}}}});
@@ -463,15 +466,18 @@ mod tests {
         "type": {
             "map": {
                 "key": {
+                    "name": "key",
                     "nullable": false,
                     "type": {"atom": "string"}
                 },
                 "value": {
+                    "name": "value",
                     "nullable": false,
                     "type": {
                         "object": {
                             "fields": {
                                 "test-int": {
+                                    "name": "test-int",
                                     "nullable": false,
                                     "type": {"atom": "integer"}
                                 }}}}}}}});
