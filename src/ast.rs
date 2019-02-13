@@ -20,12 +20,9 @@ pub struct Object {
 
 impl Object {
     pub fn new(fields: HashMap<String, Tag>, required: Option<HashSet<String>>) -> Self {
-        let boxed: HashMap<String, Box<Tag>> =
+        let fields: HashMap<String, Box<Tag>> =
             fields.into_iter().map(|(k, v)| (k, Box::new(v))).collect();
-        Object {
-            fields: boxed,
-            required: required,
-        }
+        Object { fields, required }
     }
 }
 
@@ -93,13 +90,19 @@ impl Union {
             };
         }
 
-        let items: Vec<Box<Tag>> = self.items.iter()
+        let items: Vec<Box<Tag>> = self
+            .items
+            .iter()
             .filter(|x| !x.is_null())
-            .map(|x| if let Type::Union(union) = &x.data_type {
-                let mut tag = union.collapse();
-                tag.name = x.name.clone();
-                Box::new(tag)
-            } else { x.clone() })
+            .map(|x| {
+                if let Type::Union(union) = &x.data_type {
+                    let mut tag = union.collapse();
+                    tag.name = x.name.clone();
+                    Box::new(tag)
+                } else {
+                    x.clone()
+                }
+            })
             .collect();
 
         // after collapsing nulls in the base case and collapsing nested unions in
@@ -192,8 +195,8 @@ impl Union {
 
         let mut tag = Tag {
             name: None,
-            nullable: nullable,
-            data_type: data_type,
+            nullable,
+            data_type,
         };
         tag.infer_nullability();
         tag
@@ -233,9 +236,9 @@ pub struct Tag {
 impl Tag {
     pub fn new(data_type: Type, name: Option<String>, nullable: bool) -> Self {
         Tag {
-            data_type: data_type,
-            name: name,
-            nullable: nullable,
+            data_type,
+            name,
+            nullable,
         }
     }
 
@@ -274,29 +277,22 @@ impl Tag {
         }
     }
 
-    pub fn is_union(&self) -> bool {
-        match self.data_type {
-            Type::Array(_) => true,
-            _ => false,
-        }
-    }
-
     /// Assign names to tags from parent Tags.
     pub fn infer_name(&mut self) {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    if let None = value.name {
+                    if value.name.is_none() {
                         value.name = Some(key.to_string());
                     }
                     value.infer_name()
                 }
             }
             Type::Map(map) => {
-                if let None = map.key.name {
+                if map.key.name.is_none() {
                     map.key.name = Some("key".into());
                 }
-                if let None = map.value.name {
+                if map.value.name.is_none() {
                     map.value.name = Some("value".into());
                 }
                 map.value.infer_name()

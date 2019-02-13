@@ -109,7 +109,7 @@ impl From<ast::Tag> for Tag {
                     .iter()
                     .map(|(k, v)| (k.to_string(), Box::new(Tag::from(*v.clone()))))
                     .collect();
-                Type::Record(Record { fields: fields })
+                Type::Record(Record { fields })
             }
             ast::Type::Array(array) => *Tag::from(*array.items.clone()).data_type,
             ast::Type::Map(map) => {
@@ -119,7 +119,7 @@ impl From<ast::Tag> for Tag {
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), Box::new(v)))
                     .collect();
-                Type::Record(Record { fields: fields })
+                Type::Record(Record { fields })
             }
             _ => Type::Atom(Atom::String),
         };
@@ -134,7 +134,7 @@ impl From<ast::Tag> for Tag {
         Tag {
             name: tag.name.clone(),
             data_type: Box::new(data_type),
-            mode: mode,
+            mode,
         }
     }
 }
