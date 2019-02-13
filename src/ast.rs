@@ -81,19 +81,30 @@ impl Union {
     /// be consumed by the JSON type. In a similar fashion, a table schema is determined
     /// to be nullable or required via occurances of null types in unions.
     pub fn collapse(&self) -> Tag {
-        let nullable: bool = self.items.iter().any(|x| x.is_null());
+        let is_null = self.items.iter().any(|x| x.is_null());
 
         if self.items.is_empty() {
             panic!("empty union is not allowed")
         } else if self.items.len() == 1 {
             return Tag {
                 name: None,
-                nullable: nullable,
+                nullable: is_null,
                 data_type: self.items[0].data_type.clone(),
             };
         }
 
-        let items: Vec<&Box<Tag>> = self.items.iter().filter(|x| !x.is_null()).collect();
+        let items: Vec<Box<Tag>> = self.items.iter()
+            .filter(|x| !x.is_null())
+            .map(|x| if let Type::Union(union) = &x.data_type {
+                let mut tag = union.collapse();
+                tag.name = x.name.clone();
+                Box::new(tag)
+            } else { x.clone() })
+            .collect();
+
+        // after collapsing nulls in the base case and collapsing nested unions in
+        // the preprocessing step, check for nullability based on the immediate level of tags
+        let nullable = is_null || items.iter().any(|tag| tag.nullable);
 
         let data_type: Type = if items.iter().all(|x| x.is_atom()) {
             items
@@ -179,11 +190,13 @@ impl Union {
             Type::Atom(Atom::JSON)
         };
 
-        Tag {
+        let mut tag = Tag {
             name: None,
             nullable: nullable,
             data_type: data_type,
-        }
+        };
+        tag.infer_nullability();
+        tag
     }
 }
 
@@ -598,9 +611,9 @@ mod tests {
         let expect = json!({
         "object": {
             "fields": {
-                "atom_0": {"type": {"atom": "boolean"}, "nullable": false},
-                "atom_1": {"type": {"atom": "integer"}, "nullable": false},
-                "atom_2": {"type": {"atom": "string"}, "nullable": false},
+                "atom_0": {"type": {"atom": "boolean"}, "nullable": true},
+                "atom_1": {"type": {"atom": "integer"}, "nullable": true},
+                "atom_2": {"type": {"atom": "string"}, "nullable": true},
             }}});
         if let Type::Union(union) = dtype {
             assert_eq!(expect, json!(union.collapse().data_type))
@@ -676,6 +689,29 @@ mod tests {
             }}});
         if let Type::Union(union) = dtype {
             assert_eq!(expect, json!(union.collapse().data_type))
+        } else {
+            panic!()
+        }
+    }
+
+    #[test]
+    fn test_union_collapse_nested_union() {
+        let data = json!({
+        "union": {
+            "items": [
+                {"type": {"union": {"items": [
+                    {"type": "null"},
+                    {"type": {"atom": "number"}},
+                ]}}},
+                {"type": {"atom": "integer"}},
+            ]}});
+        let dtype: Type = serde_json::from_value(data).unwrap();
+        let expect = json!({
+            "nullable": true,
+            "type": {"atom": "number"}
+        });
+        if let Type::Union(union) = dtype {
+            assert_eq!(expect, json!(union.collapse()))
         } else {
             panic!()
         }

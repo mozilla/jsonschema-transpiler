@@ -40,7 +40,7 @@ struct Object {
     #[serde(skip_serializing_if = "Option::is_none")]
     additional_properties: Option<AdditionalProperties>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pattern_properties: Option<Box<Tag>>,
+    pattern_properties: Option<HashMap<String, Box<Tag>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     required: Option<HashSet<String>>,
 }
@@ -136,23 +136,30 @@ impl Tag {
                         &self.object.pattern_properties,
                     ) {
                         (Some(AdditionalProperties::Object(add)), Some(pat)) => {
-                            let value = ast::Tag::new(
-                                ast::Type::Union(ast::Union::new(vec![
-                                    add.type_into_ast(),
-                                    pat.type_into_ast(),
-                                ])),
-                                None,
-                                false,
-                            );
+                            let mut vec: Vec<ast::Tag> = Vec::new();
+                            vec.push(add.type_into_ast());
+                            for value in pat.values() {
+                                vec.push(value.type_into_ast());
+                            }
+                            let value =
+                                ast::Tag::new(ast::Type::Union(ast::Union::new(vec)), None, false);
 
                             ast::Tag::new(ast::Type::Map(ast::Map::new(None, value)), None, false)
                         }
-                        (Some(AdditionalProperties::Object(tag)), None) | (None, Some(tag)) => {
-                            ast::Tag::new(
-                                ast::Type::Map(ast::Map::new(None, tag.type_into_ast())),
+                        (Some(AdditionalProperties::Object(tag)), None) => ast::Tag::new(
+                            ast::Type::Map(ast::Map::new(None, tag.type_into_ast())),
+                            None,
+                            false,
+                        ),
+                        (_, Some(tag)) => {
+                            let union = ast::Tag::new(
+                                ast::Type::Union(ast::Union::new(
+                                    tag.values().map(|v| v.type_into_ast()).collect(),
+                                )),
                                 None,
                                 false,
-                            )
+                            );
+                            ast::Tag::new(ast::Type::Map(ast::Map::new(None, union)), None, false)
                         }
                         _ => {
                             // handle oneOf
@@ -295,6 +302,18 @@ mod tests {
         } else {
             panic!()
         };
+    }
+
+    #[test]
+    fn test_deserialize_type_object_pattern_properties() {
+        let data = json!({
+        "type": "object",
+        "patternProperties": {
+            "*": {
+                "type": "integer"
+            }}});
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let props = schema.object.pattern_properties.unwrap();
     }
 
     #[test]
