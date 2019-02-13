@@ -86,10 +86,15 @@ pub struct Tag {
 impl From<ast::Tag> for Tag {
     fn from(tag: ast::Tag) -> Tag {
         let mut tag = match tag.data_type {
-            ast::Type::Union(union) => union.collapse(),
+            ast::Type::Union(union) => {
+                let mut collapsed = union.collapse();
+                collapsed.name = tag.name.clone();
+                collapsed
+            }
             _ => tag,
         };
         tag.infer_name();
+        tag.infer_nullability();
         let data_type = match &tag.data_type {
             ast::Type::Atom(atom) => Type::Atom(match atom {
                 ast::Atom::Boolean => Atom::Bool,
@@ -118,6 +123,7 @@ impl From<ast::Tag> for Tag {
             }
             _ => Type::Atom(Atom::String),
         };
+
         let mode = if tag.is_array() || tag.is_map() {
             Mode::Repeated
         } else if tag.is_null() || tag.nullable {
@@ -146,10 +152,7 @@ mod fields_as_vec {
         S: Serializer,
     {
         let mut seq = serializer.serialize_seq(Some(map.len()))?;
-        let mut vec: Vec<(String, &Tag)> = map
-            .iter()
-            .map(|(k, v)| (k.to_string(), &**v))
-            .collect();
+        let mut vec: Vec<(String, &Tag)> = map.iter().map(|(k, v)| (k.to_string(), &**v)).collect();
         vec.sort_by_key(|(k, _)| k.to_string());
 
         for (_, element) in vec {
@@ -417,6 +420,7 @@ mod tests {
         let data = json!({
         "type": {
             "object": {
+                "required": ["test-atom", "test-object"],
                 "fields": {
                     "test-null": {"type": "null"},
                     "test-atom": {"type": {"atom": "integer"}},
@@ -434,7 +438,7 @@ mod tests {
                 {"name": "test-atom", "type": "INT64", "mode": "REQUIRED"},
                 {"name": "test-null", "type": "STRING", "mode": "NULLABLE"},
                 {"name": "test-object", "type": "RECORD", "mode": "REQUIRED", "fields": [
-                    {"name": "test-nested-atom", "type": "FLOAT64", "mode": "REQUIRED"},
+                    {"name": "test-nested-atom", "type": "FLOAT64", "mode": "NULLABLE"},
                 ]},
             ]
         });

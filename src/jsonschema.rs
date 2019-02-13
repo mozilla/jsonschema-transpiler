@@ -1,7 +1,7 @@
 /// A JSON Schema serde module derived from the v4 spec.
 /// Refer to http://json-schema.org/draft-04/schema for spec details.
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::ast;
 
@@ -42,7 +42,7 @@ struct Object {
     #[serde(skip_serializing_if = "Option::is_none")]
     pattern_properties: Option<Box<Tag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    required: Option<Vec<String>>,
+    required: Option<HashSet<String>>,
 }
 
 /// Represent an array of subschemas. This is also known as a `schemaArray`.
@@ -97,18 +97,22 @@ impl Tag {
         match self.get_type() {
             Type::Atom(atom) => self.atom_into_ast(atom),
             Type::List(list) => {
+                let mut nullable: bool = false;
                 let mut items: Vec<ast::Tag> = Vec::new();
                 for atom in list {
+                    if let Atom::Null = &atom {
+                        nullable = true;
+                    }
                     items.push(self.atom_into_ast(atom));
                 }
-                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, false)
+                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, nullable)
             }
         }
     }
 
     fn atom_into_ast(&self, data_type: Atom) -> ast::Tag {
         match data_type {
-            Atom::Null => ast::Tag::new(ast::Type::Null, None, false),
+            Atom::Null => ast::Tag::new(ast::Type::Null, None, true),
             Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
             Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
@@ -119,7 +123,11 @@ impl Tag {
                     for (key, value) in properties {
                         fields.insert(key.to_string(), value.type_into_ast());
                     }
-                    ast::Tag::new(ast::Type::Object(ast::Object::new(fields)), None, false)
+                    ast::Tag::new(
+                        ast::Type::Object(ast::Object::new(fields, self.object.required.clone())),
+                        None,
+                        false,
+                    )
                 }
                 None => {
                     // handle maps
@@ -150,12 +158,13 @@ impl Tag {
                             // handle oneOf
                             match &self.one_of {
                                 Some(vec) => {
-                                    let items =
+                                    let items: Vec<ast::Tag> =
                                         vec.iter().map(|item| item.type_into_ast()).collect();
+                                    let nullable: bool = items.iter().any(|x| x.is_null());
                                     ast::Tag::new(
                                         ast::Type::Union(ast::Union::new(items)),
                                         None,
-                                        false,
+                                        nullable,
                                     )
                                 }
                                 None => {
@@ -240,7 +249,10 @@ mod tests {
         assert_eq!(props.len(), 2);
         let test_int = props.get("test-int").unwrap();
         assert_eq!(test_int.data_type, json!("integer"));
-        assert_eq!(schema.object.required.unwrap(), vec!["test-int"]);
+        assert_eq!(
+            schema.object.required.unwrap(),
+            vec!["test-int".to_string()].into_iter().collect()
+        );
     }
 
     #[test]
@@ -370,7 +382,7 @@ mod tests {
         let ast: ast::Tag = schema.into();
         let expect = json!({
             "type": "null",
-            "nullable": false,
+            "nullable": true,
         });
         assert_eq!(expect, json!(ast))
     }
@@ -400,12 +412,12 @@ mod tests {
             "type": {
                 "union": {
                     "items": [
-                        {"type": "null", "nullable": false},
+                        {"type": "null", "nullable": true},
                         {"type": {"atom": "integer"}, "nullable": false},
                     ]
                 }
             },
-            "nullable": false,
+            "nullable": true,
         });
         assert_eq!(expect, json!(ast))
     }
@@ -432,18 +444,18 @@ mod tests {
                     "test-int": {
                         "name": "test-int",
                         "type": {"atom": "integer"},
-                        "nullable": false,
+                        "nullable": true,
                     },
                     "test-obj": {
                         "name": "test-obj",
-                        "nullable": false,
+                        "nullable": true,
                         "type": {
                             "object": {
                                 "fields": {
                                     "test-null": {
                                         "name": "test-null",
                                         "type": "null",
-                                        "nullable": false,
+                                        "nullable": true,
                                     }}}}}}}}});
         assert_eq!(expect, json!(ast))
     }
@@ -478,7 +490,7 @@ mod tests {
                             "fields": {
                                 "test-int": {
                                     "name": "test-int",
-                                    "nullable": false,
+                                    "nullable": true,
                                     "type": {"atom": "integer"}
                                 }}}}}}}});
         assert_eq!(expect, json!(ast))
@@ -516,7 +528,7 @@ mod tests {
         let schema: Tag = serde_json::from_value(data).unwrap();
         let ast: ast::Tag = schema.into();
         let expect = json!({
-        "nullable": false,
+        "nullable": true,
         "type": {
             "union": {
                 "items": [
@@ -525,7 +537,7 @@ mod tests {
                         "type": {"atom": "integer"},
                     },
                     {
-                        "nullable": false,
+                        "nullable": true,
                         "type": "null"
                     }
                 ]}}});

@@ -1,5 +1,5 @@
 use super::jsonschema;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -14,13 +14,18 @@ pub enum Atom {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Object {
     pub fields: HashMap<String, Box<Tag>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<HashSet<String>>,
 }
 
 impl Object {
-    pub fn new(fields: HashMap<String, Tag>) -> Self {
+    pub fn new(fields: HashMap<String, Tag>, required: Option<HashSet<String>>) -> Self {
         let boxed: HashMap<String, Box<Tag>> =
             fields.into_iter().map(|(k, v)| (k, Box::new(v))).collect();
-        Object { fields: boxed }
+        Object {
+            fields: boxed,
+            required: required,
+        }
     }
 }
 
@@ -137,7 +142,15 @@ impl Union {
                             _ => false,
                         });
                         if is_consistent {
-                            Type::Object(Object::new(result))
+                            let required: Option<HashSet<String>> =
+                                match (&left.required, &right.required) {
+                                    (Some(x), Some(y)) => {
+                                        Some(x.union(&y).map(|x| x.to_string()).collect())
+                                    }
+                                    (Some(x), None) | (None, Some(x)) => Some(x.clone()),
+                                    _ => None,
+                                };
+                            Type::Object(Object::new(result, required))
                         } else {
                             Type::Atom(Atom::JSON)
                         }
@@ -279,12 +292,37 @@ impl Tag {
             _ => (),
         }
     }
+
+    /// These rules are primarily focused on BigQuery, although they should translate
+    /// into other schemas.
+    pub fn infer_nullability(&mut self) {
+        match &mut self.data_type {
+            Type::Object(object) => {
+                let required = match &object.required {
+                    Some(required) => required.clone(),
+                    None => HashSet::new(),
+                };
+                for (key, value) in &mut object.fields {
+                    if required.contains(key) {
+                        value.nullable = false;
+                    } else {
+                        value.nullable = true;
+                    }
+                    value.infer_nullability()
+                }
+            }
+            Type::Map(map) => map.value.infer_nullability(),
+            Type::Array(array) => array.items.infer_nullability(),
+            _ => (),
+        }
+    }
 }
 
 impl From<jsonschema::Tag> for Tag {
     fn from(tag: jsonschema::Tag) -> Self {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
+        tag.infer_nullability();
         tag
     }
 }
@@ -324,7 +362,7 @@ mod tests {
     #[test]
     fn test_serialize_object() {
         let mut field = Tag {
-            data_type: Type::Object(Object::new(HashMap::new())),
+            data_type: Type::Object(Object::new(HashMap::new(), None)),
             name: Some("test-object".into()),
             nullable: false,
         };
