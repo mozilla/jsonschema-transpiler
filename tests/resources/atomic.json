@@ -10,7 +10,7 @@
                 },
                 "bigquery": {
                     "mode": "REQUIRED",
-                    "type": "INTEGER"
+                    "type": "INT64"
                 },
                 "json": {
                     "type": "integer"
@@ -29,7 +29,7 @@
                 },
                 "bigquery": {
                     "mode": "NULLABLE",
-                    "type": "INTEGER"
+                    "type": "INT64"
                 },
                 "json": {
                     "type": [

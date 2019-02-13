@@ -13,7 +13,7 @@
                 },
                 "bigquery": {
                     "mode": "REPEATED",
-                    "type": "INTEGER"
+                    "type": "INT64"
                 },
                 "json": {
                     "items": {
@@ -54,7 +54,7 @@
                         {
                             "mode": "NULLABLE",
                             "name": "field_2",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         }
                     ],
                     "mode": "REPEATED",
