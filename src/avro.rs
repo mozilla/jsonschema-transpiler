@@ -15,7 +15,7 @@ enum Primitive {
     String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct CommonAttributes {
     name: String,
     namespace: Option<String>,
@@ -30,7 +30,7 @@ struct Record {
     fields: HashMap<String, Field>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Field {
     name: String,
     doc: Option<String>,
@@ -78,19 +78,70 @@ enum Type {
     Complex(Complex),
 }
 
+impl Default for Type {
+    fn default() -> Self {
+        Type::Primitive(Primitive::Null)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
 
+    fn assert_serialize(expect: Value, schema: Type) {
+        assert_eq!(expect, json!(schema))
+    }
+
     #[test]
     fn serialize_primitive() {
-        unimplemented!()
+        let schema = Type::Primitive(Primitive::Null);
+        let expect = json!({"type": "null"});
+        assert_serialize(expect, schema);
     }
 
     #[test]
     fn serialize_complex_record() {
-        unimplemented!()
+        let fields: HashMap<String, Field> = vec![
+            Field {
+                name: "test-bool".into(),
+                data_type: Type::Primitive(Primitive::Boolean),
+                ..Default::default()
+            },
+            Field {
+                name: "test-int".into(),
+                data_type: Type::Primitive(Primitive::Int),
+                ..Default::default()
+            },
+            Field {
+                name: "test-string".into(),
+                data_type: Type::Primitive(Primitive::String),
+                ..Default::default()
+            },
+        ]
+        .into_iter()
+        .map(|field| (field.name.to_string(), field))
+        .collect();
+
+        let schema = Type::Complex(Complex::Record(Record {
+            common: CommonAttributes {
+                name: "test-record".into(),
+                ..Default::default()
+            },
+            fields,
+        }));
+
+        let expect = json!({
+            "type": "record",
+            "name": "test-record",
+            "fields": [
+                {"name": "test-bool", "type": "boolean"},
+                {"name": "test-int", "type": "int"},
+                {"name": "test-string", "type": "string"},
+            ]
+        });
+
+        assert_serialize(expect, schema)
     }
 
     #[test]
