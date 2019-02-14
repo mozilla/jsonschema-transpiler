@@ -1,5 +1,6 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
+use serde::de::{self, Deserialize, Deserializer};
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -80,7 +81,7 @@ enum Complex {
     Fixed(Fixed),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 enum Type {
     Primitive(Primitive),
@@ -93,6 +94,24 @@ impl Default for Type {
     }
 }
 
+impl<'de> Deserialize<'de> for Type {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let v = Value::deserialize(deserializer)?;
+
+        // Try to deserialize the type as a primitive first
+        if let Ok(primitive) = Primitive::deserialize(&v) {
+            Ok(Type::Primitive(primitive))
+        } else if let Ok(complex) = Complex::deserialize(&v) {
+            Ok(Type::Complex(complex))
+        } else {
+            Err(de::Error::custom("Error deserializing type!"))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,6 +119,10 @@ mod tests {
 
     fn assert_serialize(expect: Value, schema: Type) {
         assert_eq!(expect, json!(schema))
+    }
+
+    fn type_from_value(value: Value) -> Type {
+        serde_json::from_value(value).unwrap()
     }
 
     #[test]
@@ -219,27 +242,83 @@ mod tests {
 
     #[test]
     fn deserialize_primitive() {
-        unimplemented!()
+        let data = json!({
+            "type": "int"
+        });
+        match type_from_value(data) {
+            Type::Primitive(Primitive::Int) => (),
+            _ => panic!(),
+        }
     }
 
     #[test]
     fn deserialize_complex_record() {
-        unimplemented!()
+        let data = json!({
+            "type": "record",
+            "name": "test-record",
+            "fields": [
+                {"name": "test-bool", "type": "boolean"},
+                {"name": "test-int", "type": "int"},
+                {"name": "test-string", "type": "string"},
+            ]
+        });
+        match type_from_value(data) {
+            Type::Complex(Complex::Record(record)) => {
+                assert_eq!(record.fields[0].name, "test-bool");
+                assert_eq!(record.fields[1].name, "test-int");
+                assert_eq!(record.fields[2].name, "test-string");
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
     fn deserialize_complex_enum() {
-        unimplemented!()
+        let data = json!({
+            "type": "enum",
+            "name": "test-enum",
+            "symbols": ["A", "B", "C"]
+        });
+        match type_from_value(data) {
+            Type::Complex(Complex::Enum(enum_type)) => {
+                assert_eq!(enum_type.symbols, vec!["A", "B", "C"]);
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
     fn deserialize_complex_array() {
-        unimplemented!()
+        let data = json!({
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        });
+        match type_from_value(data) {
+            Type::Complex(Complex::Array(array)) => match *array.items {
+                Type::Primitive(Primitive::String) => (),
+                _ => panic!(),
+            },
+            _ => panic!(),
+        }
     }
 
     #[test]
     fn deserialize_complex_map() {
-        unimplemented!()
+        let data = json!({
+            "type": "map",
+            "values": {
+                "type": "long"
+            }
+        });
+        match type_from_value(data) {
+            Type::Complex(Complex::Map(map)) => match *map.values {
+                Type::Primitive(Primitive::Long) => (),
+                _ => panic!(),
+            },
+            _ => panic!(),
+        }
     }
 
     #[test]
@@ -249,7 +328,18 @@ mod tests {
 
     #[test]
     fn deserialize_complex_fixed() {
-        unimplemented!()
+        let data = json!({
+            "type": "fixed",
+            "size": 16,
+            "name": "md5"
+        });
+        match type_from_value(data) {
+            Type::Complex(Complex::Fixed(fixed)) => {
+                assert_eq!(fixed.common.name, "md5");
+                assert_eq!(fixed.size, 16);
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
