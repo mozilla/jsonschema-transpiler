@@ -196,7 +196,19 @@ mod tests {
 
     #[test]
     fn serialize_complex_fixed() {
-        unimplemented!()
+        let schema = Type::Complex(Complex::Fixed(Fixed {
+            common: CommonAttributes {
+                name: "md5".into(),
+                ..Default::default()
+            },
+            size: 16,
+        }));
+        let expect = json!({
+            "type": "fixed",
+            "size": 16,
+            "name": "md5"
+        });
+        assert_serialize(expect, schema);
     }
 
     #[test]
