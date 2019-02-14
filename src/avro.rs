@@ -141,21 +141,56 @@ mod tests {
             ]
         });
 
-        assert_serialize(expect, schema)
+        assert_serialize(expect, schema);
     }
 
     #[test]
     fn serialize_complex_enum() {
-        unimplemented!()
+        let schema = Type::Complex(Complex::Enum(Enum {
+            common: CommonAttributes {
+                name: "test-enum".into(),
+                ..Default::default()
+            },
+            symbols: vec!["A".into(), "B".into(), "C".into()],
+        }));
+        let expect = json!({
+            "type": "enum",
+            "name": "test-enum",
+            "symbols": ["A", "B", "C"]
+        });
+        assert_serialize(expect, schema);
     }
 
     #[test]
     fn serialize_complex_array() {
-        unimplemented!()
+        let schema = Type::Complex(Complex::Array(Array {
+            items: Box::new(Type::Primitive(Primitive::String)),
+        }));
+        let expect = json!({
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        });
+        assert_serialize(expect, schema);
     }
 
     #[test]
     fn serialize_complex_map() {
+        let schema = Type::Complex(Complex::Map(Map {
+            values: Box::new(Type::Primitive(Primitive::Long)),
+        }));
+        let expect = json!({
+            "type": "map",
+            "values": {
+                "type": "long"
+            }
+        });
+        assert_serialize(expect, schema);
+    }
+
+    #[test]
+    fn serialize_complex_union() {
         unimplemented!()
     }
 
@@ -186,6 +221,11 @@ mod tests {
 
     #[test]
     fn deserialize_complex_map() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_union() {
         unimplemented!()
     }
 
