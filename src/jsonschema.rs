@@ -138,9 +138,7 @@ impl Tag {
                         (Some(AdditionalProperties::Object(add)), Some(pat)) => {
                             let mut vec: Vec<ast::Tag> = Vec::new();
                             vec.push(add.type_into_ast());
-                            for value in pat.values() {
-                                vec.push(value.type_into_ast());
-                            }
+                            vec.extend(pat.values().map(|v| v.type_into_ast()));
                             let value =
                                 ast::Tag::new(ast::Type::Union(ast::Union::new(vec)), None, false);
 
@@ -314,6 +312,7 @@ mod tests {
             }}});
         let schema: Tag = serde_json::from_value(data).unwrap();
         let props = schema.object.pattern_properties.unwrap();
+        assert_eq!(props["*"].data_type, json!({"type": "integer"})
     }
 
     #[test]

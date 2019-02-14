@@ -339,7 +339,7 @@ impl From<jsonschema::Tag> for Tag {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, Value};
+    use serde_json::json;
 
     #[test]
     fn test_serialize_null() {
