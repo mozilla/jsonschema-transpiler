@@ -312,7 +312,7 @@ mod tests {
             }}});
         let schema: Tag = serde_json::from_value(data).unwrap();
         let props = schema.object.pattern_properties.unwrap();
-        assert_eq!(props["*"].data_type, json!({"type": "integer"})
+        assert_eq!(props["*"].data_type, json!("integer"))
     }
 
     #[test]

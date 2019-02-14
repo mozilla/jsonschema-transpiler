@@ -306,6 +306,9 @@ impl Tag {
     /// into other schemas.
     pub fn infer_nullability(&mut self) {
         match &mut self.data_type {
+            Type::Null => {
+                self.nullable = true;
+            }
             Type::Object(object) => {
                 let required = match &object.required {
                     Some(required) => required.clone(),
