@@ -87,34 +87,89 @@ mod tests {
     fn serialize_primitive() {
         unimplemented!()
     }
-    #[test]
-    fn serialize_complex_record() {        unimplemented!()
-}
-    fn serialize_complex_enum() {        unimplemented!()
-}
-    fn serialize_complex_array() {        unimplemented!()
-}
-    fn serialize_complex_map() {        unimplemented!()
-}
-    fn serialize_complex_fixed() {        unimplemented!()
-}
-    fn deserialize_primitive() {        unimplemented!()
-}
-    fn deserialize_complex_record() {        unimplemented!()
-}
-    fn deserialize_complex_enum() {        unimplemented!()
-}
-    fn deserialize_complex_array() {        unimplemented!()
-}
-    fn deserialize_complex_map() {        unimplemented!()
-}
-    fn deserialize_complex_fixed() {        unimplemented!()
-}
 
-    fn from_ast_null() {}
-    fn from_ast_atom() {}
-    fn from_ast_object() {}
-    fn from_ast_map() {}
-    fn from_ast_array() {}
-    fn from_ast_union() {}
+    #[test]
+    fn serialize_complex_record() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn serialize_complex_enum() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn serialize_complex_array() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn serialize_complex_map() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn serialize_complex_fixed() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_primitive() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_record() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_enum() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_array() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_map() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn deserialize_complex_fixed() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_null() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_atom() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_object() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_map() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_array() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn from_ast_union() {
+        unimplemented!()
+    }
 }
