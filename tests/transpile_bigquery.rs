@@ -11,7 +11,7 @@ fn bigquery_test_atomic() {
     let expected_data = r#"
     {
       "mode": "REQUIRED",
-      "type": "INTEGER"
+      "type": "INT64"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -32,7 +32,7 @@ fn bigquery_test_atomic_with_null() {
     let expected_data = r#"
     {
       "mode": "NULLABLE",
-      "type": "INTEGER"
+      "type": "INT64"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -96,7 +96,7 @@ fn bigquery_test_array_with_atomics() {
     let expected_data = r#"
     {
       "mode": "REPEATED",
-      "type": "INTEGER"
+      "type": "INT64"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -133,7 +133,7 @@ fn bigquery_test_array_with_complex() {
         {
           "mode": "NULLABLE",
           "name": "field_2",
-          "type": "INTEGER"
+          "type": "INT64"
         }
       ],
       "mode": "REPEATED",
@@ -172,7 +172,7 @@ fn bigquery_test_object_with_atomics_is_sorted() {
         {
           "mode": "NULLABLE",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
@@ -182,12 +182,12 @@ fn bigquery_test_object_with_atomics_is_sorted() {
         {
           "mode": "NULLABLE",
           "name": "field_3",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         },
         {
           "mode": "NULLABLE",
           "name": "field_4",
-          "type": "FLOAT"
+          "type": "FLOAT64"
         }
       ],
       "mode": "REQUIRED",
@@ -227,7 +227,7 @@ fn bigquery_test_object_with_atomics_required() {
         {
           "mode": "REQUIRED",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
@@ -237,7 +237,7 @@ fn bigquery_test_object_with_atomics_required() {
         {
           "mode": "REQUIRED",
           "name": "field_3",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         }
       ],
       "mode": "REQUIRED",
@@ -280,7 +280,7 @@ fn bigquery_test_object_with_atomics_required_with_null() {
         {
           "mode": "NULLABLE",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
@@ -290,7 +290,7 @@ fn bigquery_test_object_with_atomics_required_with_null() {
         {
           "mode": "REQUIRED",
           "name": "field_3",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         }
       ],
       "mode": "REQUIRED",
@@ -335,7 +335,7 @@ fn bigquery_test_object_with_complex() {
             {
               "mode": "NULLABLE",
               "name": "field_2",
-              "type": "INTEGER"
+              "type": "INT64"
             }
           ],
           "mode": "NULLABLE",
@@ -369,7 +369,7 @@ fn bigquery_test_oneof_atomic() {
     let expected_data = r#"
     {
       "mode": "REQUIRED",
-      "type": "INTEGER"
+      "type": "INT64"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -394,7 +394,7 @@ fn bigquery_test_oneof_atomic_with_null() {
     let expected_data = r#"
     {
       "mode": "NULLABLE",
-      "type": "INTEGER"
+      "type": "INT64"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -491,12 +491,12 @@ fn bigquery_test_oneof_object_with_atomics() {
         {
           "mode": "NULLABLE",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
           "name": "field_2",
-          "type": "INTEGER"
+          "type": "INT64"
         }
       ],
       "mode": "REQUIRED",
@@ -544,17 +544,17 @@ fn bigquery_test_oneof_object_merge() {
         {
           "mode": "NULLABLE",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
           "name": "field_2",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         },
         {
           "mode": "NULLABLE",
           "name": "field_3",
-          "type": "FLOAT"
+          "type": "FLOAT64"
         }
       ],
       "mode": "REQUIRED",
@@ -623,29 +623,29 @@ fn bigquery_test_oneof_object_merge_with_complex() {
         {
           "mode": "NULLABLE",
           "name": "field_4",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         },
         {
           "mode": "NULLABLE",
           "name": "field_5",
-          "type": "FLOAT"
+          "type": "FLOAT64"
         },
         {
           "fields": [
             {
               "mode": "NULLABLE",
               "name": "field_1",
-              "type": "INTEGER"
+              "type": "INT64"
             },
             {
               "mode": "NULLABLE",
               "name": "field_2",
-              "type": "BOOLEAN"
+              "type": "BOOL"
             },
             {
               "mode": "NULLABLE",
               "name": "field_3",
-              "type": "FLOAT"
+              "type": "FLOAT64"
             }
           ],
           "mode": "NULLABLE",
@@ -815,7 +815,7 @@ fn bigquery_test_allof_object() {
         {
           "mode": "NULLABLE",
           "name": "field_1",
-          "type": "INTEGER"
+          "type": "INT64"
         },
         {
           "mode": "NULLABLE",
@@ -825,7 +825,7 @@ fn bigquery_test_allof_object() {
         {
           "mode": "REQUIRED",
           "name": "field_3",
-          "type": "BOOLEAN"
+          "type": "BOOL"
         }
       ],
       "mode": "REQUIRED",
@@ -858,7 +858,7 @@ fn bigquery_test_map_with_atomics() {
         {
           "mode": "REQUIRED",
           "name": "value",
-          "type": "INTEGER"
+          "type": "INT64"
         }
       ],
       "mode": "REPEATED",
@@ -906,7 +906,7 @@ fn bigquery_test_map_with_complex() {
             {
               "mode": "NULLABLE",
               "name": "field_2",
-              "type": "INTEGER"
+              "type": "INT64"
             }
           ],
           "mode": "REQUIRED",
@@ -947,7 +947,7 @@ fn bigquery_test_map_with_pattern_properties() {
         {
           "mode": "REQUIRED",
           "name": "value",
-          "type": "INTEGER"
+          "type": "INT64"
         }
       ],
       "mode": "REPEATED",
@@ -985,7 +985,7 @@ fn bigquery_test_map_with_pattern_and_additional_properties() {
         {
           "mode": "REQUIRED",
           "name": "value",
-          "type": "INTEGER"
+          "type": "INT64"
         }
       ],
       "mode": "REPEATED",

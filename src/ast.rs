@@ -1,5 +1,5 @@
 use super::jsonschema;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -14,13 +14,15 @@ pub enum Atom {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Object {
     pub fields: HashMap<String, Box<Tag>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<HashSet<String>>,
 }
 
 impl Object {
-    pub fn new(fields: HashMap<String, Tag>) -> Self {
-        let boxed: HashMap<String, Box<Tag>> =
+    pub fn new(fields: HashMap<String, Tag>, required: Option<HashSet<String>>) -> Self {
+        let fields: HashMap<String, Box<Tag>> =
             fields.into_iter().map(|(k, v)| (k, Box::new(v))).collect();
-        Object { fields: boxed }
+        Object { fields, required }
     }
 }
 
@@ -76,19 +78,36 @@ impl Union {
     /// be consumed by the JSON type. In a similar fashion, a table schema is determined
     /// to be nullable or required via occurances of null types in unions.
     pub fn collapse(&self) -> Tag {
-        let nullable: bool = self.items.iter().any(|x| x.is_null());
+        let is_null = self.items.iter().any(|x| x.is_null());
 
         if self.items.is_empty() {
             panic!("empty union is not allowed")
         } else if self.items.len() == 1 {
             return Tag {
                 name: None,
-                nullable: nullable,
+                nullable: is_null,
                 data_type: self.items[0].data_type.clone(),
             };
         }
 
-        let items: Vec<&Box<Tag>> = self.items.iter().filter(|x| !x.is_null()).collect();
+        let items: Vec<Box<Tag>> = self
+            .items
+            .iter()
+            .filter(|x| !x.is_null())
+            .map(|x| {
+                if let Type::Union(union) = &x.data_type {
+                    let mut tag = union.collapse();
+                    tag.name = x.name.clone();
+                    Box::new(tag)
+                } else {
+                    x.clone()
+                }
+            })
+            .collect();
+
+        // after collapsing nulls in the base case and collapsing nested unions in
+        // the preprocessing step, check for nullability based on the immediate level of tags
+        let nullable = is_null || items.iter().any(|tag| tag.nullable);
 
         let data_type: Type = if items.iter().all(|x| x.is_atom()) {
             items
@@ -137,7 +156,15 @@ impl Union {
                             _ => false,
                         });
                         if is_consistent {
-                            Type::Object(Object::new(result))
+                            let required: Option<HashSet<String>> =
+                                match (&left.required, &right.required) {
+                                    (Some(x), Some(y)) => {
+                                        Some(x.union(&y).map(|x| x.to_string()).collect())
+                                    }
+                                    (Some(x), None) | (None, Some(x)) => Some(x.clone()),
+                                    _ => None,
+                                };
+                            Type::Object(Object::new(result, required))
                         } else {
                             Type::Atom(Atom::JSON)
                         }
@@ -166,11 +193,13 @@ impl Union {
             Type::Atom(Atom::JSON)
         };
 
-        Tag {
+        let mut tag = Tag {
             name: None,
-            nullable: nullable,
-            data_type: data_type,
-        }
+            nullable,
+            data_type,
+        };
+        tag.infer_nullability();
+        tag
     }
 }
 
@@ -207,9 +236,9 @@ pub struct Tag {
 impl Tag {
     pub fn new(data_type: Type, name: Option<String>, nullable: bool) -> Self {
         Tag {
-            data_type: data_type,
-            name: name,
-            nullable: nullable,
+            data_type,
+            name,
+            nullable,
         }
     }
 
@@ -248,34 +277,51 @@ impl Tag {
         }
     }
 
-    pub fn is_union(&self) -> bool {
-        match self.data_type {
-            Type::Array(_) => true,
-            _ => false,
-        }
-    }
-
     /// Assign names to tags from parent Tags.
     pub fn infer_name(&mut self) {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    if let None = value.name {
+                    if value.name.is_none() {
                         value.name = Some(key.to_string());
                     }
                     value.infer_name()
                 }
             }
             Type::Map(map) => {
-                if let None = map.key.name {
+                if map.key.name.is_none() {
                     map.key.name = Some("key".into());
                 }
-                if let None = map.value.name {
+                if map.value.name.is_none() {
                     map.value.name = Some("value".into());
                 }
                 map.value.infer_name()
             }
             Type::Array(array) => array.items.infer_name(),
+            _ => (),
+        }
+    }
+
+    /// These rules are primarily focused on BigQuery, although they should translate
+    /// into other schemas.
+    pub fn infer_nullability(&mut self) {
+        match &mut self.data_type {
+            Type::Object(object) => {
+                let required = match &object.required {
+                    Some(required) => required.clone(),
+                    None => HashSet::new(),
+                };
+                for (key, value) in &mut object.fields {
+                    if required.contains(key) {
+                        value.nullable = false;
+                    } else {
+                        value.nullable = true;
+                    }
+                    value.infer_nullability()
+                }
+            }
+            Type::Map(map) => map.value.infer_nullability(),
+            Type::Array(array) => array.items.infer_nullability(),
             _ => (),
         }
     }
@@ -285,6 +331,7 @@ impl From<jsonschema::Tag> for Tag {
     fn from(tag: jsonschema::Tag) -> Self {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
+        tag.infer_nullability();
         tag
     }
 }
@@ -292,7 +339,7 @@ impl From<jsonschema::Tag> for Tag {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, Value};
+    use serde_json::json;
 
     #[test]
     fn test_serialize_null() {
@@ -324,7 +371,7 @@ mod tests {
     #[test]
     fn test_serialize_object() {
         let mut field = Tag {
-            data_type: Type::Object(Object::new(HashMap::new())),
+            data_type: Type::Object(Object::new(HashMap::new(), None)),
             name: Some("test-object".into()),
             nullable: false,
         };
@@ -560,9 +607,9 @@ mod tests {
         let expect = json!({
         "object": {
             "fields": {
-                "atom_0": {"type": {"atom": "boolean"}, "nullable": false},
-                "atom_1": {"type": {"atom": "integer"}, "nullable": false},
-                "atom_2": {"type": {"atom": "string"}, "nullable": false},
+                "atom_0": {"type": {"atom": "boolean"}, "nullable": true},
+                "atom_1": {"type": {"atom": "integer"}, "nullable": true},
+                "atom_2": {"type": {"atom": "string"}, "nullable": true},
             }}});
         if let Type::Union(union) = dtype {
             assert_eq!(expect, json!(union.collapse().data_type))
@@ -638,6 +685,29 @@ mod tests {
             }}});
         if let Type::Union(union) = dtype {
             assert_eq!(expect, json!(union.collapse().data_type))
+        } else {
+            panic!()
+        }
+    }
+
+    #[test]
+    fn test_union_collapse_nested_union() {
+        let data = json!({
+        "union": {
+            "items": [
+                {"type": {"union": {"items": [
+                    {"type": "null"},
+                    {"type": {"atom": "number"}},
+                ]}}},
+                {"type": {"atom": "integer"}},
+            ]}});
+        let dtype: Type = serde_json::from_value(data).unwrap();
+        let expect = json!({
+            "nullable": true,
+            "type": {"atom": "number"}
+        });
+        if let Type::Union(union) = dtype {
+            assert_eq!(expect, json!(union.collapse()))
         } else {
             panic!()
         }

@@ -27,7 +27,7 @@
                         {
                             "mode": "NULLABLE",
                             "name": "field_1",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         },
                         {
                             "mode": "NULLABLE",
@@ -37,7 +37,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "field_3",
-                            "type": "BOOLEAN"
+                            "type": "BOOL"
                         }
                     ],
                     "mode": "REQUIRED",

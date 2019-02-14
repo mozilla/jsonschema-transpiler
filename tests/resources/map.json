@@ -28,7 +28,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "value",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         }
                     ],
                     "mode": "REPEATED",
@@ -80,7 +80,7 @@
                                 {
                                     "mode": "NULLABLE",
                                     "name": "field_2",
-                                    "type": "INTEGER"
+                                    "type": "INT64"
                                 }
                             ],
                             "mode": "REQUIRED",
@@ -127,7 +127,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "value",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         }
                     ],
                     "mode": "REPEATED",
@@ -164,7 +164,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "value",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         }
                     ],
                     "mode": "REPEATED",

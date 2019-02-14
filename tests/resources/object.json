@@ -35,7 +35,7 @@
                         {
                             "mode": "NULLABLE",
                             "name": "field_1",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         },
                         {
                             "mode": "NULLABLE",
@@ -45,12 +45,12 @@
                         {
                             "mode": "NULLABLE",
                             "name": "field_3",
-                            "type": "BOOLEAN"
+                            "type": "BOOL"
                         },
                         {
                             "mode": "NULLABLE",
                             "name": "field_4",
-                            "type": "FLOAT"
+                            "type": "FLOAT64"
                         }
                     ],
                     "mode": "REQUIRED",
@@ -105,7 +105,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "field_1",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         },
                         {
                             "mode": "NULLABLE",
@@ -115,7 +115,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "field_3",
-                            "type": "BOOLEAN"
+                            "type": "BOOL"
                         }
                     ],
                     "mode": "REQUIRED",
@@ -172,7 +172,7 @@
                         {
                             "mode": "NULLABLE",
                             "name": "field_1",
-                            "type": "INTEGER"
+                            "type": "INT64"
                         },
                         {
                             "mode": "NULLABLE",
@@ -182,7 +182,7 @@
                         {
                             "mode": "REQUIRED",
                             "name": "field_3",
-                            "type": "BOOLEAN"
+                            "type": "BOOL"
                         }
                     ],
                     "mode": "REQUIRED",
@@ -246,7 +246,7 @@
                                 {
                                     "mode": "NULLABLE",
                                     "name": "field_2",
-                                    "type": "INTEGER"
+                                    "type": "INT64"
                                 }
                             ],
                             "mode": "NULLABLE",
