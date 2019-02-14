@@ -1,9 +1,9 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
 use serde_json::Value;
-use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase", tag = "type")]
 enum Primitive {
     Null,
     Boolean,
@@ -18,8 +18,11 @@ enum Primitive {
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct CommonAttributes {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     namespace: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     doc: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     aliases: Option<Vec<String>>,
 }
 
@@ -27,14 +30,18 @@ struct CommonAttributes {
 struct Record {
     #[serde(flatten)]
     common: CommonAttributes,
-    fields: HashMap<String, Field>,
+    fields: Vec<Field>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(tag = "type")]
 struct Field {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     doc: Option<String>,
+    #[serde(flatten)]
     data_type: Type,
+    #[serde(skip_serializing_if = "Option::is_none")]
     default: Option<Value>,
 }
 
@@ -64,6 +71,7 @@ struct Fixed {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase", tag = "type")]
 enum Complex {
     Record(Record),
     Enum(Enum),
@@ -73,6 +81,7 @@ enum Complex {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
 enum Type {
     Primitive(Primitive),
     Complex(Complex),
@@ -102,7 +111,7 @@ mod tests {
 
     #[test]
     fn serialize_complex_record() {
-        let fields: HashMap<String, Field> = vec![
+        let fields = vec![
             Field {
                 name: "test-bool".into(),
                 data_type: Type::Primitive(Primitive::Boolean),
@@ -118,10 +127,7 @@ mod tests {
                 data_type: Type::Primitive(Primitive::String),
                 ..Default::default()
             },
-        ]
-        .into_iter()
-        .map(|field| (field.name.to_string(), field))
-        .collect();
+        ];
 
         let schema = Type::Complex(Complex::Record(Record {
             common: CommonAttributes {
