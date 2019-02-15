@@ -3,6 +3,7 @@ extern crate serde;
 extern crate serde_json;
 
 mod ast;
+mod avro;
 mod bigquery;
 mod jsonschema;
 
