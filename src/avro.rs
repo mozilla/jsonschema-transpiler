@@ -115,7 +115,7 @@ impl From<ast::Tag> for Type {
         };
         tag.infer_name();
         tag.infer_nullability();
-        match &tag.data_type {
+        let data_type = match &tag.data_type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
             ast::Type::Atom(atom) => Type::Primitive(match atom {
                 ast::Atom::Boolean => Primitive::Boolean,
@@ -125,7 +125,7 @@ impl From<ast::Tag> for Type {
                 ast::Atom::JSON => Primitive::String,
             }),
             ast::Type::Object(object) => {
-                let fields: Vec<Field> = object
+                let mut fields: Vec<Field> = object
                     .fields
                     .iter()
                     .map(|(k, v)| Field {
@@ -134,18 +134,35 @@ impl From<ast::Tag> for Type {
                         ..Default::default()
                     })
                     .collect();
+                fields.sort_by_key(|v| v.name.to_string());
 
                 let record = Record {
                     common: CommonAttributes {
                         // This is not a safe assumption
-                        name: tag.name.unwrap_or("root".into()),
+                        name: tag.name.clone().unwrap_or("root".into()),
                         ..Default::default()
                     },
                     fields,
                 };
                 Type::Complex(Complex::Record(record))
             }
+            ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
+                items: Box::new(Type::from(*array.items.clone())),
+            })),
+            ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
+                values: Box::new(Type::from(*map.value.clone())),
+            })),
             _ => Type::Primitive(Primitive::String),
+        };
+        if tag.nullable && !tag.is_null() {
+            Type::Union(Union {
+                data_type: vec![
+                    Type::Primitive(Primitive::Null),
+                    data_type,
+                ]
+            })
+        } else {
+            data_type
         }
     }
 }
@@ -433,22 +450,27 @@ mod tests {
     #[test]
     fn from_ast_object() {
         let ast = json!({
-            "type": {"object": {"fields": {
-                "test-null": {"type": "null"},
-                "test-int": {"type": {"atom": "integer"}},
-                "test-nested": {"type": {"object": {"fields": {
-                    "test-bool": {"type": {"atom": "boolean"}},
-                }}}},
+            "type": {"object": {
+                "required": ["1-test-int", "2-test-nested"],
+                "fields": {
+                    "0-test-null": {"type": "null"},
+                    "1-test-int": {"type": {"atom": "integer"}},
+                    "2-test-nested": {"type": {"object": {"fields": {
+                        "test-bool": {"type": {"atom": "boolean"}},
+                    }}}},
             }}}
         });
         let avro = json!({
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "test-null", "type": "null"},
-                {"name": "test-int", "type": "int"},
-                {"name": "test-nested", "type": "record", "fields": [
-                    {"name": "test-bool", "type": "boolean"},
+                {"name": "0-test-null", "type": "null"},
+                {"name": "1-test-int", "type": "int"},
+                {"name": "2-test-nested", "type": "record", "fields": [
+                    {"name": "test-bool", "type": [
+                        {"type": "null"},
+                        {"type": "boolean"},
+                    ]},
                 ]}
             ]
         });
@@ -457,16 +479,46 @@ mod tests {
 
     #[test]
     fn from_ast_map() {
-        unimplemented!()
+        let ast = json!({
+            "type": {"map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {"type": {"atom": "integer"}}
+        }}});
+        let avro = json!({
+            "type": "map",
+            "values": {"type": "int"}
+        });
+        assert_from_ast_eq(ast, avro);
     }
 
     #[test]
     fn from_ast_array() {
-        unimplemented!()
+        let ast = json!({
+            "type": {"array": {"items": {
+                "type": {"atom": "string"}}}}
+        });
+        let avro = json!({
+            "type": "array",
+            "items": {"type": "string"}
+        });
+        assert_from_ast_eq(ast, avro);
     }
 
     #[test]
+    /// The union type is collapsed before being reconstructed
     fn from_ast_union() {
-        unimplemented!()
+        let ast = json!({
+            "type": {"union": {"items": [
+                {"type": "null"},
+                {"type": {"atom": "boolean"}},
+            ]}}
+        });
+        let avro = json!({
+            "type": [
+                {"type": "null"},
+                {"type": "boolean"}
+            ]
+        });
+        assert_from_ast_eq(ast, avro);
     }
 }
