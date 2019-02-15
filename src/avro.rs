@@ -103,6 +103,53 @@ impl Default for Type {
     }
 }
 
+impl From<ast::Tag> for Type {
+    fn from(tag: ast::Tag) -> Self {
+        let mut tag = match tag.data_type {
+            ast::Type::Union(union) => {
+                let mut collapsed = union.collapse();
+                collapsed.name = tag.name.clone();
+                collapsed
+            }
+            _ => tag,
+        };
+        tag.infer_name();
+        tag.infer_nullability();
+        match &tag.data_type {
+            ast::Type::Null => Type::Primitive(Primitive::Null),
+            ast::Type::Atom(atom) => Type::Primitive(match atom {
+                ast::Atom::Boolean => Primitive::Boolean,
+                ast::Atom::Integer => Primitive::Int,
+                ast::Atom::Number => Primitive::Float,
+                ast::Atom::String => Primitive::String,
+                ast::Atom::JSON => Primitive::String,
+            }),
+            ast::Type::Object(object) => {
+                let fields: Vec<Field> = object
+                    .fields
+                    .iter()
+                    .map(|(k, v)| Field {
+                        name: k.to_string(),
+                        data_type: Type::from(*v.clone()),
+                        ..Default::default()
+                    })
+                    .collect();
+
+                let record = Record {
+                    common: CommonAttributes {
+                        // This is not a safe assumption
+                        name: tag.name.unwrap_or("root".into()),
+                        ..Default::default()
+                    },
+                    fields,
+                };
+                Type::Complex(Complex::Record(record))
+            }
+            _ => Type::Primitive(Primitive::String),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,6 +161,12 @@ mod tests {
 
     fn type_from_value(value: Value) -> Type {
         serde_json::from_value(value).unwrap()
+    }
+
+    fn assert_from_ast_eq(ast: Value, avro: Value) {
+        let tag: ast::Tag = serde_json::from_value(ast).unwrap();
+        let from_tag = Type::from(tag);
+        assert_eq!(avro, json!(from_tag))
     }
 
     #[test]
@@ -365,17 +418,41 @@ mod tests {
 
     #[test]
     fn from_ast_null() {
-        unimplemented!()
+        let ast = json!({"type": "null"});
+        let avro = json!({"type": "null"});
+        assert_from_ast_eq(ast, avro);
     }
 
     #[test]
     fn from_ast_atom() {
-        unimplemented!()
+        let ast = json!({"type": {"atom": "integer"}});
+        let avro = json!({"type": "int"});
+        assert_from_ast_eq(ast, avro);
     }
 
     #[test]
     fn from_ast_object() {
-        unimplemented!()
+        let ast = json!({
+            "type": {"object": {"fields": {
+                "test-null": {"type": "null"},
+                "test-int": {"type": {"atom": "integer"}},
+                "test-nested": {"type": {"object": {"fields": {
+                    "test-bool": {"type": {"atom": "boolean"}},
+                }}}},
+            }}}
+        });
+        let avro = json!({
+            "type": "record",
+            "name": "root",
+            "fields": [
+                {"name": "test-null", "type": "null"},
+                {"name": "test-int", "type": "int"},
+                {"name": "test-nested", "type": "record", "fields": [
+                    {"name": "test-bool", "type": "boolean"},
+                ]}
+            ]
+        });
+        assert_from_ast_eq(ast, avro);
     }
 
     #[test]
