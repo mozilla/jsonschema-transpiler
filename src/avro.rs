@@ -1,6 +1,5 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
-use serde::de::{self, Deserialize, Deserializer};
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -64,6 +63,13 @@ struct Map {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+struct Union {
+    #[serde(rename = "type")]
+    data_type: Vec<Type>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct Fixed {
     // this field, however, does not support the doc attribute
     #[serde(flatten)]
@@ -78,11 +84,12 @@ enum Complex {
     Enum(Enum),
     Array(Array),
     Map(Map),
+    Union(Union),
     Fixed(Fixed),
 }
 
-#[derive(Serialize, Debug)]
-#[serde(tag = "type")]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
 enum Type {
     Primitive(Primitive),
     Complex(Complex),
@@ -91,24 +98,6 @@ enum Type {
 impl Default for Type {
     fn default() -> Self {
         Type::Primitive(Primitive::Null)
-    }
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let v = Value::deserialize(deserializer)?;
-
-        // Try to deserialize the type as a primitive first
-        if let Ok(primitive) = Primitive::deserialize(&v) {
-            Ok(Type::Primitive(primitive))
-        } else if let Ok(complex) = Complex::deserialize(&v) {
-            Ok(Type::Complex(complex))
-        } else {
-            Err(de::Error::custom("Error deserializing type!"))
-        }
     }
 }
 
@@ -220,7 +209,19 @@ mod tests {
 
     #[test]
     fn serialize_complex_union() {
-        unimplemented!()
+        let schema = Type::Complex(Complex::Union(Union {
+            data_type: vec![
+                Type::Primitive(Primitive::Null),
+                Type::Primitive(Primitive::Long),
+                ]}));
+        let expect = json!({
+            "type": [
+                {"type": "null"},
+                {"type": "long"},
+            ]
+        });
+        assert_serialize(expect, schema);
+
     }
 
     #[test]
