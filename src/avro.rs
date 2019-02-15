@@ -66,7 +66,7 @@ struct Map {
 #[serde(tag = "type")]
 struct Union {
     #[serde(rename = "type")]
-    data_type: Vec<Type>
+    data_type: Vec<Type>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -84,7 +84,6 @@ enum Complex {
     Enum(Enum),
     Array(Array),
     Map(Map),
-    Union(Union),
     Fixed(Fixed),
 }
 
@@ -93,6 +92,9 @@ enum Complex {
 enum Type {
     Primitive(Primitive),
     Complex(Complex),
+    // A union is categorized as a complex type, but acts as a top-level type. It is delineated
+    // by the presence of a JSON array in the type field.
+    Union(Union),
 }
 
 impl Default for Type {
@@ -209,11 +211,12 @@ mod tests {
 
     #[test]
     fn serialize_complex_union() {
-        let schema = Type::Complex(Complex::Union(Union {
+        let schema = Type::Union(Union {
             data_type: vec![
                 Type::Primitive(Primitive::Null),
                 Type::Primitive(Primitive::Long),
-                ]}));
+            ],
+        });
         let expect = json!({
             "type": [
                 {"type": "null"},
@@ -221,7 +224,6 @@ mod tests {
             ]
         });
         assert_serialize(expect, schema);
-
     }
 
     #[test]
@@ -324,7 +326,25 @@ mod tests {
 
     #[test]
     fn deserialize_complex_union() {
-        unimplemented!()
+        let data = json!({
+            "type": [
+                {"type": "null"},
+                {"type": "long"},
+            ]
+        });
+        match type_from_value(data) {
+            Type::Union(union) => {
+                match union.data_type[0] {
+                    Type::Primitive(Primitive::Null) => (),
+                    _ => panic!(),
+                };
+                match union.data_type[1] {
+                    Type::Primitive(Primitive::Long) => (),
+                    _ => panic!(),
+                };
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
