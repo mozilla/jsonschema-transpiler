@@ -15,18 +15,28 @@ fn main() {
                 .short("f")
                 .long("from-file")
                 .value_name("FILE")
-                .takes_value(true),
+                .takes_value(true)
+                .required(true),
+        )
+        .arg(
+            Arg::with_name("type")
+                .long("type")
+                .takes_value(true)
+                .possible_values(&["avro", "bigquery"])
+                .required(true),
         )
         .get_matches();
 
-    if let Some(path) = matches.value_of("from-file") {
-        let file = File::open(path).unwrap();
-        let reader = BufReader::new(file);
-        let data: Value = serde_json::from_reader(reader).unwrap();
-        let output = jst::convert_bigquery(&data);
-        let pretty = serde_json::to_string_pretty(&output).unwrap();
-        println!("{}", pretty);
-    } else {
-        panic!("Missing application handling!");
-    }
+    let path = matches.value_of("from-file").unwrap();
+    let file = File::open(path).unwrap();
+    let reader = BufReader::new(file);
+    let data: Value = serde_json::from_reader(reader).unwrap();
+
+    let output = match matches.value_of("type").unwrap() {
+        "avro" => jst::convert_avro(&data),
+        "bigquery" => jst::convert_bigquery(&data),
+        _ => panic!(),
+    };
+    let pretty = serde_json::to_string_pretty(&output).unwrap();
+    println!("{}", pretty);
 }

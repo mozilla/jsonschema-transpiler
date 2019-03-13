@@ -4,7 +4,7 @@ use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase", tag = "type")]
-enum Primitive {
+pub enum Primitive {
     Null,
     Boolean,
     Int,
@@ -27,7 +27,7 @@ struct CommonAttributes {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Record {
+pub struct Record {
     #[serde(flatten)]
     common: CommonAttributes,
     fields: Vec<Field>,
@@ -46,31 +46,31 @@ struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Enum {
+pub struct Enum {
     #[serde(flatten)]
     common: CommonAttributes,
     symbols: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Array {
+pub struct Array {
     items: Box<Type>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Map {
+pub struct Map {
     values: Box<Type>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
-struct Union {
+pub struct Union {
     #[serde(rename = "type")]
     data_type: Vec<Type>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Fixed {
+pub struct Fixed {
     // this field, however, does not support the doc attribute
     #[serde(flatten)]
     common: CommonAttributes,
@@ -79,7 +79,7 @@ struct Fixed {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase", tag = "type")]
-enum Complex {
+pub enum Complex {
     Record(Record),
     Enum(Enum),
     Array(Array),
@@ -89,7 +89,7 @@ enum Complex {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-enum Type {
+pub enum Type {
     Primitive(Primitive),
     Complex(Complex),
     // A union is categorized as a complex type, but acts as a top-level type. It is delineated
@@ -156,10 +156,7 @@ impl From<ast::Tag> for Type {
         };
         if tag.nullable && !tag.is_null() {
             Type::Union(Union {
-                data_type: vec![
-                    Type::Primitive(Primitive::Null),
-                    data_type,
-                ]
+                data_type: vec![Type::Primitive(Primitive::Null), data_type],
             })
         } else {
             data_type
