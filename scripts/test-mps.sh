@@ -8,14 +8,15 @@ if [[ ! -d "schemas/" ]]; then
     exit 1
 fi
 
-cargo install --path . --force
+cargo build
+bin="target/debug/jsonschema_transpiler"
 
 schemas=$(find schemas/ -name "*.schema.json")
 
 total=0
 failed=0
 for schema in $schemas; do
-    jsonschema_transpiler -f $schema --type avro > /dev/null
+    $bin -f $schema --type avro > /dev/null
     if [[ $? != 0 ]]; then
         echo "Failed on $schema"
         let failed++
