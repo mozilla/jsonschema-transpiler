@@ -291,12 +291,10 @@ mod tests {
                 Type::Primitive(Primitive::Long),
             ],
         });
-        let expect = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "long"},
-            ]
-        });
+        let expect = json!([
+            {"type": "null"},
+            {"type": "long"},
+        ]);
         assert_serialize(expect, schema);
     }
 
@@ -400,12 +398,10 @@ mod tests {
 
     #[test]
     fn deserialize_complex_union() {
-        let data = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "long"},
-            ]
-        });
+        let data = json!([
+            {"type": "null"},
+            {"type": "long"},
+        ]);
         match type_from_value(data) {
             Type::Union(union) => {
                 match union.data_type[0] {
@@ -458,16 +454,17 @@ mod tests {
                 // An additional case could be made for the behavior of nested
                 // structs and nested arrays. A nullable array for example may
                 // not be a valid structure in bigquery.
-                "required": ["1-test-int", "2-test-nested", "3-test-array"],
+                "required": ["1-test-int", "3-test-nested", "4-test-array"],
                 "fields": {
                     "0-test-null": {"type": "null"},
                     "1-test-int": {"type": {"atom": "integer"}},
-                    "2-test-nested": {"type": {"object": {"fields": {
+                    "2-test-null-int": {"type": {"atom": "integer"}, "nullable": true},
+                    "3-test-nested": {"type": {"object": {"fields": {
                         "test-bool": {
                             "type": {"atom": "boolean"},
                             "nullable": true
                             }}}}},
-                    "3-test-array": {"type": {"array": {
+                    "4-test-array": {"type": {"array": {
                         "items": {"type": {"atom": "integer"}}}}},
             }}}
         });
@@ -477,17 +474,20 @@ mod tests {
             "fields": [
                 {"name": "0-test-null", "type": {"type": "null"}},
                 {"name": "1-test-int", "type": {"type": "int"}},
-                {"name": "2-test-nested", "type": {
-                    "name": "2-test-nested",
+                {"name": "2-test-null-int", "type": [
+                    {"type": "null"},
+                    {"type": "int"},
+                ]},
+                {"name": "3-test-nested", "type": {
+                    "name": "3-test-nested",
                     "type": "record",
                     "fields": [
-                        {"name": "test-bool", "type": {
-                            "type": [
+                        {"name": "test-bool", "type": [
                                 {"type": "null"},
                                 {"type": "boolean"},
-                            ]}},
+                            ]},
                     ]}},
-                {"name": "3-test-array", "type": {
+                {"name": "4-test-array", "type": {
                     "type": "array",
                     "items": {"type": "int"}
                 }}
@@ -532,12 +532,10 @@ mod tests {
                 {"type": {"atom": "boolean"}},
             ]}}
         });
-        let avro = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "boolean"}
-            ]
-        });
+        let avro = json!([
+            {"type": "null"},
+            {"type": "boolean"}
+        ]);
         assert_from_ast_eq(ast, avro);
     }
 }
