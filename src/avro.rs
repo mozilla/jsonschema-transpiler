@@ -33,13 +33,19 @@ pub struct Record {
     fields: Vec<Field>,
 }
 
+// The field doesn't handle the canonical form naively e.g. a null record
+// `{"name": "foo", "type": "null"}` must explicitly nest the type in the
+// following form: `{"name": "foo", "type": {"type": "null"}}`. Applying
+// flattening at this level will produce the wrong results for nested objects.
+// We may apply an extra layer of indirection in code by using a `FieldType`,
+// but this does not affect correctness of the schema.
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(tag = "type")]
 struct Field {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     doc: Option<String>,
-    #[serde(flatten)]
+    #[serde(rename = "type")]
     data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
     default: Option<Value>,
@@ -92,8 +98,8 @@ pub enum Complex {
 pub enum Type {
     Primitive(Primitive),
     Complex(Complex),
-    // A union is categorized as a complex type, but acts as a top-level type. It is delineated
-    // by the presence of a JSON array in the type field.
+    // A union is categorized as a complex type, but acts as a top-level type.
+    // It is delineated by the presence of a JSON array in the type field.
     Union(Union),
 }
 
@@ -167,8 +173,8 @@ impl From<ast::Tag> for Type {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use pretty_assertions::assert_eq;
+    use serde_json::json;
 
     fn assert_serialize(expect: Value, schema: Type) {
         assert_eq!(expect, json!(schema))
@@ -223,9 +229,9 @@ mod tests {
             "type": "record",
             "name": "test-record",
             "fields": [
-                {"name": "test-bool", "type": "boolean"},
-                {"name": "test-int", "type": "int"},
-                {"name": "test-string", "type": "string"},
+                {"name": "test-bool", "type": {"type": "boolean"}},
+                {"name": "test-int", "type": {"type": "int"}},
+                {"name": "test-string", "type": {"type": "string"}},
             ]
         });
 
@@ -328,9 +334,9 @@ mod tests {
             "type": "record",
             "name": "test-record",
             "fields": [
-                {"name": "test-bool", "type": "boolean"},
-                {"name": "test-int", "type": "int"},
-                {"name": "test-string", "type": "string"},
+                {"name": "test-bool", "type": {"type": "boolean"}},
+                {"name": "test-int", "type": {"type": "int"}},
+                {"name": "test-string", "type": {"type": "string"}},
             ]
         });
         match type_from_value(data) {
@@ -449,27 +455,42 @@ mod tests {
     fn from_ast_object() {
         let ast = json!({
             "type": {"object": {
-                "required": ["1-test-int", "2-test-nested"],
+                // An additional case could be made for the behavior of nested
+                // structs and nested arrays. A nullable array for example may
+                // not be a valid structure in bigquery.
+                "required": ["1-test-int", "2-test-nested", "3-test-array"],
                 "fields": {
                     "0-test-null": {"type": "null"},
                     "1-test-int": {"type": {"atom": "integer"}},
                     "2-test-nested": {"type": {"object": {"fields": {
-                        "test-bool": {"type": {"atom": "boolean"}},
-                    }}}},
+                        "test-bool": {
+                            "type": {"atom": "boolean"},
+                            "nullable": true
+                            }}}}},
+                    "3-test-array": {"type": {"array": {
+                        "items": {"type": {"atom": "integer"}}}}},
             }}}
         });
         let avro = json!({
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "0-test-null", "type": "null"},
-                {"name": "1-test-int", "type": "int"},
-                {"name": "2-test-nested", "type": "record", "fields": [
-                    {"name": "test-bool", "type": [
-                        {"type": "null"},
-                        {"type": "boolean"},
-                    ]},
-                ]}
+                {"name": "0-test-null", "type": {"type": "null"}},
+                {"name": "1-test-int", "type": {"type": "int"}},
+                {"name": "2-test-nested", "type": {
+                    "name": "2-test-nested",
+                    "type": "record",
+                    "fields": [
+                        {"name": "test-bool", "type": {
+                            "type": [
+                                {"type": "null"},
+                                {"type": "boolean"},
+                            ]}},
+                    ]}},
+                {"name": "3-test-array", "type": {
+                    "type": "array",
+                    "items": {"type": "int"}
+                }}
             ]
         });
         assert_from_ast_eq(ast, avro);
