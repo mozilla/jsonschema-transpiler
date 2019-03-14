@@ -168,6 +168,7 @@ impl From<ast::Tag> for Type {
 mod tests {
     use super::*;
     use serde_json::json;
+    use pretty_assertions::assert_eq;
 
     fn assert_serialize(expect: Value, schema: Type) {
         assert_eq!(expect, json!(schema))
