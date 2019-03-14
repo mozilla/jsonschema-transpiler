@@ -68,12 +68,6 @@ pub struct Map {
     values: Box<Type>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
-pub struct Union {
-    #[serde(rename = "type")]
-    data_type: Vec<Type>,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Fixed {
@@ -99,8 +93,9 @@ pub enum Type {
     Primitive(Primitive),
     Complex(Complex),
     // A union is categorized as a complex type, but acts as a top-level type.
-    // It is delineated by the presence of a JSON array in the type field.
-    Union(Union),
+    // It is delineated by the presence of a JSON array in the type field. This
+    // particular definition allows for nested unions, which is not valid avro.
+    Union(Vec<Type>),
 }
 
 impl Default for Type {
@@ -161,9 +156,7 @@ impl From<ast::Tag> for Type {
             _ => Type::Primitive(Primitive::String),
         };
         if tag.nullable && !tag.is_null() {
-            Type::Union(Union {
-                data_type: vec![Type::Primitive(Primitive::Null), data_type],
-            })
+            Type::Union(vec![Type::Primitive(Primitive::Null), data_type])
         } else {
             data_type
         }
@@ -285,12 +278,10 @@ mod tests {
 
     #[test]
     fn serialize_complex_union() {
-        let schema = Type::Union(Union {
-            data_type: vec![
-                Type::Primitive(Primitive::Null),
-                Type::Primitive(Primitive::Long),
-            ],
-        });
+        let schema = Type::Union(vec![
+            Type::Primitive(Primitive::Null),
+            Type::Primitive(Primitive::Long),
+        ]);
         let expect = json!([
             {"type": "null"},
             {"type": "long"},
@@ -404,11 +395,11 @@ mod tests {
         ]);
         match type_from_value(data) {
             Type::Union(union) => {
-                match union.data_type[0] {
+                match union[0] {
                     Type::Primitive(Primitive::Null) => (),
                     _ => panic!(),
                 };
-                match union.data_type[1] {
+                match union[1] {
                     Type::Primitive(Primitive::Long) => (),
                     _ => panic!(),
                 };
