@@ -11,7 +11,10 @@ mod jsonschema;
 use serde_json::{json, Value};
 
 fn into_ast(input: &Value) -> ast::Tag {
-    let jsonschema: jsonschema::Tag = serde_json::from_value(json!(input)).unwrap();
+    let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
+        Ok(tag) => tag,
+        Err(e) => panic!(format!("{:#?}", e)),
+    };
     ast::Tag::from(jsonschema)
 }
 

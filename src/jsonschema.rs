@@ -50,11 +50,18 @@ type TagArray = Vec<Box<Tag>>;
 type OneOf = TagArray;
 type AllOf = TagArray;
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+enum ArrayType {
+    Tag(Box<Tag>),
+    TagTuple(TagArray),
+}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Array {
     // Using Option<TagArray> would support tuple validation
     #[serde(skip_serializing_if = "Option::is_none")]
-    items: Option<Box<Tag>>,
+    items: Option<ArrayType>,
 }
 
 /// Container for the main body of the schema.
@@ -182,13 +189,19 @@ impl Tag {
             },
             Atom::Array => {
                 if let Some(items) = &self.array.items {
-                    ast::Tag::new(
-                        ast::Type::Array(ast::Array::new(items.type_into_ast())),
-                        None,
-                        false,
-                    )
+                    let data_type = match items {
+                        ArrayType::Tag(items) => {
+                            ast::Type::Array(ast::Array::new(items.type_into_ast()))
+                        }
+                        ArrayType::TagTuple(items) => {
+                            let items: Vec<ast::Tag> =
+                                items.iter().map(|item| item.type_into_ast()).collect();
+                            ast::Type::Tuple(ast::Tuple::new(items))
+                        }
+                    };
+                    ast::Tag::new(data_type, None, false)
                 } else {
-                    panic!("array missing item")
+                    panic!(format!("array missing item: {:#?}", self))
                 }
             }
         }
@@ -346,8 +359,29 @@ mod tests {
             }
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let items = schema.array.items.unwrap();
-        assert_eq!(items.data_type, json!("integer"))
+        if let ArrayType::Tag(items) = schema.array.items.unwrap() {
+            assert_eq!(items.data_type, json!("integer"))
+        } else {
+            panic!();
+        }
+    }
+
+    #[test]
+    fn test_deserialize_type_array_tuple() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "integer"},
+                {"type": "boolean"}
+            ]
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        if let ArrayType::TagTuple(items) = schema.array.items.unwrap() {
+            assert_eq!(items[0].data_type, json!("integer"));
+            assert_eq!(items[1].data_type, json!("boolean"));
+        } else {
+            panic!();
+        }
     }
 
     #[test]

@@ -40,6 +40,19 @@ impl Array {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Tuple {
+    pub items: Vec<Tag>,
+}
+
+impl Tuple {
+    pub fn new(items: Vec<Tag>) -> Self {
+        Tuple {
+            items: items.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Map {
     pub key: Box<Tag>,
     pub value: Box<Tag>,
@@ -211,6 +224,7 @@ pub enum Type {
     Object(Object),
     Map(Map),
     Array(Array),
+    Tuple(Tuple),
     Union(Union),
     // Intersection
     // Not

@@ -68,7 +68,6 @@ pub struct Map {
     values: Box<Type>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Fixed {
     // this field, however, does not support the doc attribute
@@ -511,6 +510,23 @@ mod tests {
             "type": "array",
             "items": {"type": "string"}
         });
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
+    fn from_ast_tuple() {
+        // This case is not handled and instead converted into an object
+        let ast = json!({
+            "type": {
+                "tuple": {
+                    "items": [
+                        {"type": {"atom": "boolean"}},
+                        {"type": {"atom": "integer"}},
+                    ]
+                }
+            }
+        });
+        let avro = json!({"type": "string"});
         assert_from_ast_eq(ast, avro);
     }
 

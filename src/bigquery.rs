@@ -463,6 +463,27 @@ mod tests {
     }
 
     #[test]
+    fn test_from_ast_tuple() {
+        let data = json!({
+            "type": {
+                "tuple": {
+                    "items": [
+                        {"type": {"atom": "boolean"}},
+                        {"type": {"atom": "integer"}},
+                    ]
+                }
+            }
+        });
+        let tag: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Tag = tag.into();
+        let expect = json!({
+            "type": "STRING",
+            "mode": "REQUIRED",
+        });
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
     fn test_from_ast_map() {
         let data = json!({
         "type": {
