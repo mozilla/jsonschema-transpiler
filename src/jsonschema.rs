@@ -506,6 +506,7 @@ mod tests {
                                 "fields": {
                                     "test-null": {
                                         "name": "test-null",
+                                        "namespace": ".test-obj",
                                         "type": "null",
                                         "nullable": true,
                                     }}}}}}}}});
@@ -542,6 +543,7 @@ mod tests {
                             "fields": {
                                 "test-int": {
                                     "name": "test-int",
+                                    "namespace": ".value",
                                     "nullable": true,
                                     "type": {"atom": "integer"}
                                 }}}}}}}});
