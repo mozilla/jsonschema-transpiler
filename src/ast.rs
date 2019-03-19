@@ -300,43 +300,39 @@ impl Tag {
         }
     }
 
+    fn fill_names(&mut self, name: String, namespace: String) {
+        self.name = Some(name);
+        if namespace.len() > 0 {
+            self.namespace = Some(namespace);
+        }
+    }
+
     fn infer_name_helper(&mut self, namespace: String) {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    if value.name.is_none() {
-                        value.name = Some(key.to_string());
-                    }
-                    if namespace.len() > 0 {
-                        value.namespace = Some(namespace.clone());
-                    }
+                    value.fill_names(key.to_string(), namespace.clone());
                     value.infer_name_helper(format!("{}.{}", namespace, key));
                 }
             }
             Type::Map(map) => {
-                if map.key.name.is_none() {
-                    map.key.name = Some("key".into());
-                }
-                if map.value.name.is_none() {
-                    map.value.name = Some("value".into());
-                }
-                if namespace.len() > 0 {
-                    map.key.namespace = Some(namespace.clone());
-                    map.value.namespace = Some(namespace.clone());
-                }
-                map.key.infer_name_helper(format!("{}.key", namespace));
-                map.value.infer_name_helper(format!("{}.value", namespace));
+                map.key.fill_names("key".into(), namespace.clone());
+                map.value.fill_names("value".into(), namespace.clone());
+                map.key
+                    .infer_name_helper(format!("{}.key", namespace.clone()));
+                map.value
+                    .infer_name_helper(format!("{}.value", namespace.clone()));
             }
             Type::Array(array) => {
-                if array.items.name.is_none() {
-                    array.items.name = Some("items".into());
-                }
-                if namespace.len() > 0 {
-                    array.items.namespace = Some(namespace.clone());
-                }
+                array.items.fill_names("items".into(), namespace.clone());
                 array
                     .items
-                    .infer_name_helper(format!("{}.items", namespace));
+                    .infer_name_helper(format!("{}.items", namespace.clone()));
+            }
+            Type::Union(union) => {
+                for item in union.items.iter_mut() {
+                    item.infer_name_helper(namespace.clone());
+                }
             }
             _ => (),
         }
@@ -833,6 +829,51 @@ mod tests {
     }
 
     #[test]
+    fn test_tag_infer_name_map_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {"type": {"atom": "integer"}}
+                            }}}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "map": {
+                "key": {
+                    "nullable": false,
+                    "name": "key",
+                    // avro doesn't allow primitives to have a namespace, but is
+                    // consistent behavior within ast
+                    "namespace": "foo",
+                    "type": {"atom": "string"}
+                },
+                "value": {
+                    "nullable": false,
+                    // array items are always named item, for the sanity of avro
+                    "name": "value",
+                    "namespace": "foo",
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {
+                                    "nullable": false,
+                                    "name": "bar",
+                                    "namespace": "foo.value",
+                                    "type": {"atom": "integer"}}
+                            }}}}}}});
+        assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
     fn test_tag_infer_namespace() {
         let data = json!({
         "type": {
@@ -860,6 +901,7 @@ mod tests {
                                 "fields": {
                                     "bar": {
                                         "name": "bar",
+                                        // empty toplevel
                                         "namespace": ".foo",
                                         "type": "null",
                                         "nullable": false,
