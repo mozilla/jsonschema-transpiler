@@ -140,6 +140,7 @@ impl From<ast::Tag> for Type {
                     common: CommonAttributes {
                         // This is not a safe assumption
                         name: tag.name.clone().unwrap_or("root".into()),
+                        namespace: tag.namespace.clone(),
                         ..Default::default()
                     },
                     fields,

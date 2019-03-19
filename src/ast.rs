@@ -327,14 +327,28 @@ impl Tag {
                 map.key.infer_name_helper(format!("{}.key", namespace));
                 map.value.infer_name_helper(format!("{}.value", namespace));
             }
-            Type::Array(array) => array.items.infer_name_helper(namespace),
+            Type::Array(array) => {
+                if array.items.name.is_none() {
+                    array.items.name = Some("items".into());
+                }
+                if namespace.len() > 0 {
+                    array.items.namespace = Some(namespace.clone());
+                }
+                array
+                    .items
+                    .infer_name_helper(format!("{}.items", namespace));
+            }
             _ => (),
         }
     }
 
     /// Assign names and namespaces to tags from parent tags.
     pub fn infer_name(&mut self) {
-        self.infer_name_helper("".into())
+        let namespace = match &self.name {
+            Some(name) => name.clone(),
+            None => "".into(),
+        };
+        self.infer_name_helper(namespace);
     }
 
     /// These rules are primarily focused on BigQuery, although they should
@@ -377,6 +391,7 @@ impl From<jsonschema::Tag> for Tag {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     #[test]
@@ -778,6 +793,42 @@ mod tests {
                     "atom_1": {"name": "atom_1", "type": {"atom": "integer"}, "nullable": false},
                     "atom_2": {"name": "atom_2", "type": {"atom": "integer"}, "nullable": false},
                 }}}});
+        assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_infer_name_array_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "array": {
+                "items": {
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {"type": {"atom": "integer"}}
+                            }}}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "array": {
+                "items": {
+                    "nullable": false,
+                    // array items are always named item, for the sanity of avro
+                    "name": "items",
+                    "namespace": "foo",
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {
+                                    "nullable": false,
+                                    "name": "bar",
+                                    "namespace": "foo.items",
+                                    "type": {"atom": "integer"}}
+                            }}}}}}});
         assert_eq!(expect, json!(tag));
     }
 

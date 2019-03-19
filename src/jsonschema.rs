@@ -565,6 +565,7 @@ mod tests {
         "type": {
             "array": {
                 "items": {
+                    "name": "items",
                     "nullable": false,
                     "type": {"atom": "integer"}
                 }}}});
