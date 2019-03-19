@@ -66,6 +66,7 @@ impl Map {
                 namespace: None,
                 data_type: Type::Atom(Atom::String),
                 nullable: false,
+                is_root: false,
             }),
             value: Box::new(value),
         }
@@ -101,6 +102,7 @@ impl Union {
                 name: None,
                 namespace: None,
                 nullable: is_null,
+                is_root: false,
                 data_type: self.items[0].data_type.clone(),
             };
         }
@@ -213,6 +215,7 @@ impl Union {
             namespace: None,
             nullable,
             data_type,
+            is_root: false,
         };
         tag.infer_nullability();
         tag
@@ -253,6 +256,9 @@ pub struct Tag {
 
     #[serde(default)]
     pub nullable: bool,
+
+    #[serde(default, skip_serializing)]
+    pub is_root: bool,
 }
 
 impl Tag {
@@ -262,6 +268,7 @@ impl Tag {
             name,
             namespace: None,
             nullable,
+            is_root: false,
         }
     }
 
@@ -380,6 +387,7 @@ impl From<jsonschema::Tag> for Tag {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
         tag.infer_nullability();
+        tag.is_root = true;
         tag
     }
 }

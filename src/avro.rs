@@ -113,7 +113,13 @@ impl From<ast::Tag> for Type {
             }
             _ => tag,
         };
-        tag.infer_name();
+        if tag.is_root {
+            // Name inference is run only from the root for the proper
+            // construction of the namespace. Fully qualified names require a
+            // top-down approach.
+            tag.name = Some("root".into());
+            tag.infer_name();
+        }
         tag.infer_nullability();
         let data_type = match &tag.data_type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
@@ -139,7 +145,7 @@ impl From<ast::Tag> for Type {
                 let record = Record {
                     common: CommonAttributes {
                         // This is not a safe assumption
-                        name: tag.name.clone().unwrap_or("root".into()),
+                        name: tag.name.clone().unwrap_or("__UNNAMED__".into()),
                         namespace: tag.namespace.clone(),
                         ..Default::default()
                     },
@@ -440,7 +446,11 @@ mod tests {
 
     #[test]
     fn from_ast_object() {
+        // Note the inclusion of `is_root`, which is required for proper
+        // namespace resolution. For testing purposes, this property is only
+        // included when testing deeply nested data-structures.
         let ast = json!({
+            "is_root": true,
             "type": {"object": {
                 // An additional case could be made for the behavior of nested
                 // structs and nested arrays. A nullable array for example may
@@ -471,6 +481,7 @@ mod tests {
                 ]},
                 {"name": "3-test-nested", "type": {
                     "name": "3-test-nested",
+                    "namespace": "root",
                     "type": "record",
                     "fields": [
                         {"name": "test-bool", "type": [
