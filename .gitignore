@@ -4,4 +4,4 @@ __pycache__/
 /target
 **/*.rs.bk
 
-/data
+/schemas
