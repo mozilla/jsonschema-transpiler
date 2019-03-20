@@ -338,7 +338,8 @@ impl Tag {
             }
             Type::Union(union) => {
                 for item in union.items.iter_mut() {
-                    item.infer_name_helper(namespace.clone());
+                    item.fill_names("__union__".into(), namespace.clone());
+                    item.infer_name_helper(format!("{}.__union__", namespace.clone()));
                 }
             }
             _ => (),
@@ -377,6 +378,30 @@ impl Tag {
             }
             Type::Map(map) => map.value.infer_nullability(),
             Type::Array(array) => array.items.infer_nullability(),
+            _ => (),
+        }
+    }
+
+    // An interface to collapse the schema of all unions
+    pub fn collapse(&mut self) {
+        match &mut self.data_type {
+            Type::Object(object) => {
+                for (_, value) in &mut object.fields {
+                    value.collapse()
+                }
+            }
+            Type::Map(map) => map.value.collapse(),
+            Type::Array(array) => array.items.collapse(),
+            Type::Tuple(tuple) => {
+                for item in tuple.items.iter_mut() {
+                    item.collapse()
+                }
+            }
+            Type::Union(union) => {
+                let tag = union.collapse();
+                self.data_type = tag.data_type;
+                self.nullable = tag.nullable;
+            }
             _ => (),
         }
     }
@@ -882,7 +907,101 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_infer_namespace() {
+    fn test_tag_infer_name_union_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "union": {
+                "items": [
+                    {
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {"type": {"atom": "integer"}}
+                                }}}},
+                    {
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "baz": {"type": {"atom": "boolean"}}
+                                }}}},
+                ]}}});
+        let mut tag: Tag = serde_json::from_value(data.clone()).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "union": {
+                "items": [
+                    // Conflicting names should go away when collapsed. Variant
+                    // types are generally not SQL friendly.
+                    {
+                        "nullable": false,
+                        "name": "__union__",
+                        "namespace": "foo",
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {
+                                        "nullable": false,
+                                        "name": "bar",
+                                        "namespace": "foo.__union__",
+                                        "type": {"atom": "integer"}}
+                                }}}},
+                    {
+                        "nullable": false,
+                        "name": "__union__",
+                        "namespace": "foo",
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "baz": {
+                                        "nullable": false,
+                                        "name": "baz",
+                                        "namespace": "foo.__union__",
+                                        "type": {"atom": "boolean"}}
+                                }}}},
+                ]}}});
+        assert_eq!(expect, json!(tag));
+
+        let collapse_expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "object": {
+                "fields": {
+                    "bar": {
+                        // nullability is inferred when collapsed
+                        "nullable": true,
+                        "name": "bar",
+                        "namespace": "foo",
+                        "type": {"atom": "integer"}},
+                    "baz": {
+                        "nullable": true,
+                        "name": "baz",
+                        "namespace": "foo",
+                        "type": {"atom": "boolean"}},
+                }}}});
+        // collapse and infer name
+        let mut tag_collapse: Tag = serde_json::from_value(data.clone()).unwrap();
+        tag_collapse.collapse();
+        tag_collapse.infer_name();
+        assert_eq!(collapse_expect, json!(tag_collapse));
+
+        // infer and then collapse
+        // NOTE: The behavior is not the same, the name and namespace need to be inferred again
+        tag_collapse = serde_json::from_value(data.clone()).unwrap();
+        tag_collapse.infer_name();
+        tag_collapse.collapse();
+
+        assert_ne!(collapse_expect, json!(tag_collapse));
+        tag_collapse.infer_name();
+        assert_eq!(collapse_expect, json!(tag_collapse));
+    }
+
+    #[test]
+    fn test_tag_infer_name_nested_object() {
         let data = json!({
         "type": {
             "object": {

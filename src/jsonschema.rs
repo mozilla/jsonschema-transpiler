@@ -465,8 +465,15 @@ mod tests {
             "type": {
                 "union": {
                     "items": [
-                        {"type": "null", "nullable": true},
-                        {"type": {"atom": "integer"}, "nullable": false},
+                        {
+                            // TODO: refactor this test to avoid implementation details
+                            "name": "__union__",
+                            "type": "null",
+                            "nullable": true},
+                        {
+                            "name": "__union__",
+                            "type": {"atom": "integer"},
+                            "nullable": false},
                     ]
                 }
             },
@@ -589,10 +596,12 @@ mod tests {
             "union": {
                 "items": [
                     {
+                        "name": "__union__",
                         "nullable": false,
                         "type": {"atom": "integer"},
                     },
                     {
+                        "name": "__union__",
                         "nullable": true,
                         "type": "null"
                     }
