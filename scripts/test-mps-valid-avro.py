@@ -71,4 +71,5 @@ def test_documents(mps_path):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    build()
     test_documents(os.path.join(ROOT, "schemas"))
