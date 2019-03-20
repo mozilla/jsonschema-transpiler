@@ -105,18 +105,12 @@ impl Default for Type {
 
 impl From<ast::Tag> for Type {
     fn from(tag: ast::Tag) -> Self {
-        let mut tag = match tag.data_type {
-            ast::Type::Union(union) => {
-                let mut collapsed = union.collapse();
-                collapsed.name = tag.name.clone();
-                collapsed
-            }
-            _ => tag,
-        };
+        let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
             // construction of the namespace. Fully qualified names require a
             // top-down approach.
+            tag.collapse();
             tag.name = Some("root".into());
             tag.infer_name();
         }
@@ -546,6 +540,8 @@ mod tests {
     /// The union type is collapsed before being reconstructed
     fn from_ast_union() {
         let ast = json!({
+            // test this document as if it were root
+            "is_root": true,
             "type": {"union": {"items": [
                 {"type": "null"},
                 {"type": {"atom": "boolean"}},

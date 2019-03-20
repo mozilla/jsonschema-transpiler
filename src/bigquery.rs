@@ -85,14 +85,8 @@ pub struct Tag {
 
 impl From<ast::Tag> for Tag {
     fn from(tag: ast::Tag) -> Tag {
-        let mut tag = match tag.data_type {
-            ast::Type::Union(union) => {
-                let mut collapsed = union.collapse();
-                collapsed.name = tag.name.clone();
-                collapsed
-            }
-            _ => tag,
-        };
+        let mut tag = tag;
+        tag.collapse();
         tag.infer_name();
         tag.infer_nullability();
         let data_type = match &tag.data_type {
