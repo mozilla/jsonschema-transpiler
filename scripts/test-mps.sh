@@ -14,7 +14,7 @@ bin="target/debug/jsonschema_transpiler"
 schemas=$(find schemas/ -name "*.schema.json")
 
 # create a new folder for avro schemas
-outdir="avro"
+outdir=${1:-"avro"}
 if [[ -d $outdir ]]; then
     rm -r $outdir
 fi

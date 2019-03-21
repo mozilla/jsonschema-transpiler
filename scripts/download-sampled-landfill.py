@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-import boto3
 import base64
 import logging
 import json
 import os
+
+import boto3
+# python-rapidjson
+import rapidjson
 
 
 def parse_schema_name(path):
@@ -16,13 +19,16 @@ def parse_schema_name(path):
     return f"{namespace}.{doctype}.{docver}"
 
 
-def construct_schema_set(path):
-    """return a set containing "{namespace}.{doctype}.{doctype}" strings"""
-    schemas = set()
+def load_schemas(path):
+    """return a dictionary containing "{namespace}.{doctype}.{doctype}" to validator"""
+    schemas = {}
     for root, _, files in os.walk(path):
         for name in files:
             if name.endswith(".schema.json"):
-                schemas.add(parse_schema_name(os.path.join(root, name)))
+                schemafile = os.path.join(root, name)
+                name = parse_schema_name(schemafile)
+                with open(schemafile, "r") as f:
+                    schemas[name] = rapidjson.Validator(f.read())
     return schemas
 
 
@@ -40,7 +46,7 @@ if __name__ == "__main__":
     os.chdir(root)
 
     # current directory
-    schemas = construct_schema_set("schemas")
+    schemas = load_schemas("schemas")
 
     output_folder = "data"
     if not os.path.exists(output_folder):
@@ -56,21 +62,24 @@ if __name__ == "__main__":
     for key in keys:
         schema_name = get_schema_name(key)
         if not schema_name in schemas:
-            logging.info("schema does not exist for {}".format(schema_name))
+            logging.info(f"schema does not exist: {schema_name}")
             continue
 
-        logging.info("Creating ndjson for {}".format(schema_name))
         data = (
             s3.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf-8").strip()
         )
         lines = data.split("\n")
 
         with open(f"{output_folder}/{schema_name}.ndjson", "w") as fp:
+            errors = 0
             for line in lines:
                 # each of the lines contains metadata with a content field
                 content = json.loads(line).get("content")
-                if not content:
+                try:
+                    schemas[schema_name](content)
+                except ValueError:
+                    errors += 1
                     continue
                 fp.write(json.dumps(json.loads(content)) + "\n")
-        logging.info("Wrote {} documents".format(len(lines)))
+        logging.info(f"wrote {len(lines)-errors}, skipped {errors} documents: {schema_name}")
     logging.info("Done!")
