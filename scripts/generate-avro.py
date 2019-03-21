@@ -81,6 +81,7 @@ with open(f"data/{document}.ndjson", "r") as f:
     data = f.readlines()
 
 try:
+    out = {}
     for line in data:
         out = convert(json.loads(line), schema)
         writer.append(out)

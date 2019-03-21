@@ -71,6 +71,6 @@ if __name__ == "__main__":
                 content = json.loads(line).get("content")
                 if not content:
                     continue
-                fp.write(content + "\n")
+                fp.write(json.dumps(json.loads(content)) + "\n")
         logging.info("Wrote {} documents".format(len(lines)))
     logging.info("Done!")
