@@ -13,14 +13,26 @@ bin="target/debug/jsonschema_transpiler"
 
 schemas=$(find schemas/ -name "*.schema.json")
 
+# create a new folder for avro schemas
+outdir="avro"
+if [[ -d $outdir ]]; then
+    rm -r $outdir
+fi
+mkdir $outdir
+
 total=0
 failed=0
 for schema in $schemas; do
-    if ! $bin -f "$schema" --type avro > /dev/null; then
+    namespace=$(basename $(dirname $(dirname $schema)))
+    schema_filename=$(basename $schema | sed 's/schema.json/avro.json/g')
+    outfile="$outdir/$namespace.$schema_filename"
+
+    if ! $bin -f "$schema" --type avro > $outfile; then
         echo "Failed on $schema"
+        rm $outfile
         ((failed++))
     fi
     ((total++))
 done
 
-echo "$failed/$total failures"
+echo "$((total - failed))/$total succeeded"
