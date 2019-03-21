@@ -357,7 +357,9 @@ impl Tag {
     }
 
     /// These rules are primarily focused on BigQuery, although they should
-    /// translate into other schemas.
+    /// translate into other schemas. This should be run after unions have been
+    /// eliminated from the tree since the behavior is currently order
+    /// dependent.
     pub fn infer_nullability(&mut self) {
         match &mut self.data_type {
             Type::Null => {
@@ -369,16 +371,24 @@ impl Tag {
                     None => HashSet::new(),
                 };
                 for (key, value) in &mut object.fields {
-                    if required.contains(key) {
-                        value.nullable = false;
-                    } else {
-                        value.nullable = true;
-                    }
-                    value.infer_nullability()
+                    // Infer whether the value is nullable
+                    value.infer_nullability();
+                    // A required nullable field is still nullable
+                    value.nullable |= !required.contains(key);
                 }
             }
             Type::Map(map) => map.value.infer_nullability(),
             Type::Array(array) => array.items.infer_nullability(),
+            Type::Tuple(tuple) => {
+                for item in tuple.items.iter_mut() {
+                    item.infer_nullability();
+                }
+            }
+            Type::Union(union) => {
+                for item in union.items.iter_mut() {
+                    item.infer_nullability();
+                }
+            }
             _ => (),
         }
     }
