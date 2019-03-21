@@ -119,8 +119,8 @@ impl From<ast::Tag> for Type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
             ast::Type::Atom(atom) => Type::Primitive(match atom {
                 ast::Atom::Boolean => Primitive::Boolean,
-                ast::Atom::Integer => Primitive::Int,
-                ast::Atom::Number => Primitive::Float,
+                ast::Atom::Integer => Primitive::Long,
+                ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
                 ast::Atom::JSON => Primitive::String,
             }),
@@ -435,7 +435,7 @@ mod tests {
     #[test]
     fn from_ast_atom() {
         let ast = json!({"type": {"atom": "integer"}});
-        let avro = json!({"type": "int"});
+        let avro = json!({"type": "long"});
         assert_from_ast_eq(ast, avro);
     }
 
@@ -469,11 +469,11 @@ mod tests {
             "name": "root",
             "fields": [
                 {"name": "0-test-null", "type": {"type": "null"}, "default": null},
-                {"name": "1-test-int", "type": {"type": "int"}},
+                {"name": "1-test-int", "type": {"type": "long"}},
                 {"name": "2-test-null-int",
                     "type": [
                         {"type": "null"},
-                        {"type": "int"},
+                        {"type": "long"},
                     ],
                     "default": null,
                 },
@@ -492,7 +492,7 @@ mod tests {
                     ]}},
                 {"name": "4-test-array", "type": {
                     "type": "array",
-                    "items": {"type": "int"}
+                    "items": {"type": "long"}
                 }}
             ]
         });
@@ -508,7 +508,7 @@ mod tests {
         }}});
         let avro = json!({
             "type": "map",
-            "values": {"type": "int"}
+            "values": {"type": "long"}
         });
         assert_from_ast_eq(ast, avro);
     }
