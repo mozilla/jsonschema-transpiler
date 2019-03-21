@@ -21,10 +21,11 @@
             "name": "test_atomic_with_null",
             "test": {
                 "avro": {
+                    "default": null,
                     "name": "root",
                     "type": [
-                        "int",
-                        "null"
+                        "null",
+                        "int"
                     ]
                 },
                 "bigquery": {

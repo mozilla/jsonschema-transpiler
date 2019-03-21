@@ -152,12 +152,20 @@
                 "avro": {
                     "fields": [
                         {
+                            "default": null,
                             "name": "field_1",
-                            "type": "int"
+                            "type": [
+                                "null",
+                                "int"
+                            ]
                         },
                         {
+                            "default": null,
                             "name": "field_2",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         {
                             "name": "field_3",

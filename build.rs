@@ -63,6 +63,7 @@ fn main() {
     write!(
         bq_fp,
         r#"use jst::convert_bigquery;
+use pretty_assertions::assert_eq;
 use serde_json::Value;
 "#
     )
