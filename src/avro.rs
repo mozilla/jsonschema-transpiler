@@ -1,6 +1,6 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase", tag = "type")]
@@ -131,6 +131,7 @@ impl From<ast::Tag> for Type {
                     .map(|(k, v)| Field {
                         name: k.to_string(),
                         data_type: Type::from(*v.clone()),
+                        default: if v.nullable { Some(json!(null)) } else { None },
                         ..Default::default()
                     })
                     .collect();
@@ -467,21 +468,27 @@ mod tests {
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "0-test-null", "type": {"type": "null"}},
+                {"name": "0-test-null", "type": {"type": "null"}, "default": null},
                 {"name": "1-test-int", "type": {"type": "int"}},
-                {"name": "2-test-null-int", "type": [
-                    {"type": "null"},
-                    {"type": "int"},
-                ]},
+                {"name": "2-test-null-int",
+                    "type": [
+                        {"type": "null"},
+                        {"type": "int"},
+                    ],
+                    "default": null,
+                },
                 {"name": "3-test-nested", "type": {
                     "name": "3-test-nested",
                     "namespace": "root",
                     "type": "record",
                     "fields": [
-                        {"name": "test-bool", "type": [
+                        {"name": "test-bool",
+                            "type": [
                                 {"type": "null"},
                                 {"type": "boolean"},
-                            ]},
+                            ],
+                            "default": null,
+                        },
                     ]}},
                 {"name": "4-test-array", "type": {
                     "type": "array",
