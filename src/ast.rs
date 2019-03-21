@@ -176,13 +176,14 @@ impl Union {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
                                     (Some(x), Some(y)) => {
-                                        Some(x.union(&y).map(|x| x.to_string()).collect())
+                                        Some(x.intersection(&y).map(|x| x.to_string()).collect())
                                     }
                                     (Some(x), None) | (None, Some(x)) => Some(x.clone()),
                                     _ => None,
                                 };
                             Type::Object(Object::new(result, required))
                         } else {
+                            // TODO: warn about inconsistency
                             Type::Atom(Atom::JSON)
                         }
                     }

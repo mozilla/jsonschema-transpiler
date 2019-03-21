@@ -780,6 +780,70 @@ fn bigquery_test_incompatible_oneof_object_with_complex() {
 }
 
 #[test]
+fn bigquery_test_oneof_object_merge_nullability() {
+    let input_data = r#"
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "shared": {
+              "type": "integer"
+            },
+            "type_a": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "shared",
+            "type_a"
+          ]
+        },
+        {
+          "properties": {
+            "shared": {
+              "type": "integer"
+            },
+            "type_b": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "shared",
+            "type_b"
+          ]
+        }
+      ]
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "fields": [
+        {
+          "mode": "REQUIRED",
+          "name": "shared",
+          "type": "INT64"
+        },
+        {
+          "mode": "NULLABLE",
+          "name": "type_a",
+          "type": "INT64"
+        },
+        {
+          "mode": "NULLABLE",
+          "name": "type_b",
+          "type": "INT64"
+        }
+      ],
+      "mode": "REQUIRED",
+      "type": "RECORD"
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input));
+}
+
+#[test]
 fn bigquery_test_allof_object() {
     let input_data = r#"
     {
