@@ -1,4 +1,5 @@
 use super::jsonschema;
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -436,6 +437,36 @@ impl Tag {
                 self.nullable = tag.nullable;
             }
             _ => (),
+        }
+    }
+
+    // If the current tag is an object, remove keyword properties and apply
+    // transformations on the fields.
+    pub fn fix_properties(&mut self) {
+        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
+        if let Type::Object(ref mut object) = self.data_type {
+            let fields = &mut object.fields;
+            let keys: Vec<String> = fields.keys().cloned().collect();
+            for key in keys {
+                let mut sanitized = key.replace(".", "_").replace("-", "_");
+                if sanitized.chars().next().unwrap().is_numeric() {
+                    sanitized = format!("_{}", sanitized);
+                }
+                if re.is_match(sanitized.as_str()) {
+                    if sanitized.as_str() != key.as_str() {
+                        warn!("{} replaced with {}", key, sanitized);
+                        fields.insert(sanitized.clone(), fields[&key].clone());
+                        fields.remove(&key.clone());
+                    }
+                // otherwise leave the field alone
+                } else {
+                    warn!(
+                        "{} is not a valid property name and will not be included",
+                        key
+                    );
+                    fields.remove(&key.clone());
+                }
+            }
         }
     }
 }
@@ -1067,5 +1098,30 @@ mod tests {
                                         "nullable": false,
                                     }}}}}}}}});
         assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_fix_properties() {
+        let data = json!({
+        "type": {
+            "object": {
+                "fields": {
+                    "valid_name": {"type": "null"},
+                    "renamed-value.0": {"type": "null"},
+                    "$schema": {"type": "null"},
+                    "64bit": {"type": "null"},
+                }}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.fix_properties();
+        if let Type::Object(object) = &tag.data_type {
+            let expected: HashSet<String> = ["valid_name", "renamed_value_0", "_64bit"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect();
+            let actual: HashSet<String> = object.fields.keys().cloned().collect();
+            assert_eq!(expected, actual);
+        } else {
+            panic!()
+        }
     }
 }
