@@ -97,6 +97,7 @@ impl From<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::JSON => Atom::String,
             }),
+            ast::Type::Object(object) if object.fields.is_empty() => Type::Atom(Atom::String),
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = object
                     .fields

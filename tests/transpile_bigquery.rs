@@ -354,6 +354,25 @@ fn bigquery_test_object_with_complex() {
 }
 
 #[test]
+fn bigquery_test_object_empty_record() {
+    let input_data = r#"
+    {
+      "properties": {},
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "mode": "REQUIRED",
+      "type": "STRING"
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input));
+}
+
+#[test]
 fn bigquery_test_oneof_atomic() {
     let input_data = r#"
     {

@@ -282,6 +282,26 @@
                     "type": "object"
                 }
             }
+        },
+        {
+            "description": [
+                "Empty structs are not supported in BigQuery, so we treat them ",
+                "as empty documents."
+            ],
+            "name": "test_object_empty_record",
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "properties": {},
+                    "type": "object"
+                }
+            }
         }
     ]
 }

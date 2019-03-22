@@ -124,6 +124,10 @@ impl From<ast::Tag> for Type {
                 ast::Atom::String => Primitive::String,
                 ast::Atom::JSON => Primitive::String,
             }),
+            ast::Type::Object(object) if object.fields.is_empty() => {
+                // empty records are not supported
+                Type::Primitive(Primitive::String)
+            }
             ast::Type::Object(object) => {
                 let mut fields: Vec<Field> = object
                     .fields
