@@ -95,9 +95,21 @@ impl From<ast::Tag> for Tag {
                 ast::Atom::Integer => Atom::Int64,
                 ast::Atom::Number => Atom::Float64,
                 ast::Atom::String => Atom::String,
-                ast::Atom::JSON => Atom::String,
+                ast::Atom::JSON => {
+                    warn!(
+                        "{} - Treating subschema as JSON string",
+                        tag.fully_qualified_name()
+                    );
+                    Atom::String
+                }
             }),
-            ast::Type::Object(object) if object.fields.is_empty() => Type::Atom(Atom::String),
+            ast::Type::Object(object) if object.fields.is_empty() => {
+                warn!(
+                    "{} - Empty records are not supported, casting into a JSON string",
+                    tag.fully_qualified_name()
+                );
+                Type::Atom(Atom::String)
+            }
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = object
                     .fields
@@ -116,7 +128,10 @@ impl From<ast::Tag> for Tag {
                     .collect();
                 Type::Record(Record { fields })
             }
-            _ => Type::Atom(Atom::String),
+            _ => {
+                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                Type::Atom(Atom::String)
+            }
         };
 
         let mode = if tag.is_array() || tag.is_map() {

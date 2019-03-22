@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate env_logger;
 extern crate jst;
 
 use clap::{App, Arg};
@@ -7,6 +8,8 @@ use std::fs::File;
 use std::io::BufReader;
 
 fn main() {
+    env_logger::init();
+
     let matches = App::new("jst")
         .version("0.1")
         .author("Anthony Miyaguchi <amiyaguchi@mozilla.com>")

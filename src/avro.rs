@@ -122,10 +122,19 @@ impl From<ast::Tag> for Type {
                 ast::Atom::Integer => Primitive::Long,
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
-                ast::Atom::JSON => Primitive::String,
+                ast::Atom::JSON => {
+                    warn!(
+                        "{} - Treating subschema as JSON string",
+                        tag.fully_qualified_name()
+                    );
+                    Primitive::String
+                }
             }),
             ast::Type::Object(object) if object.fields.is_empty() => {
-                // empty records are not supported
+                warn!(
+                    "{} - Empty records are not supported, casting into a JSON string",
+                    tag.fully_qualified_name()
+                );
                 Type::Primitive(Primitive::String)
             }
             ast::Type::Object(object) => {
@@ -150,6 +159,9 @@ impl From<ast::Tag> for Type {
                     },
                     fields,
                 };
+                if record.common.name == "__UNNAMED__" {
+                    warn!("{} - Unnamed field", tag.fully_qualified_name());
+                }
                 Type::Complex(Complex::Record(record))
             }
             ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
@@ -158,7 +170,10 @@ impl From<ast::Tag> for Type {
             ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
                 values: Box::new(Type::from(*map.value.clone())),
             })),
-            _ => Type::Primitive(Primitive::String),
+            _ => {
+                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                Type::Primitive(Primitive::String)
+            }
         };
         if tag.nullable && !tag.is_null() {
             Type::Union(vec![Type::Primitive(Primitive::Null), data_type])

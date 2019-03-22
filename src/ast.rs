@@ -139,11 +139,17 @@ impl Union {
                             | (Atom::Integer, Atom::Number)
                             | (Atom::Number, Atom::Integer) => Atom::Number,
                             (Atom::String, Atom::String) => Atom::String,
-                            _ => Atom::JSON,
+                            (lhs, rhs) => {
+                                trace!("Invalid union collapse of atoms {:?} and {:?}", lhs, rhs);
+                                Atom::JSON
+                            }
                         };
                         Type::Atom(atom)
                     }
-                    _ => Type::Atom(Atom::JSON),
+                    _ => {
+                        trace!("Invalid union collapse of atoms found during fold");
+                        Type::Atom(Atom::JSON)
+                    }
                 })
         } else if items.iter().all(|x| x.is_object()) {
             items
@@ -167,7 +173,8 @@ impl Union {
                             .into_iter()
                             .map(|(k, v)| (k, Union::new(v).collapse()))
                             .collect();
-                        // Atom::JSON is a catch-all value and makes for inconsistent objects
+                        // Recursively invalidate the tree if any of the subschemas are incompatible.
+                        // Atom::JSON is a catch-all value and marks inconsistent objects.
                         let is_consistent = !result.iter().any(|(_, v)| match v.data_type {
                             Type::Atom(Atom::JSON) => true,
                             _ => false,
@@ -183,18 +190,21 @@ impl Union {
                                 };
                             Type::Object(Object::new(result, required))
                         } else {
-                            // TODO: warn about inconsistency
+                            trace!("Incompatible subschemas found during union collapse");
                             Type::Atom(Atom::JSON)
                         }
                     }
-                    _ => Type::Atom(Atom::JSON),
+                    _ => {
+                        trace!("Inconsistent union collapse of object");
+                        Type::Atom(Atom::JSON)
+                    }
                 })
         } else if items.iter().all(|x| x.is_map()) {
             let tags: Vec<Tag> = items
                 .into_iter()
                 .map(|x| match &x.data_type {
                     Type::Map(map) => *map.value.clone(),
-                    _ => panic!(),
+                    _ => panic!("Invalid map found during union collapse"),
                 })
                 .collect();
             Type::Map(Map::new(None, Union::new(tags).collapse()))
@@ -203,11 +213,12 @@ impl Union {
                 .into_iter()
                 .map(|x| match &x.data_type {
                     Type::Array(array) => *array.items.clone(),
-                    _ => panic!(),
+                    _ => panic!("Invalid array found during union collapse"),
                 })
                 .collect();
             Type::Array(Array::new(Union::new(tags).collapse()))
         } else {
+            trace!("Incompatible union collapse found");
             Type::Atom(Atom::JSON)
         };
 
@@ -270,6 +281,17 @@ impl Tag {
             namespace: None,
             nullable,
             is_root: false,
+        }
+    }
+
+    pub fn fully_qualified_name(&self) -> String {
+        let name = match &self.name {
+            Some(name) => name.clone(),
+            None => "__unknown__".to_string(),
+        };
+        match &self.namespace {
+            Some(ns) => format!("{}.{}", ns, name),
+            None => name,
         }
     }
 
