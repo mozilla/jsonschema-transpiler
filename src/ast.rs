@@ -40,6 +40,19 @@ impl Array {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Tuple {
+    pub items: Vec<Tag>,
+}
+
+impl Tuple {
+    pub fn new(items: Vec<Tag>) -> Self {
+        Tuple {
+            items: items.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Map {
     pub key: Box<Tag>,
     pub value: Box<Tag>,
@@ -50,8 +63,10 @@ impl Map {
         Map {
             key: Box::new(Tag {
                 name: key,
+                namespace: None,
                 data_type: Type::Atom(Atom::String),
                 nullable: false,
+                is_root: false,
             }),
             value: Box::new(value),
         }
@@ -85,7 +100,9 @@ impl Union {
         } else if self.items.len() == 1 {
             return Tag {
                 name: None,
+                namespace: None,
                 nullable: is_null,
+                is_root: false,
                 data_type: self.items[0].data_type.clone(),
             };
         }
@@ -195,8 +212,10 @@ impl Union {
 
         let mut tag = Tag {
             name: None,
+            namespace: None,
             nullable,
             data_type,
+            is_root: false,
         };
         tag.infer_nullability();
         tag
@@ -211,6 +230,7 @@ pub enum Type {
     Object(Object),
     Map(Map),
     Array(Array),
+    Tuple(Tuple),
     Union(Union),
     // Intersection
     // Not
@@ -229,8 +249,16 @@ pub struct Tag {
     pub data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+
+    // The namespace of the current object
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+
     #[serde(default)]
     pub nullable: bool,
+
+    #[serde(default, skip_serializing)]
+    pub is_root: bool,
 }
 
 impl Tag {
@@ -238,7 +266,9 @@ impl Tag {
         Tag {
             data_type,
             name,
+            namespace: None,
             nullable,
+            is_root: false,
         }
     }
 
@@ -277,33 +307,56 @@ impl Tag {
         }
     }
 
-    /// Assign names to tags from parent Tags.
-    pub fn infer_name(&mut self) {
+    fn fill_names(&mut self, name: String, namespace: String) {
+        self.name = Some(name);
+        if namespace.len() > 0 {
+            self.namespace = Some(namespace);
+        }
+    }
+
+    fn infer_name_helper(&mut self, namespace: String) {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    if value.name.is_none() {
-                        value.name = Some(key.to_string());
-                    }
-                    value.infer_name()
+                    value.fill_names(key.to_string(), namespace.clone());
+                    value.infer_name_helper(format!("{}.{}", namespace, key));
                 }
             }
             Type::Map(map) => {
-                if map.key.name.is_none() {
-                    map.key.name = Some("key".into());
-                }
-                if map.value.name.is_none() {
-                    map.value.name = Some("value".into());
-                }
-                map.value.infer_name()
+                map.key.fill_names("key".into(), namespace.clone());
+                map.value.fill_names("value".into(), namespace.clone());
+                map.key
+                    .infer_name_helper(format!("{}.key", namespace.clone()));
+                map.value
+                    .infer_name_helper(format!("{}.value", namespace.clone()));
             }
-            Type::Array(array) => array.items.infer_name(),
+            Type::Array(array) => {
+                array.items.fill_names("items".into(), namespace.clone());
+                array
+                    .items
+                    .infer_name_helper(format!("{}.items", namespace.clone()));
+            }
+            Type::Union(union) => {
+                for item in union.items.iter_mut() {
+                    item.fill_names("__union__".into(), namespace.clone());
+                    item.infer_name_helper(format!("{}.__union__", namespace.clone()));
+                }
+            }
             _ => (),
         }
     }
 
-    /// These rules are primarily focused on BigQuery, although they should translate
-    /// into other schemas.
+    /// Assign names and namespaces to tags from parent tags.
+    pub fn infer_name(&mut self) {
+        let namespace = match &self.name {
+            Some(name) => name.clone(),
+            None => "".into(),
+        };
+        self.infer_name_helper(namespace);
+    }
+
+    /// These rules are primarily focused on BigQuery, although they should
+    /// translate into other schemas.
     pub fn infer_nullability(&mut self) {
         match &mut self.data_type {
             Type::Null => {
@@ -328,6 +381,30 @@ impl Tag {
             _ => (),
         }
     }
+
+    // An interface to collapse the schema of all unions
+    pub fn collapse(&mut self) {
+        match &mut self.data_type {
+            Type::Object(object) => {
+                for (_, value) in &mut object.fields {
+                    value.collapse()
+                }
+            }
+            Type::Map(map) => map.value.collapse(),
+            Type::Array(array) => array.items.collapse(),
+            Type::Tuple(tuple) => {
+                for item in tuple.items.iter_mut() {
+                    item.collapse()
+                }
+            }
+            Type::Union(union) => {
+                let tag = union.collapse();
+                self.data_type = tag.data_type;
+                self.nullable = tag.nullable;
+            }
+            _ => (),
+        }
+    }
 }
 
 impl From<jsonschema::Tag> for Tag {
@@ -335,6 +412,7 @@ impl From<jsonschema::Tag> for Tag {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
         tag.infer_nullability();
+        tag.is_root = true;
         tag
     }
 }
@@ -342,6 +420,7 @@ impl From<jsonschema::Tag> for Tag {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     #[test]
@@ -362,11 +441,13 @@ mod tests {
             data_type: Type::Atom(Atom::Integer),
             name: Some("test-int".into()),
             nullable: true,
+            ..Default::default()
         };
         let expect = json!({
             "type": {"atom": "integer"},
             "name": "test-int",
             "nullable": true,
+
         });
         assert_eq!(expect, json!(atom));
     }
@@ -376,7 +457,7 @@ mod tests {
         let mut field = Tag {
             data_type: Type::Object(Object::new(HashMap::new(), None)),
             name: Some("test-object".into()),
-            nullable: false,
+            ..Default::default()
         };
         if let Type::Object(object) = &mut field.data_type {
             object.fields.insert(
@@ -384,7 +465,7 @@ mod tests {
                 Box::new(Tag {
                     data_type: Type::Atom(Atom::Integer),
                     name: Some("test-int".into()),
-                    nullable: false,
+                    ..Default::default()
                 }),
             );
             object.fields.insert(
@@ -392,7 +473,7 @@ mod tests {
                 Box::new(Tag {
                     data_type: Type::Atom(Atom::Boolean),
                     name: Some("test-bool".into()),
-                    nullable: false,
+                    ..Default::default()
                 }),
             );
         }
@@ -425,11 +506,13 @@ mod tests {
             data_type: Type::Atom(Atom::Integer),
             name: Some("test-value".into()),
             nullable: false,
+            ..Default::default()
         };
         let field = Tag {
             data_type: Type::Map(Map::new(Some("test-key".into()), atom)),
             name: Some("test-map".into()),
             nullable: true,
+            ..Default::default()
         };
         let expect = json!({
             "name": "test-map",
@@ -459,11 +542,13 @@ mod tests {
             data_type: Type::Atom(Atom::Integer),
             name: Some("test-int".into()),
             nullable: true,
+            ..Default::default()
         };
         let field = Tag {
             data_type: Type::Array(Array::new(atom)),
             name: Some("test-array".into()),
             nullable: false,
+            ..Default::default()
         };
         let expect = json!({
             "type": {
@@ -737,6 +822,217 @@ mod tests {
                     "atom_1": {"name": "atom_1", "type": {"atom": "integer"}, "nullable": false},
                     "atom_2": {"name": "atom_2", "type": {"atom": "integer"}, "nullable": false},
                 }}}});
+        assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_infer_name_array_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "array": {
+                "items": {
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {"type": {"atom": "integer"}}
+                            }}}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "array": {
+                "items": {
+                    "nullable": false,
+                    // array items are always named item, for the sanity of avro
+                    "name": "items",
+                    "namespace": "foo",
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {
+                                    "nullable": false,
+                                    "name": "bar",
+                                    "namespace": "foo.items",
+                                    "type": {"atom": "integer"}}
+                            }}}}}}});
+        assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_infer_name_map_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {"type": {"atom": "integer"}}
+                            }}}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "map": {
+                "key": {
+                    "nullable": false,
+                    "name": "key",
+                    // avro doesn't allow primitives to have a namespace, but is
+                    // consistent behavior within ast
+                    "namespace": "foo",
+                    "type": {"atom": "string"}
+                },
+                "value": {
+                    "nullable": false,
+                    // array items are always named item, for the sanity of avro
+                    "name": "value",
+                    "namespace": "foo",
+                    "type": {
+                        "object": {
+                            "fields": {
+                                "bar": {
+                                    "nullable": false,
+                                    "name": "bar",
+                                    "namespace": "foo.value",
+                                    "type": {"atom": "integer"}}
+                            }}}}}}});
+        assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_infer_name_union_object() {
+        let data = json!({
+        "name": "foo",
+        "type": {
+            "union": {
+                "items": [
+                    {
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {"type": {"atom": "integer"}}
+                                }}}},
+                    {
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "baz": {"type": {"atom": "boolean"}}
+                                }}}},
+                ]}}});
+        let mut tag: Tag = serde_json::from_value(data.clone()).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "union": {
+                "items": [
+                    // Conflicting names should go away when collapsed. Variant
+                    // types are generally not SQL friendly.
+                    {
+                        "nullable": false,
+                        "name": "__union__",
+                        "namespace": "foo",
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {
+                                        "nullable": false,
+                                        "name": "bar",
+                                        "namespace": "foo.__union__",
+                                        "type": {"atom": "integer"}}
+                                }}}},
+                    {
+                        "nullable": false,
+                        "name": "__union__",
+                        "namespace": "foo",
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "baz": {
+                                        "nullable": false,
+                                        "name": "baz",
+                                        "namespace": "foo.__union__",
+                                        "type": {"atom": "boolean"}}
+                                }}}},
+                ]}}});
+        assert_eq!(expect, json!(tag));
+
+        let collapse_expect = json!({
+        "nullable": false,
+        "name": "foo",
+        "type": {
+            "object": {
+                "fields": {
+                    "bar": {
+                        // nullability is inferred when collapsed
+                        "nullable": true,
+                        "name": "bar",
+                        "namespace": "foo",
+                        "type": {"atom": "integer"}},
+                    "baz": {
+                        "nullable": true,
+                        "name": "baz",
+                        "namespace": "foo",
+                        "type": {"atom": "boolean"}},
+                }}}});
+        // collapse and infer name
+        let mut tag_collapse: Tag = serde_json::from_value(data.clone()).unwrap();
+        tag_collapse.collapse();
+        tag_collapse.infer_name();
+        assert_eq!(collapse_expect, json!(tag_collapse));
+
+        // infer and then collapse
+        // NOTE: The behavior is not the same, the name and namespace need to be inferred again
+        tag_collapse = serde_json::from_value(data.clone()).unwrap();
+        tag_collapse.infer_name();
+        tag_collapse.collapse();
+
+        assert_ne!(collapse_expect, json!(tag_collapse));
+        tag_collapse.infer_name();
+        assert_eq!(collapse_expect, json!(tag_collapse));
+    }
+
+    #[test]
+    fn test_tag_infer_name_nested_object() {
+        let data = json!({
+        "type": {
+            "object": {
+                "fields": {
+                    "foo": {
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {
+                                        "type": "null"
+                                        }}}}}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_name();
+        let expect = json!({
+        "nullable": false,
+        "type": {
+            "object": {
+                "fields": {
+                    "foo": {
+                        "name": "foo",
+                        "nullable": false,
+                        "type": {
+                            "object": {
+                                "fields": {
+                                    "bar": {
+                                        "name": "bar",
+                                        // empty toplevel
+                                        "namespace": ".foo",
+                                        "type": "null",
+                                        "nullable": false,
+                                    }}}}}}}}});
         assert_eq!(expect, json!(tag));
     }
 }

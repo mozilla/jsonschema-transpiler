@@ -33,13 +33,19 @@ pub struct Record {
     fields: Vec<Field>,
 }
 
+// The field doesn't handle the canonical form naively e.g. a null record
+// `{"name": "foo", "type": "null"}` must explicitly nest the type in the
+// following form: `{"name": "foo", "type": {"type": "null"}}`. Applying
+// flattening at this level will produce the wrong results for nested objects.
+// We may apply an extra layer of indirection in code by using a `FieldType`,
+// but this does not affect correctness of the schema.
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(tag = "type")]
 struct Field {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     doc: Option<String>,
-    #[serde(flatten)]
+    #[serde(rename = "type")]
     data_type: Type,
     #[serde(skip_serializing_if = "Option::is_none")]
     default: Option<Value>,
@@ -60,13 +66,6 @@ pub struct Array {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Map {
     values: Box<Type>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
-pub struct Union {
-    #[serde(rename = "type")]
-    data_type: Vec<Type>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -92,9 +91,10 @@ pub enum Complex {
 pub enum Type {
     Primitive(Primitive),
     Complex(Complex),
-    // A union is categorized as a complex type, but acts as a top-level type. It is delineated
-    // by the presence of a JSON array in the type field.
-    Union(Union),
+    // A union is categorized as a complex type, but acts as a top-level type.
+    // It is delineated by the presence of a JSON array in the type field. This
+    // particular definition allows for nested unions, which is not valid avro.
+    Union(Vec<Type>),
 }
 
 impl Default for Type {
@@ -105,15 +105,15 @@ impl Default for Type {
 
 impl From<ast::Tag> for Type {
     fn from(tag: ast::Tag) -> Self {
-        let mut tag = match tag.data_type {
-            ast::Type::Union(union) => {
-                let mut collapsed = union.collapse();
-                collapsed.name = tag.name.clone();
-                collapsed
-            }
-            _ => tag,
-        };
-        tag.infer_name();
+        let mut tag = tag;
+        if tag.is_root {
+            // Name inference is run only from the root for the proper
+            // construction of the namespace. Fully qualified names require a
+            // top-down approach.
+            tag.collapse();
+            tag.name = Some("root".into());
+            tag.infer_name();
+        }
         tag.infer_nullability();
         let data_type = match &tag.data_type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
@@ -139,7 +139,8 @@ impl From<ast::Tag> for Type {
                 let record = Record {
                     common: CommonAttributes {
                         // This is not a safe assumption
-                        name: tag.name.clone().unwrap_or("root".into()),
+                        name: tag.name.clone().unwrap_or("__UNNAMED__".into()),
+                        namespace: tag.namespace.clone(),
                         ..Default::default()
                     },
                     fields,
@@ -155,9 +156,7 @@ impl From<ast::Tag> for Type {
             _ => Type::Primitive(Primitive::String),
         };
         if tag.nullable && !tag.is_null() {
-            Type::Union(Union {
-                data_type: vec![Type::Primitive(Primitive::Null), data_type],
-            })
+            Type::Union(vec![Type::Primitive(Primitive::Null), data_type])
         } else {
             data_type
         }
@@ -167,6 +166,7 @@ impl From<ast::Tag> for Type {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     fn assert_serialize(expect: Value, schema: Type) {
@@ -222,9 +222,9 @@ mod tests {
             "type": "record",
             "name": "test-record",
             "fields": [
-                {"name": "test-bool", "type": "boolean"},
-                {"name": "test-int", "type": "int"},
-                {"name": "test-string", "type": "string"},
+                {"name": "test-bool", "type": {"type": "boolean"}},
+                {"name": "test-int", "type": {"type": "int"}},
+                {"name": "test-string", "type": {"type": "string"}},
             ]
         });
 
@@ -278,18 +278,14 @@ mod tests {
 
     #[test]
     fn serialize_complex_union() {
-        let schema = Type::Union(Union {
-            data_type: vec![
-                Type::Primitive(Primitive::Null),
-                Type::Primitive(Primitive::Long),
-            ],
-        });
-        let expect = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "long"},
-            ]
-        });
+        let schema = Type::Union(vec![
+            Type::Primitive(Primitive::Null),
+            Type::Primitive(Primitive::Long),
+        ]);
+        let expect = json!([
+            {"type": "null"},
+            {"type": "long"},
+        ]);
         assert_serialize(expect, schema);
     }
 
@@ -327,9 +323,9 @@ mod tests {
             "type": "record",
             "name": "test-record",
             "fields": [
-                {"name": "test-bool", "type": "boolean"},
-                {"name": "test-int", "type": "int"},
-                {"name": "test-string", "type": "string"},
+                {"name": "test-bool", "type": {"type": "boolean"}},
+                {"name": "test-int", "type": {"type": "int"}},
+                {"name": "test-string", "type": {"type": "string"}},
             ]
         });
         match type_from_value(data) {
@@ -393,19 +389,17 @@ mod tests {
 
     #[test]
     fn deserialize_complex_union() {
-        let data = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "long"},
-            ]
-        });
+        let data = json!([
+            {"type": "null"},
+            {"type": "long"},
+        ]);
         match type_from_value(data) {
             Type::Union(union) => {
-                match union.data_type[0] {
+                match union[0] {
                     Type::Primitive(Primitive::Null) => (),
                     _ => panic!(),
                 };
-                match union.data_type[1] {
+                match union[1] {
                     Type::Primitive(Primitive::Long) => (),
                     _ => panic!(),
                 };
@@ -446,29 +440,53 @@ mod tests {
 
     #[test]
     fn from_ast_object() {
+        // Note the inclusion of `is_root`, which is required for proper
+        // namespace resolution. For testing purposes, this property is only
+        // included when testing deeply nested data-structures.
         let ast = json!({
+            "is_root": true,
             "type": {"object": {
-                "required": ["1-test-int", "2-test-nested"],
+                // An additional case could be made for the behavior of nested
+                // structs and nested arrays. A nullable array for example may
+                // not be a valid structure in bigquery.
+                "required": ["1-test-int", "3-test-nested", "4-test-array"],
                 "fields": {
                     "0-test-null": {"type": "null"},
                     "1-test-int": {"type": {"atom": "integer"}},
-                    "2-test-nested": {"type": {"object": {"fields": {
-                        "test-bool": {"type": {"atom": "boolean"}},
-                    }}}},
+                    "2-test-null-int": {"type": {"atom": "integer"}, "nullable": true},
+                    "3-test-nested": {"type": {"object": {"fields": {
+                        "test-bool": {
+                            "type": {"atom": "boolean"},
+                            "nullable": true
+                            }}}}},
+                    "4-test-array": {"type": {"array": {
+                        "items": {"type": {"atom": "integer"}}}}},
             }}}
         });
         let avro = json!({
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "0-test-null", "type": "null"},
-                {"name": "1-test-int", "type": "int"},
-                {"name": "2-test-nested", "type": "record", "fields": [
-                    {"name": "test-bool", "type": [
-                        {"type": "null"},
-                        {"type": "boolean"},
-                    ]},
-                ]}
+                {"name": "0-test-null", "type": {"type": "null"}},
+                {"name": "1-test-int", "type": {"type": "int"}},
+                {"name": "2-test-null-int", "type": [
+                    {"type": "null"},
+                    {"type": "int"},
+                ]},
+                {"name": "3-test-nested", "type": {
+                    "name": "3-test-nested",
+                    "namespace": "root",
+                    "type": "record",
+                    "fields": [
+                        {"name": "test-bool", "type": [
+                                {"type": "null"},
+                                {"type": "boolean"},
+                            ]},
+                    ]}},
+                {"name": "4-test-array", "type": {
+                    "type": "array",
+                    "items": {"type": "int"}
+                }}
             ]
         });
         assert_from_ast_eq(ast, avro);
@@ -502,20 +520,37 @@ mod tests {
     }
 
     #[test]
+    fn from_ast_tuple() {
+        // This case is not handled and instead converted into an object
+        let ast = json!({
+            "type": {
+                "tuple": {
+                    "items": [
+                        {"type": {"atom": "boolean"}},
+                        {"type": {"atom": "integer"}},
+                    ]
+                }
+            }
+        });
+        let avro = json!({"type": "string"});
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
     /// The union type is collapsed before being reconstructed
     fn from_ast_union() {
         let ast = json!({
+            // test this document as if it were root
+            "is_root": true,
             "type": {"union": {"items": [
                 {"type": "null"},
                 {"type": {"atom": "boolean"}},
             ]}}
         });
-        let avro = json!({
-            "type": [
-                {"type": "null"},
-                {"type": "boolean"}
-            ]
-        });
+        let avro = json!([
+            {"type": "null"},
+            {"type": "boolean"}
+        ]);
         assert_from_ast_eq(ast, avro);
     }
 }

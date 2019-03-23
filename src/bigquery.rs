@@ -85,14 +85,8 @@ pub struct Tag {
 
 impl From<ast::Tag> for Tag {
     fn from(tag: ast::Tag) -> Tag {
-        let mut tag = match tag.data_type {
-            ast::Type::Union(union) => {
-                let mut collapsed = union.collapse();
-                collapsed.name = tag.name.clone();
-                collapsed
-            }
-            _ => tag,
-        };
+        let mut tag = tag;
+        tag.collapse();
         tag.infer_name();
         tag.infer_nullability();
         let data_type = match &tag.data_type {
@@ -458,6 +452,27 @@ mod tests {
         let expect = json!({
             "type": "INT64",
             "mode": "REPEATED",
+        });
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_from_ast_tuple() {
+        let data = json!({
+            "type": {
+                "tuple": {
+                    "items": [
+                        {"type": {"atom": "boolean"}},
+                        {"type": {"atom": "integer"}},
+                    ]
+                }
+            }
+        });
+        let tag: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Tag = tag.into();
+        let expect = json!({
+            "type": "STRING",
+            "mode": "REQUIRED",
         });
         assert_eq!(expect, json!(bq));
     }
