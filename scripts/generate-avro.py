@@ -23,6 +23,15 @@ assert any(
 ), "document not found in avro schemas"
 
 
+def format_key(key):
+    if not key:
+        raise ValueError("empty key not allowed")
+    key = key.replace("-", "_").replace(".", "_")
+    if key[0].isdigit():
+        key = "_" + key
+    return key
+
+
 def convert(data, schema):
 
     if schema.type == "string":
@@ -35,6 +44,8 @@ def convert(data, schema):
         if not data:
             return out
         for key, value in data.items():
+            # apply the appropriate transformations on the key
+            key = format_key(key)
             field = schema.field_map.get(key)
             if not field:
                 continue
