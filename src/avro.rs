@@ -481,27 +481,28 @@ mod tests {
                             }}}}},
                     "4-test-array": {"type": {"array": {
                         "items": {"type": {"atom": "integer"}}}}},
+                    "$invalid-name": {"type": "null"}
             }}}
         });
         let avro = json!({
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "0-test-null", "type": {"type": "null"}, "default": null},
-                {"name": "1-test-int", "type": {"type": "long"}},
-                {"name": "2-test-null-int",
+                {"name": "_0_test_null", "type": {"type": "null"}, "default": null},
+                {"name": "_1_test_int", "type": {"type": "long"}},
+                {"name": "_2_test_null_int",
                     "type": [
                         {"type": "null"},
                         {"type": "long"},
                     ],
                     "default": null,
                 },
-                {"name": "3-test-nested", "type": {
-                    "name": "3-test-nested",
+                {"name": "_3_test_nested", "type": {
+                    "name": "_3_test_nested",
                     "namespace": "root",
                     "type": "record",
                     "fields": [
-                        {"name": "test-bool",
+                        {"name": "test_bool",
                             "type": [
                                 {"type": "null"},
                                 {"type": "boolean"},
@@ -509,7 +510,7 @@ mod tests {
                             "default": null,
                         },
                     ]}},
-                {"name": "4-test-array", "type": {
+                {"name": "_4_test_array", "type": {
                     "type": "array",
                     "items": {"type": "long"}
                 }}

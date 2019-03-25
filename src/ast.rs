@@ -339,6 +339,12 @@ impl Tag {
     }
 
     fn infer_name_helper(&mut self, namespace: String) {
+        // We remove invalid field names from the schema when we infer the names
+        // for the schema (e.g. `$schema`). We also apply rules to make the
+        // names consistent with BigQuery's naming scheme, like avoiding columns
+        // that start with a number.
+        self.fix_properties();
+
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
@@ -440,25 +446,32 @@ impl Tag {
         }
     }
 
+    fn sanitize_string(string: &String) -> Option<String> {
+        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
+        let mut sanitized = string.replace(".", "_").replace("-", "_");
+        if sanitized.chars().next().unwrap().is_numeric() {
+            sanitized = format!("_{}", sanitized);
+        };
+        if re.is_match(&sanitized) {
+            Some(sanitized)
+        } else {
+            None
+        }
+    }
+
     // If the current tag is an object, remove keyword properties and apply
     // transformations on the fields.
     pub fn fix_properties(&mut self) {
-        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
         if let Type::Object(ref mut object) = self.data_type {
             let fields = &mut object.fields;
             let keys: Vec<String> = fields.keys().cloned().collect();
             for key in keys {
-                let mut sanitized = key.replace(".", "_").replace("-", "_");
-                if sanitized.chars().next().unwrap().is_numeric() {
-                    sanitized = format!("_{}", sanitized);
-                }
-                if re.is_match(sanitized.as_str()) {
+                if let Some(sanitized) = Tag::sanitize_string(&key) {
                     if sanitized.as_str() != key.as_str() {
                         warn!("{} replaced with {}", key, sanitized);
                         fields.insert(sanitized.clone(), fields[&key].clone());
                         fields.remove(&key.clone());
                     }
-                // otherwise leave the field alone
                 } else {
                     warn!(
                         "{} is not a valid property name and will not be included",
@@ -467,6 +480,18 @@ impl Tag {
                     fields.remove(&key.clone());
                 }
             }
+            object.required = match &object.required {
+                Some(required) => {
+                    let sanitized: HashSet<String> = required
+                        .iter()
+                        .map(Tag::sanitize_string)
+                        .filter(Option::is_some)
+                        .map(|x| x.unwrap())
+                        .collect();
+                    Some(sanitized)
+                }
+                None => None,
+            };
         }
     }
 }
@@ -1110,7 +1135,13 @@ mod tests {
                     "renamed-value.0": {"type": "null"},
                     "$schema": {"type": "null"},
                     "64bit": {"type": "null"},
-                }}}});
+                },
+                "required": [
+                    "valid_name",
+                    "renamed-value.0",
+                    "$schema",
+                    "64bit",
+                ]}}});
         let mut tag: Tag = serde_json::from_value(data).unwrap();
         tag.fix_properties();
         if let Type::Object(object) = &tag.data_type {
@@ -1120,6 +1151,7 @@ mod tests {
                 .collect();
             let actual: HashSet<String> = object.fields.keys().cloned().collect();
             assert_eq!(expected, actual);
+            assert_eq!(expected, object.required.clone().unwrap());
         } else {
             panic!()
         }

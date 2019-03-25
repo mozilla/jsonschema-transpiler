@@ -501,20 +501,20 @@ mod tests {
         "type": {
             "object": {
                 "fields": {
-                    "test-int": {
-                        "name": "test-int",
+                    "test_int": {
+                        "name": "test_int",
                         "type": {"atom": "integer"},
                         "nullable": true,
                     },
-                    "test-obj": {
-                        "name": "test-obj",
+                    "test_obj": {
+                        "name": "test_obj",
                         "nullable": true,
                         "type": {
                             "object": {
                                 "fields": {
-                                    "test-null": {
-                                        "name": "test-null",
-                                        "namespace": ".test-obj",
+                                    "test_null": {
+                                        "name": "test_null",
+                                        "namespace": ".test_obj",
                                         "type": "null",
                                         "nullable": true,
                                     }}}}}}}}});
@@ -549,8 +549,8 @@ mod tests {
                     "type": {
                         "object": {
                             "fields": {
-                                "test-int": {
-                                    "name": "test-int",
+                                "test_int": {
+                                    "name": "test_int",
                                     "namespace": ".value",
                                     "nullable": true,
                                     "type": {"atom": "integer"}

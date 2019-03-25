@@ -187,6 +187,7 @@ mod fields_as_vec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::{self, json};
 
     #[test]
@@ -445,10 +446,10 @@ mod tests {
             "type": "RECORD",
             "mode": "REQUIRED",
             "fields": [
-                {"name": "test-atom", "type": "INT64", "mode": "REQUIRED"},
-                {"name": "test-null", "type": "STRING", "mode": "NULLABLE"},
-                {"name": "test-object", "type": "RECORD", "mode": "REQUIRED", "fields": [
-                    {"name": "test-nested-atom", "type": "FLOAT64", "mode": "NULLABLE"},
+                {"name": "test_atom", "type": "INT64", "mode": "REQUIRED"},
+                {"name": "test_null", "type": "STRING", "mode": "NULLABLE"},
+                {"name": "test_object", "type": "RECORD", "mode": "REQUIRED", "fields": [
+                    {"name": "test_nested_atom", "type": "FLOAT64", "mode": "NULLABLE"},
                 ]},
             ]
         });
