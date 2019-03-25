@@ -4,7 +4,7 @@
 cd "$(dirname "$0")/.." || exit
 
 if [[ ! -d "schemas/" ]]; then
-    echo "Run scripts/download-mps.sh to retrieve schemas"
+    echo "Run scripts/mps-download-schemas.sh to retrieve schemas"
     exit 1
 fi
 

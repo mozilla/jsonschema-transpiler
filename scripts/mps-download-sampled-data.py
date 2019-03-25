@@ -6,6 +6,7 @@ import json
 import os
 
 import boto3
+
 # python-rapidjson
 import rapidjson
 
@@ -81,5 +82,7 @@ if __name__ == "__main__":
                     errors += 1
                     continue
                 fp.write(json.dumps(json.loads(content)) + "\n")
-        logging.info(f"wrote {len(lines)-errors}, skipped {errors} documents: {schema_name}")
+        logging.info(
+            f"wrote {len(lines)-errors}, skipped {errors} documents: {schema_name}"
+        )
     logging.info("Done!")

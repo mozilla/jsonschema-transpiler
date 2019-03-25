@@ -2,7 +2,7 @@
 
 """A one off script to test whether mozilla-pipeline-schemas are generated
 as valid avro schemas. This script requires avro to be installed, as well
-as running the `download-mps.sh` script."""
+as running the `mps-download-schemas.sh` script."""
 
 import json
 import logging
