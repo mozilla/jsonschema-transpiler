@@ -446,30 +446,36 @@ impl Tag {
         }
     }
 
-    fn sanitize_string(string: &String) -> Option<String> {
-        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
-        let mut sanitized = string.replace(".", "_").replace("-", "_");
-        if sanitized.chars().next().unwrap().is_numeric() {
-            sanitized = format!("_{}", sanitized);
+    /// Renames a column name so it contains only letters, numbers, and
+    /// underscores while starting with a letter or underscore. This requirement
+    /// is enforced by BigQuery during table creation.
+    fn rename_string_bigquery(string: &str) -> Option<String> {
+        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+        let mut renamed = string.replace(".", "_").replace("-", "_");
+        if renamed.chars().next().unwrap().is_numeric() {
+            renamed = format!("_{}", renamed);
         };
-        if re.is_match(&sanitized) {
-            Some(sanitized)
+        if re.is_match(&renamed) {
+            Some(renamed)
         } else {
             None
         }
     }
 
-    // If the current tag is an object, remove keyword properties and apply
-    // transformations on the fields.
+    /// Fix properties of an object to adhere the BigQuery column name
+    /// specification.
+    ///
+    /// This modifies field names as well as required fields.
+    /// See: https://cloud.google.com/bigquery/docs/schemas
     pub fn fix_properties(&mut self) {
         if let Type::Object(ref mut object) = self.data_type {
             let fields = &mut object.fields;
             let keys: Vec<String> = fields.keys().cloned().collect();
             for key in keys {
-                if let Some(sanitized) = Tag::sanitize_string(&key) {
-                    if sanitized.as_str() != key.as_str() {
-                        warn!("{} replaced with {}", key, sanitized);
-                        fields.insert(sanitized.clone(), fields[&key].clone());
+                if let Some(renamed) = Tag::rename_string_bigquery(&key) {
+                    if renamed.as_str() != key.as_str() {
+                        warn!("{} replaced with {}", key, renamed);
+                        fields.insert(renamed.clone(), fields[&key].clone());
                         fields.remove(&key.clone());
                     }
                 } else {
@@ -482,13 +488,14 @@ impl Tag {
             }
             object.required = match &object.required {
                 Some(required) => {
-                    let sanitized: HashSet<String> = required
+                    let renamed: HashSet<String> = required
                         .iter()
-                        .map(Tag::sanitize_string)
+                        .map(String::as_str)
+                        .map(Tag::rename_string_bigquery)
                         .filter(Option::is_some)
                         .map(|x| x.unwrap())
                         .collect();
-                    Some(sanitized)
+                    Some(renamed)
                 }
                 None => None,
             };
