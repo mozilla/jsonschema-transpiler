@@ -18,6 +18,24 @@ intermediary.
 cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler
 ```
 
+## Usage
+
+```
+jst 0.1
+Anthony Miyaguchi <amiyaguchi@mozilla.com>
+
+USAGE:
+    jsonschema_transpiler --from-file <FILE> --type <type>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -f, --from-file <FILE>
+        --type <type>          [possible values: avro, bigquery]
+```
+
 ## Contributing
 
 Contributions are welcome. The API may change significantly, but the
