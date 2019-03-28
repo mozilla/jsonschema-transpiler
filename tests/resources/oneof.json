@@ -425,7 +425,7 @@
         },
         {
             "description": [
-                " Test behavior of creating an incompatible leaf on a complex object.",
+                "Test behavior of creating an incompatible leaf on a complex object.",
                 "NOTE: A conflict at a node invalidates the entire tree. Another ",
                 "conflict resolution method is to treat diffs as json blobs while ",
                 "retaining as much structure as possible."
@@ -473,6 +473,94 @@
                                 }
                             },
                             "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": [
+                "Test for nullability across two variants with required fields"
+            ],
+            "name": "test_oneof_object_merge_nullability",
+            "test": {
+                "avro": {
+                    "fields": [
+                        {
+                            "name": "shared",
+                            "namespace": "root",
+                            "type": {
+                                "type": "long"
+                            }
+                        },
+                        {
+                            "name": "type_a",
+                            "namespace": "root",
+                            "type": {
+                                "type": "long"
+                            }
+                        },
+                        {
+                            "name": "type_b",
+                            "namespace": "root",
+                            "type": {
+                                "type": "long"
+                            }
+                        }
+                    ],
+                    "name": "root",
+                    "type": "record"
+                },
+                "bigquery": {
+                    "fields": [
+                        {
+                            "mode": "REQUIRED",
+                            "name": "shared",
+                            "type": "INT64"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "type_a",
+                            "type": "INT64"
+                        },
+                        {
+                            "mode": "NULLABLE",
+                            "name": "type_b",
+                            "type": "INT64"
+                        }
+                    ],
+                    "mode": "REQUIRED",
+                    "type": "RECORD"
+                },
+                "json": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "shared": {
+                                    "type": "integer"
+                                },
+                                "type_a": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "shared",
+                                "type_a"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "shared": {
+                                    "type": "integer"
+                                },
+                                "type_b": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "shared",
+                                "type_b"
+                            ]
                         }
                     ]
                 }

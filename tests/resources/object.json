@@ -152,12 +152,20 @@
                 "avro": {
                     "fields": [
                         {
+                            "default": null,
                             "name": "field_1",
-                            "type": "int"
+                            "type": [
+                                "null",
+                                "int"
+                            ]
                         },
                         {
+                            "default": null,
                             "name": "field_2",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         {
                             "name": "field_3",
@@ -271,6 +279,26 @@
                             "type": "object"
                         }
                     },
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "description": [
+                "Empty structs are not supported in BigQuery, so we treat them ",
+                "as empty documents."
+            ],
+            "name": "test_object_empty_record",
+            "test": {
+                "avro": {
+                    "type": "string"
+                },
+                "bigquery": {
+                    "mode": "REQUIRED",
+                    "type": "STRING"
+                },
+                "json": {
+                    "properties": {},
                     "type": "object"
                 }
             }

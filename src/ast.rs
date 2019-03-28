@@ -1,4 +1,5 @@
 use super::jsonschema;
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -139,11 +140,17 @@ impl Union {
                             | (Atom::Integer, Atom::Number)
                             | (Atom::Number, Atom::Integer) => Atom::Number,
                             (Atom::String, Atom::String) => Atom::String,
-                            _ => Atom::JSON,
+                            (lhs, rhs) => {
+                                trace!("Invalid union collapse of atoms {:?} and {:?}", lhs, rhs);
+                                Atom::JSON
+                            }
                         };
                         Type::Atom(atom)
                     }
-                    _ => Type::Atom(Atom::JSON),
+                    _ => {
+                        trace!("Invalid union collapse of atoms found during fold");
+                        Type::Atom(Atom::JSON)
+                    }
                 })
         } else if items.iter().all(|x| x.is_object()) {
             items
@@ -167,7 +174,8 @@ impl Union {
                             .into_iter()
                             .map(|(k, v)| (k, Union::new(v).collapse()))
                             .collect();
-                        // Atom::JSON is a catch-all value and makes for inconsistent objects
+                        // Recursively invalidate the tree if any of the subschemas are incompatible.
+                        // Atom::JSON is a catch-all value and marks inconsistent objects.
                         let is_consistent = !result.iter().any(|(_, v)| match v.data_type {
                             Type::Atom(Atom::JSON) => true,
                             _ => false,
@@ -176,24 +184,28 @@ impl Union {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
                                     (Some(x), Some(y)) => {
-                                        Some(x.union(&y).map(|x| x.to_string()).collect())
+                                        Some(x.intersection(&y).map(|x| x.to_string()).collect())
                                     }
                                     (Some(x), None) | (None, Some(x)) => Some(x.clone()),
                                     _ => None,
                                 };
                             Type::Object(Object::new(result, required))
                         } else {
+                            trace!("Incompatible subschemas found during union collapse");
                             Type::Atom(Atom::JSON)
                         }
                     }
-                    _ => Type::Atom(Atom::JSON),
+                    _ => {
+                        trace!("Inconsistent union collapse of object");
+                        Type::Atom(Atom::JSON)
+                    }
                 })
         } else if items.iter().all(|x| x.is_map()) {
             let tags: Vec<Tag> = items
                 .into_iter()
                 .map(|x| match &x.data_type {
                     Type::Map(map) => *map.value.clone(),
-                    _ => panic!(),
+                    _ => panic!("Invalid map found during union collapse"),
                 })
                 .collect();
             Type::Map(Map::new(None, Union::new(tags).collapse()))
@@ -202,11 +214,12 @@ impl Union {
                 .into_iter()
                 .map(|x| match &x.data_type {
                     Type::Array(array) => *array.items.clone(),
-                    _ => panic!(),
+                    _ => panic!("Invalid array found during union collapse"),
                 })
                 .collect();
             Type::Array(Array::new(Union::new(tags).collapse()))
         } else {
+            trace!("Incompatible union collapse found");
             Type::Atom(Atom::JSON)
         };
 
@@ -272,6 +285,17 @@ impl Tag {
         }
     }
 
+    pub fn fully_qualified_name(&self) -> String {
+        let name = match &self.name {
+            Some(name) => name.clone(),
+            None => "__unknown__".to_string(),
+        };
+        match &self.namespace {
+            Some(ns) => format!("{}.{}", ns, name),
+            None => name,
+        }
+    }
+
     pub fn is_null(&self) -> bool {
         match self.data_type {
             Type::Null => true,
@@ -315,6 +339,12 @@ impl Tag {
     }
 
     fn infer_name_helper(&mut self, namespace: String) {
+        // We remove invalid field names from the schema when we infer the names
+        // for the schema (e.g. `$schema`). We also apply rules to make the
+        // names consistent with BigQuery's naming scheme, like avoiding columns
+        // that start with a number.
+        self.fix_properties();
+
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
@@ -356,7 +386,9 @@ impl Tag {
     }
 
     /// These rules are primarily focused on BigQuery, although they should
-    /// translate into other schemas.
+    /// translate into other schemas. This should be run after unions have been
+    /// eliminated from the tree since the behavior is currently order
+    /// dependent.
     pub fn infer_nullability(&mut self) {
         match &mut self.data_type {
             Type::Null => {
@@ -368,16 +400,24 @@ impl Tag {
                     None => HashSet::new(),
                 };
                 for (key, value) in &mut object.fields {
-                    if required.contains(key) {
-                        value.nullable = false;
-                    } else {
-                        value.nullable = true;
-                    }
-                    value.infer_nullability()
+                    // Infer whether the value is nullable
+                    value.infer_nullability();
+                    // A required nullable field is still nullable
+                    value.nullable |= !required.contains(key);
                 }
             }
             Type::Map(map) => map.value.infer_nullability(),
             Type::Array(array) => array.items.infer_nullability(),
+            Type::Tuple(tuple) => {
+                for item in tuple.items.iter_mut() {
+                    item.infer_nullability();
+                }
+            }
+            Type::Union(union) => {
+                for item in union.items.iter_mut() {
+                    item.infer_nullability();
+                }
+            }
             _ => (),
         }
     }
@@ -403,6 +443,62 @@ impl Tag {
                 self.nullable = tag.nullable;
             }
             _ => (),
+        }
+    }
+
+    /// Renames a column name so it contains only letters, numbers, and
+    /// underscores while starting with a letter or underscore. This requirement
+    /// is enforced by BigQuery during table creation.
+    fn rename_string_bigquery(string: &str) -> Option<String> {
+        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+        let mut renamed = string.replace(".", "_").replace("-", "_");
+        if renamed.chars().next().unwrap().is_numeric() {
+            renamed = format!("_{}", renamed);
+        };
+        if re.is_match(&renamed) {
+            Some(renamed)
+        } else {
+            None
+        }
+    }
+
+    /// Fix properties of an object to adhere the BigQuery column name
+    /// specification.
+    ///
+    /// This modifies field names as well as required fields.
+    /// See: https://cloud.google.com/bigquery/docs/schemas
+    pub fn fix_properties(&mut self) {
+        if let Type::Object(ref mut object) = self.data_type {
+            let fields = &mut object.fields;
+            let keys: Vec<String> = fields.keys().cloned().collect();
+            for key in keys {
+                if let Some(renamed) = Tag::rename_string_bigquery(&key) {
+                    if renamed.as_str() != key.as_str() {
+                        warn!("{} replaced with {}", key, renamed);
+                        fields.insert(renamed.clone(), fields[&key].clone());
+                        fields.remove(&key.clone());
+                    }
+                } else {
+                    warn!(
+                        "{} is not a valid property name and will not be included",
+                        key
+                    );
+                    fields.remove(&key.clone());
+                }
+            }
+            object.required = match &object.required {
+                Some(required) => {
+                    let renamed: HashSet<String> = required
+                        .iter()
+                        .map(String::as_str)
+                        .map(Tag::rename_string_bigquery)
+                        .filter(Option::is_some)
+                        .map(|x| x.unwrap())
+                        .collect();
+                    Some(renamed)
+                }
+                None => None,
+            };
         }
     }
 }
@@ -1034,5 +1130,37 @@ mod tests {
                                         "nullable": false,
                                     }}}}}}}}});
         assert_eq!(expect, json!(tag));
+    }
+
+    #[test]
+    fn test_tag_fix_properties() {
+        let data = json!({
+        "type": {
+            "object": {
+                "fields": {
+                    "valid_name": {"type": "null"},
+                    "renamed-value.0": {"type": "null"},
+                    "$schema": {"type": "null"},
+                    "64bit": {"type": "null"},
+                },
+                "required": [
+                    "valid_name",
+                    "renamed-value.0",
+                    "$schema",
+                    "64bit",
+                ]}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.fix_properties();
+        if let Type::Object(object) = &tag.data_type {
+            let expected: HashSet<String> = ["valid_name", "renamed_value_0", "_64bit"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect();
+            let actual: HashSet<String> = object.fields.keys().cloned().collect();
+            assert_eq!(expected, actual);
+            assert_eq!(expected, object.required.clone().unwrap());
+        } else {
+            panic!()
+        }
     }
 }

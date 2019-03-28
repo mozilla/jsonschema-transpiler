@@ -1,6 +1,6 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase", tag = "type")]
@@ -119,11 +119,24 @@ impl From<ast::Tag> for Type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
             ast::Type::Atom(atom) => Type::Primitive(match atom {
                 ast::Atom::Boolean => Primitive::Boolean,
-                ast::Atom::Integer => Primitive::Int,
-                ast::Atom::Number => Primitive::Float,
+                ast::Atom::Integer => Primitive::Long,
+                ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
-                ast::Atom::JSON => Primitive::String,
+                ast::Atom::JSON => {
+                    warn!(
+                        "{} - Treating subschema as JSON string",
+                        tag.fully_qualified_name()
+                    );
+                    Primitive::String
+                }
             }),
+            ast::Type::Object(object) if object.fields.is_empty() => {
+                warn!(
+                    "{} - Empty records are not supported, casting into a JSON string",
+                    tag.fully_qualified_name()
+                );
+                Type::Primitive(Primitive::String)
+            }
             ast::Type::Object(object) => {
                 let mut fields: Vec<Field> = object
                     .fields
@@ -131,6 +144,7 @@ impl From<ast::Tag> for Type {
                     .map(|(k, v)| Field {
                         name: k.to_string(),
                         data_type: Type::from(*v.clone()),
+                        default: if v.nullable { Some(json!(null)) } else { None },
                         ..Default::default()
                     })
                     .collect();
@@ -145,6 +159,9 @@ impl From<ast::Tag> for Type {
                     },
                     fields,
                 };
+                if record.common.name == "__UNNAMED__" {
+                    warn!("{} - Unnamed field", tag.fully_qualified_name());
+                }
                 Type::Complex(Complex::Record(record))
             }
             ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
@@ -153,7 +170,10 @@ impl From<ast::Tag> for Type {
             ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
                 values: Box::new(Type::from(*map.value.clone())),
             })),
-            _ => Type::Primitive(Primitive::String),
+            _ => {
+                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                Type::Primitive(Primitive::String)
+            }
         };
         if tag.nullable && !tag.is_null() {
             Type::Union(vec![Type::Primitive(Primitive::Null), data_type])
@@ -434,7 +454,7 @@ mod tests {
     #[test]
     fn from_ast_atom() {
         let ast = json!({"type": {"atom": "integer"}});
-        let avro = json!({"type": "int"});
+        let avro = json!({"type": "long"});
         assert_from_ast_eq(ast, avro);
     }
 
@@ -461,31 +481,38 @@ mod tests {
                             }}}}},
                     "4-test-array": {"type": {"array": {
                         "items": {"type": {"atom": "integer"}}}}},
+                    "$invalid-name": {"type": "null"}
             }}}
         });
         let avro = json!({
             "type": "record",
             "name": "root",
             "fields": [
-                {"name": "0-test-null", "type": {"type": "null"}},
-                {"name": "1-test-int", "type": {"type": "int"}},
-                {"name": "2-test-null-int", "type": [
-                    {"type": "null"},
-                    {"type": "int"},
-                ]},
-                {"name": "3-test-nested", "type": {
-                    "name": "3-test-nested",
+                {"name": "_0_test_null", "type": {"type": "null"}, "default": null},
+                {"name": "_1_test_int", "type": {"type": "long"}},
+                {"name": "_2_test_null_int",
+                    "type": [
+                        {"type": "null"},
+                        {"type": "long"},
+                    ],
+                    "default": null,
+                },
+                {"name": "_3_test_nested", "type": {
+                    "name": "_3_test_nested",
                     "namespace": "root",
                     "type": "record",
                     "fields": [
-                        {"name": "test-bool", "type": [
+                        {"name": "test_bool",
+                            "type": [
                                 {"type": "null"},
                                 {"type": "boolean"},
-                            ]},
+                            ],
+                            "default": null,
+                        },
                     ]}},
-                {"name": "4-test-array", "type": {
+                {"name": "_4_test_array", "type": {
                     "type": "array",
-                    "items": {"type": "int"}
+                    "items": {"type": "long"}
                 }}
             ]
         });
@@ -501,7 +528,7 @@ mod tests {
         }}});
         let avro = json!({
             "type": "map",
-            "values": {"type": "int"}
+            "values": {"type": "long"}
         });
         assert_from_ast_eq(ast, avro);
     }
