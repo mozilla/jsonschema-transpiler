@@ -1,7 +1,9 @@
 [package]
-name = "jsonschema_transpiler"
+name = "jsonschema-transpiler"
 version = "0.1.0"
 authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
+description = "A tool to transpile JSON Schema into schemas for data processing"
+readme = "README.md"
 edition = "2018"
 
 [lib]
