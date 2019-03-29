@@ -4,7 +4,7 @@ extern crate jst;
 use clap::{App, Arg};
 use serde_json::Value;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{self, BufReader};
 
 fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
@@ -12,15 +12,14 @@ fn main() {
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
-            Arg::with_name("from-file")
-                .short("f")
-                .long("from-file")
-                .value_name("FILE")
+            Arg::with_name("FILE")
+                .help("Sets the input file to use")
                 .takes_value(true)
-                .required(true),
+                .index(1)
         )
         .arg(
             Arg::with_name("type")
+                .help("The output schema format")
                 .short("t")
                 .long("type")
                 .takes_value(true)
@@ -29,9 +28,13 @@ fn main() {
         )
         .get_matches();
 
-    let path = matches.value_of("from-file").unwrap();
-    let file = File::open(path).unwrap();
-    let reader = BufReader::new(file);
+    let reader: Box<io::Read> = match matches.value_of("FILE") {
+        Some(path) => {
+            let file = File::open(path).unwrap();
+            Box::new(BufReader::new(file))
+        },
+        None => Box::new(io::stdin())
+    };
     let data: Value = serde_json::from_reader(reader).unwrap();
 
     let output = match matches.value_of("type").unwrap() {
