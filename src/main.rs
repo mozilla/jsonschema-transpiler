@@ -29,6 +29,7 @@ fn main() {
         .get_matches();
 
     let reader: Box<io::Read> = match matches.value_of("FILE") {
+        Some(path) if path == "-" => Box::new(io::stdin()),
         Some(path) => {
             let file = File::open(path).unwrap();
             Box::new(BufReader::new(file))
