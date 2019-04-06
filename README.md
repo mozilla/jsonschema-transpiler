@@ -11,6 +11,9 @@ schema for use with data serialization and processing frameworks. The main
 use-case is to enable ingestion of JSON documents into BigQuery through an Avro
 intermediary.
 
+This tool can handle many of the composite types seen in modern data processing
+tools that support a SQL interface such as lists, structures, key-value
+maps, and type-variants.
 
 ## Installation
 
@@ -21,19 +24,159 @@ cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler
 ## Usage
 
 ```
-jst 0.1
+jsonschema-transpiler 0.2.0
 Anthony Miyaguchi <amiyaguchi@mozilla.com>
+A tool to transpile JSON Schema into schemas for data processing
 
 USAGE:
-    jsonschema_transpiler --from-file <FILE> --type <type>
+    jsonschema-transpiler [OPTIONS] [FILE]
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -f, --from-file <FILE>
-        --type <type>          [possible values: avro, bigquery]
+    -t, --type <type>    The output schema format [default: avro]  [possible values: avro, bigquery]
+
+ARGS:
+    <FILE>    Sets the input file to use
+```
+
+JSON Schemas can be read from stdin or from a file.
+
+### Examples usage:
+
+```bash
+# An object with a single, optional boolean field
+$ schema='{"type": "object", "properties": {"foo": {"type": "boolean"}}}'
+
+$ echo $schema | jq
+{
+  "type": "object",
+  "properties": {
+    "foo": {
+      "type": "boolean"
+    }
+  }
+}
+
+$ echo $schema | jsonschema-transpiler --type avro
+{
+  "fields": [
+    {
+      "name": "foo",
+      "type": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    }
+  ],
+  "name": "root",
+  "type": "record"
+}
+
+$ echo $schema | jsonschema-transpiler --type bigquery
+{
+  "fields": [
+    {
+      "mode": "NULLABLE",
+      "name": "foo",
+      "type": "BOOL"
+    }
+  ],
+  "mode": "REQUIRED",
+  "type": "RECORD"
+}
+
+# A record with an event payload containing a required timestamp and optional payload.
+# The schema is written to and read from a file.
+$ cat > test.schema.json << EOL
+{
+    "type": "object",
+    "properties": {
+        "events": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "timestamp": {"type": "integer"},
+                    "payload": {"type": "object"}
+                },
+                "required": ["timestamp"]
+            }
+        }
+    },
+    "required": ["events"]
+}
+EOL
+
+$ jsonschema-transpiler --type avro test.schema.json
+{
+  "fields": [
+    {
+      "name": "events",
+      "type": {
+        "items": {
+          "fields": [
+            {
+              "name": "payload",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "name": "timestamp",
+              "type": {
+                "type": "int"
+              }
+            }
+          ],
+          "name": "items",
+          "namespace": "root.events",
+          "type": "record"
+        },
+        "type": "array"
+      }
+    }
+  ],
+  "name": "root",
+  "type": "record"
+}
+
+$ jsonschema-transpiler --type bigquery test.schema.json
+{
+  "fields": [
+    {
+      "fields": [
+        {
+          "mode": "NULLABLE",
+          "name": "payload",
+          "type": "STRING"
+        },
+        {
+          "mode": "REQUIRED",
+          "name": "timestamp",
+          "type": "INT64"
+        }
+      ],
+      "mode": "REPEATED",
+      "name": "events",
+      "type": "RECORD"
+    }
+  ],
+  "mode": "REQUIRED",
+  "type": "RECORD"
+}
+
 ```
 
 ## Contributing
