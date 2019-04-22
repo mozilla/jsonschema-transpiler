@@ -15,6 +15,10 @@ This tool can handle many of the composite types seen in modern data processing
 tools that support a SQL interface such as lists, structures, key-value
 maps, and type-variants.
 
+This tool is designed for generating new schemas from
+[`mozilla-pipeline-schemas`](https://github.com/mozilla-services/mozilla-pipeline-schemas),
+the canonical source of truth for JSON schemas in the Firefox Data Platform.
+
 ## Installation
 
 ```
