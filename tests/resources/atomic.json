@@ -5,8 +5,7 @@
             "name": "test_atomic",
             "test": {
                 "avro": {
-                    "name": "root",
-                    "type": "int"
+                    "type": "long"
                 },
                 "bigquery": {
                     "mode": "REQUIRED",
@@ -20,14 +19,14 @@
         {
             "name": "test_atomic_with_null",
             "test": {
-                "avro": {
-                    "default": null,
-                    "name": "root",
-                    "type": [
-                        "null",
-                        "int"
-                    ]
-                },
+                "avro": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "long"
+                    }
+                ],
                 "bigquery": {
                     "mode": "NULLABLE",
                     "type": "INT64"
