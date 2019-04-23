@@ -79,16 +79,14 @@
             ],
             "name": "test_incompatible_oneof_atomic_with_null",
             "test": {
-                "avro": {
-                    "type": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "string"
-                        }
-                    ]
-                },
+                "avro": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "string"
+                    }
+                ],
                 "bigquery": {
                     "mode": "NULLABLE",
                     "type": "STRING"
@@ -458,7 +456,6 @@
             "name": "test_incompatible_oneof_atomic_and_object",
             "test": {
                 "avro": {
-                    "name": "root",
                     "type": "string"
                 },
                 "bigquery": {
@@ -486,7 +483,6 @@
             "name": "test_incompatible_oneof_object",
             "test": {
                 "avro": {
-                    "name": "root",
                     "type": "string"
                 },
                 "bigquery": {
@@ -525,7 +521,6 @@
             "name": "test_incompatible_oneof_object_with_complex",
             "test": {
                 "avro": {
-                    "name": "root",
                     "type": "string"
                 },
                 "bigquery": {
