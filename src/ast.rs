@@ -333,7 +333,7 @@ impl Tag {
 
     fn fill_names(&mut self, name: String, namespace: String) {
         self.name = Some(name);
-        if namespace.len() > 0 {
+        if !namespace.is_empty() {
             self.namespace = Some(namespace);
         }
     }
@@ -426,7 +426,7 @@ impl Tag {
     pub fn collapse(&mut self) {
         match &mut self.data_type {
             Type::Object(object) => {
-                for (_, value) in &mut object.fields {
+                for value in &mut object.fields.values_mut() {
                     value.collapse()
                 }
             }

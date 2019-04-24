@@ -153,7 +153,7 @@ impl From<ast::Tag> for Type {
                 let record = Record {
                     common: CommonAttributes {
                         // This is not a safe assumption
-                        name: tag.name.clone().unwrap_or("__UNNAMED__".into()),
+                        name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
                         namespace: tag.namespace.clone(),
                         ..Default::default()
                     },
