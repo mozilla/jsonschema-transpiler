@@ -3,6 +3,7 @@ name = "jsonschema-transpiler"
 version = "0.2.0"
 authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 description = "A tool to transpile JSON Schema into schemas for data processing"
+license = "MPL-2.0"
 readme = "README.md"
 edition = "2018"
 
