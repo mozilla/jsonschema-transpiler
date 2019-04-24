@@ -6,9 +6,8 @@
             "test": {
                 "avro": {
                     "items": {
-                        "type": "int"
+                        "type": "long"
                     },
-                    "name": "root",
                     "type": "array"
                 },
                 "bigquery": {
@@ -30,18 +29,34 @@
                     "items": {
                         "fields": [
                             {
+                                "default": null,
                                 "name": "field_1",
-                                "type": "string"
+                                "type": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
                             },
                             {
+                                "default": null,
                                 "name": "field_2",
-                                "type": "int"
+                                "type": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "type": "long"
+                                    }
+                                ]
                             }
                         ],
-                        "name": "TODO: ???",
+                        "name": "items",
+                        "namespace": "root",
                         "type": "record"
                     },
-                    "name": "root",
                     "type": "array"
                 },
                 "bigquery": {

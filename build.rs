@@ -31,6 +31,31 @@ fn format_json(obj: Value) -> String {
     pretty.replace("\n", "\n    ")
 }
 
+fn write_avro_tests(mut outfile: &File, suite: &TestSuite) {
+    for case in &suite.tests {
+        let formatted = format!(
+            r##"
+#[test]
+fn avro_{name}() {{
+    let input_data = r#"
+    {input_data}
+    "#;
+    let expected_data = r#"
+    {expected}
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}}
+"##,
+            name = case.name,
+            input_data = format_json(case.test.json.clone()),
+            expected = format_json(case.test.avro.clone()),
+        );
+        write!(outfile, "{}", formatted).unwrap()
+    }
+}
+
 fn write_bigquery_tests(mut outfile: &File, suite: &TestSuite) {
     for case in &suite.tests {
         let formatted = format!(
@@ -58,7 +83,17 @@ fn bigquery_{name}() {{
 
 fn main() {
     let test_cases = "tests/resources";
+    let mut avro_fp = File::create("tests/transpile_avro.rs").unwrap();
     let mut bq_fp = File::create("tests/transpile_bigquery.rs").unwrap();
+
+    write!(
+        avro_fp,
+        r#"use jst::convert_avro;
+use pretty_assertions::assert_eq;
+use serde_json::Value;
+"#
+    )
+    .unwrap();
 
     write!(
         bq_fp,
@@ -75,6 +110,7 @@ use serde_json::Value;
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let suite: TestSuite = serde_json::from_reader(reader).unwrap();
-        write_bigquery_tests(&bq_fp, &suite)
+        write_avro_tests(&avro_fp, &suite);
+        write_bigquery_tests(&bq_fp, &suite);
     }
 }

@@ -11,20 +11,52 @@
                 "avro": {
                     "fields": [
                         {
+                            "default": null,
                             "name": "field_1",
-                            "type": "int"
+                            "type": [
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "long"
+                                }
+                            ]
                         },
                         {
+                            "default": null,
                             "name": "field_2",
-                            "type": "string"
+                            "type": [
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
                         },
                         {
+                            "default": null,
                             "name": "field_3",
-                            "type": "boolean"
+                            "type": [
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         {
+                            "default": null,
                             "name": "field_4",
-                            "type": "float"
+                            "type": [
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "double"
+                                }
+                            ]
                         }
                     ],
                     "name": "root",
@@ -86,15 +118,27 @@
                     "fields": [
                         {
                             "name": "field_1",
-                            "type": "int"
+                            "type": {
+                                "type": "long"
+                            }
                         },
                         {
+                            "default": null,
                             "name": "field_2",
-                            "type": "string"
+                            "type": [
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
                         },
                         {
                             "name": "field_3",
-                            "type": "boolean"
+                            "type": {
+                                "type": "boolean"
+                            }
                         }
                     ],
                     "name": "root",
@@ -155,21 +199,31 @@
                             "default": null,
                             "name": "field_1",
                             "type": [
-                                "null",
-                                "int"
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "long"
+                                }
                             ]
                         },
                         {
                             "default": null,
                             "name": "field_2",
                             "type": [
-                                "null",
-                                "string"
+                                {
+                                    "type": "null"
+                                },
+                                {
+                                    "type": "string"
+                                }
                             ]
                         },
                         {
                             "name": "field_3",
-                            "type": "boolean"
+                            "type": {
+                                "type": "boolean"
+                            }
                         }
                     ],
                     "name": "root",
@@ -225,18 +279,44 @@
                 "avro": {
                     "fields": [
                         {
-                            "fields": [
+                            "default": null,
+                            "name": "namespace_1",
+                            "type": [
                                 {
-                                    "name": "field_1",
-                                    "type": "string"
+                                    "type": "null"
                                 },
                                 {
-                                    "name": "field_2",
-                                    "type": "int"
+                                    "fields": [
+                                        {
+                                            "default": null,
+                                            "name": "field_1",
+                                            "type": [
+                                                {
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "type": "string"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "default": null,
+                                            "name": "field_2",
+                                            "type": [
+                                                {
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "type": "long"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "name": "namespace_1",
+                                    "namespace": "root",
+                                    "type": "record"
                                 }
-                            ],
-                            "name": "namespace_1",
-                            "type": "record"
+                            ]
                         }
                     ],
                     "name": "root",
