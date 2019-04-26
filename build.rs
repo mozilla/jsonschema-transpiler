@@ -3,32 +3,67 @@ extern crate serde;
 extern crate serde_json;
 
 use serde_json::Value;
+use std::env;
+use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{BufReader, Write};
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TestData {
     avro: Value,
     bigquery: Value,
     json: Value,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TestCase {
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    description: Value,
     name: String,
     test: TestData,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TestSuite {
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    description: Value,
     name: String,
     tests: Vec<TestCase>,
+}
+
+const TRUTHY_ENV_VALUES: [&str; 5] = ["y", "yes", "t", "true", "1"];
+
+fn get_env_var_as_bool(var: &str, default: bool) -> bool {
+    match env::var(var) {
+        Ok(val) => TRUTHY_ENV_VALUES.contains(&val.to_lowercase().as_ref()),
+        _ => default,
+    }
 }
 
 fn format_json(obj: Value) -> String {
     let pretty = serde_json::to_string_pretty(&obj).unwrap();
     // 4 spaces
     pretty.replace("\n", "\n    ")
+}
+
+fn write_backup(path: &std::path::PathBuf) {
+    let mut backup = path.to_path_buf();
+    let mut extension = OsString::new();
+    if let Some(s) = backup.extension() {
+        extension.push(s);
+        extension.push(".");
+    };
+    extension.push("bak");
+    backup.set_extension(extension);
+    println!("Backing up: {:?} -> {:?}", path, backup);
+    fs::copy(path, backup).unwrap();
+}
+
+fn write_formatted_test(path: &std::path::PathBuf, suite: &TestSuite) {
+    println!("Formatting test: {:?}", path);
+    let formatted = serde_json::to_string_pretty(suite).unwrap();
+    let fp_write = File::create(path).unwrap();
+    write!(&fp_write, "{}\n", formatted).unwrap()
 }
 
 fn write_avro_tests(mut outfile: &File, suite: &TestSuite) {
@@ -85,6 +120,8 @@ fn main() {
     let test_cases = "tests/resources";
     let mut avro_fp = File::create("tests/transpile_avro.rs").unwrap();
     let mut bq_fp = File::create("tests/transpile_bigquery.rs").unwrap();
+    let format_tests = get_env_var_as_bool("FORMAT_TESTS", true);
+    let backup = get_env_var_as_bool("FORMAT_TESTS_BACKUP", false);
 
     write!(
         avro_fp,
@@ -104,13 +141,23 @@ use serde_json::Value;
     )
     .unwrap();
 
-    for entry in fs::read_dir(test_cases).unwrap() {
-        let path = entry.unwrap().path();
+    let mut paths: Vec<_> = fs::read_dir(test_cases)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .collect();
+    paths.sort();
+    for path in paths {
         println!("Test file: {:?}", path);
-        let file = File::open(path).unwrap();
+        let file = File::open(&path).unwrap();
         let reader = BufReader::new(file);
         let suite: TestSuite = serde_json::from_reader(reader).unwrap();
         write_avro_tests(&avro_fp, &suite);
         write_bigquery_tests(&bq_fp, &suite);
+        if backup {
+            write_backup(&path);
+        }
+        if format_tests {
+            write_formatted_test(&path, &suite);
+        }
     }
 }
