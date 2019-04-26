@@ -29,8 +29,7 @@ jobs:
           key: dep-{{ arch }}-{{ checksum "Cargo.lock" }}
       - run:
           name: Assert compiled tests were committed
-          command: |
-            ! git status --porcelain -- tests/ | grep .
+          command: git diff --exit-code -- tests/
       - run:
           name: Run linting
           command: |

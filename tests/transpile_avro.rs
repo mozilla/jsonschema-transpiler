@@ -3,6 +3,88 @@ use pretty_assertions::assert_eq;
 use serde_json::Value;
 
 #[test]
+fn avro_test_array_with_atomics() {
+    let input_data = r#"
+    {
+      "items": {
+        "type": "integer"
+      },
+      "type": "array"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "items": {
+        "type": "long"
+      },
+      "type": "array"
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
+fn avro_test_array_with_complex() {
+    let input_data = r#"
+    {
+      "items": {
+        "properties": {
+          "field_1": {
+            "type": "string"
+          },
+          "field_2": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "items": {
+        "fields": [
+          {
+            "default": null,
+            "name": "field_1",
+            "type": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "default": null,
+            "name": "field_2",
+            "type": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "long"
+              }
+            ]
+          }
+        ],
+        "name": "items",
+        "namespace": "root",
+        "type": "record"
+      },
+      "type": "array"
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
 fn avro_test_atomic() {
     let input_data = r#"
     {
@@ -91,21 +173,21 @@ fn avro_test_incompatible_atomic_multitype_with_null() {
 }
 
 #[test]
-fn avro_test_array_with_atomics() {
+fn avro_test_map_with_atomics() {
     let input_data = r#"
     {
-      "items": {
+      "additionalProperties": {
         "type": "integer"
       },
-      "type": "array"
+      "type": "object"
     }
     "#;
     let expected_data = r#"
     {
-      "items": {
+      "type": "map",
+      "values": {
         "type": "long"
-      },
-      "type": "array"
+      }
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -114,10 +196,10 @@ fn avro_test_array_with_atomics() {
 }
 
 #[test]
-fn avro_test_array_with_complex() {
+fn avro_test_map_with_complex() {
     let input_data = r#"
     {
-      "items": {
+      "additionalProperties": {
         "properties": {
           "field_1": {
             "type": "string"
@@ -128,12 +210,13 @@ fn avro_test_array_with_complex() {
         },
         "type": "object"
       },
-      "type": "array"
+      "type": "object"
     }
     "#;
     let expected_data = r#"
     {
-      "items": {
+      "type": "map",
+      "values": {
         "fields": [
           {
             "default": null,
@@ -160,11 +243,121 @@ fn avro_test_array_with_complex() {
             ]
           }
         ],
-        "name": "items",
+        "name": "value",
         "namespace": "root",
         "type": "record"
+      }
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
+fn avro_test_map_with_pattern_properties() {
+    let input_data = r#"
+    {
+      "additionalProperties": false,
+      "patternProperties": {
+        ".+": {
+          "type": "integer"
+        }
       },
-      "type": "array"
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "map",
+      "values": {
+        "type": "long"
+      }
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
+fn avro_test_map_with_pattern_and_additional_properties() {
+    let input_data = r#"
+    {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "patternProperties": {
+        ".+": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "map",
+      "values": {
+        "type": "long"
+      }
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
+fn avro_test_incompatible_map_with_pattern_properties() {
+    let input_data = r#"
+    {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^I_": {
+          "type": "integer"
+        },
+        "^S_": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "map",
+      "values": {
+        "type": "string"
+      }
+    }
+    "#;
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input));
+}
+
+#[test]
+fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
+    let input_data = r#"
+    {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "patternProperties": {
+        ".+": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "map",
+      "values": {
+        "type": "string"
+      }
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
@@ -1052,255 +1245,6 @@ fn avro_test_oneof_object_merge_nullability() {
       ],
       "name": "root",
       "type": "record"
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_allof_object() {
-    let input_data = r#"
-    {
-      "allOf": [
-        {
-          "properties": {
-            "field_1": {
-              "type": [
-                "integer",
-                "null"
-              ]
-            },
-            "field_2": {
-              "type": "string"
-            },
-            "field_3": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "required": [
-            "field_1",
-            "field_3"
-          ]
-        }
-      ]
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "fields": [
-        {
-          "name": "field_1",
-          "type": "int"
-        },
-        {
-          "name": "field_2",
-          "type": "string"
-        },
-        {
-          "name": "field_3",
-          "type": "boolean"
-        }
-      ],
-      "name": "root",
-      "type": "record"
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_map_with_atomics() {
-    let input_data = r#"
-    {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "type": "long"
-      }
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_map_with_complex() {
-    let input_data = r#"
-    {
-      "additionalProperties": {
-        "properties": {
-          "field_1": {
-            "type": "string"
-          },
-          "field_2": {
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "fields": [
-          {
-            "default": null,
-            "name": "field_1",
-            "type": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          {
-            "default": null,
-            "name": "field_2",
-            "type": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "long"
-              }
-            ]
-          }
-        ],
-        "name": "value",
-        "namespace": "root",
-        "type": "record"
-      }
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_map_with_pattern_properties() {
-    let input_data = r#"
-    {
-      "additionalProperties": false,
-      "patternProperties": {
-        ".+": {
-          "type": "integer"
-        }
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "type": "long"
-      }
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_map_with_pattern_and_additional_properties() {
-    let input_data = r#"
-    {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "patternProperties": {
-        ".+": {
-          "type": "integer"
-        }
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "type": "long"
-      }
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_incompatible_map_with_pattern_properties() {
-    let input_data = r#"
-    {
-      "additionalProperties": false,
-      "patternProperties": {
-        "^I_": {
-          "type": "integer"
-        },
-        "^S_": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "type": "string"
-      }
-    }
-    "#;
-    let input: Value = serde_json::from_str(input_data).unwrap();
-    let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
-}
-
-#[test]
-fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
-    let input_data = r#"
-    {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "patternProperties": {
-        ".+": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    }
-    "#;
-    let expected_data = r#"
-    {
-      "type": "map",
-      "values": {
-        "type": "string"
-      }
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
