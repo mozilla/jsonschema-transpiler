@@ -28,6 +28,10 @@ jobs:
             - target/debug/deps
           key: dep-{{ arch }}-{{ checksum "Cargo.lock" }}
       - run:
+          name: Assert compiled tests were committed
+          command: |
+            ! git status --porcelain -- tests/ | grep .
+      - run:
           name: Run linting
           command: |
             set -eo pipefail
