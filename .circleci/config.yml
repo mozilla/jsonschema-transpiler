@@ -1,0 +1,41 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: rust:1
+    steps:
+      - checkout
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Linting dependencies
+          command: rustup component add rustfmt clippy
+      - run:
+          name: Calculate Dependencies
+          command: cargo generate-lockfile
+      - restore_cache:
+          keys:
+            - deps-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: Build all
+          command: cargo build --all
+      - save_cache:
+          paths:
+            - /usr/local/cargo/registry
+            - target/debug/.fingerprint
+            - target/debug/build
+            - target/debug/deps
+          key: dep-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: Assert compiled tests were committed
+          command: git diff --exit-code -- tests/
+      - run:
+          name: Run linting
+          command: |
+            set -eo pipefail
+            cargo fmt -- --check
+            cargo clippy
+      - run:
+          name: Run all tests
+          command: cargo test --all

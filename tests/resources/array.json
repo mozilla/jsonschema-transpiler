@@ -1,0 +1,95 @@
+{
+  "name": "array",
+  "tests": [
+    {
+      "name": "test_array_with_atomics",
+      "test": {
+        "avro": {
+          "items": {
+            "type": "long"
+          },
+          "type": "array"
+        },
+        "bigquery": {
+          "mode": "REPEATED",
+          "type": "INT64"
+        },
+        "json": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        }
+      }
+    },
+    {
+      "name": "test_array_with_complex",
+      "test": {
+        "avro": {
+          "items": {
+            "fields": [
+              {
+                "default": null,
+                "name": "field_1",
+                "type": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "default": null,
+                "name": "field_2",
+                "type": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "long"
+                  }
+                ]
+              }
+            ],
+            "name": "items",
+            "namespace": "root",
+            "type": "record"
+          },
+          "type": "array"
+        },
+        "bigquery": {
+          "fields": [
+            {
+              "mode": "NULLABLE",
+              "name": "field_1",
+              "type": "STRING"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_2",
+              "type": "INT64"
+            }
+          ],
+          "mode": "REPEATED",
+          "type": "RECORD"
+        },
+        "json": {
+          "items": {
+            "properties": {
+              "field_1": {
+                "type": "string"
+              },
+              "field_2": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      }
+    }
+  ]
+}

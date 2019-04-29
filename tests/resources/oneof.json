@@ -1,0 +1,666 @@
+{
+  "name": "oneof",
+  "tests": [
+    {
+      "name": "test_oneof_atomic",
+      "test": {
+        "avro": {
+          "type": "long"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "INT64"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_oneof_atomic_with_null",
+      "test": {
+        "avro": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "long"
+          }
+        ],
+        "bigquery": {
+          "mode": "NULLABLE",
+          "type": "INT64"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_incompatible_oneof_atomic",
+      "test": {
+        "avro": {
+          "type": "string"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "STRING"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": [
+        "Test a oneOf clause and verify that the mode is NULLABLE.",
+        "`null` has a logical-OR like behavior when there are choices of types."
+      ],
+      "name": "test_incompatible_oneof_atomic_with_null",
+      "test": {
+        "avro": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "bigquery": {
+          "mode": "NULLABLE",
+          "type": "STRING"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_oneof_object_with_atomics",
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "default": null,
+              "name": "field_1",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "long"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "field_2",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "long"
+                }
+              ]
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": {
+          "fields": [
+            {
+              "mode": "NULLABLE",
+              "name": "field_1",
+              "type": "INT64"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_2",
+              "type": "INT64"
+            }
+          ],
+          "mode": "REQUIRED",
+          "type": "RECORD"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                },
+                "field_2": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                },
+                "field_2": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": [
+        "Test schemas that share common structure"
+      ],
+      "name": "test_oneof_object_merge",
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "default": null,
+              "name": "field_1",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "long"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "field_2",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "field_3",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "double"
+                }
+              ]
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": {
+          "fields": [
+            {
+              "mode": "NULLABLE",
+              "name": "field_1",
+              "type": "INT64"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_2",
+              "type": "BOOL"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_3",
+              "type": "FLOAT64"
+            }
+          ],
+          "mode": "REQUIRED",
+          "type": "RECORD"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                },
+                "field_3": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "field_2": {
+                  "type": "boolean"
+                },
+                "field_3": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_oneof_object_merge_with_complex",
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "default": null,
+              "name": "field_4",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "field_5",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "double"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "namespace_1",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "fields": [
+                    {
+                      "default": null,
+                      "name": "field_1",
+                      "type": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "long"
+                        }
+                      ]
+                    },
+                    {
+                      "default": null,
+                      "name": "field_2",
+                      "type": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ]
+                    },
+                    {
+                      "default": null,
+                      "name": "field_3",
+                      "type": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "double"
+                        }
+                      ]
+                    }
+                  ],
+                  "name": "namespace_1",
+                  "namespace": "root",
+                  "type": "record"
+                }
+              ]
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": {
+          "fields": [
+            {
+              "mode": "NULLABLE",
+              "name": "field_4",
+              "type": "BOOL"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "field_5",
+              "type": "FLOAT64"
+            },
+            {
+              "fields": [
+                {
+                  "mode": "NULLABLE",
+                  "name": "field_1",
+                  "type": "INT64"
+                },
+                {
+                  "mode": "NULLABLE",
+                  "name": "field_2",
+                  "type": "BOOL"
+                },
+                {
+                  "mode": "NULLABLE",
+                  "name": "field_3",
+                  "type": "FLOAT64"
+                }
+              ],
+              "mode": "NULLABLE",
+              "name": "namespace_1",
+              "type": "RECORD"
+            }
+          ],
+          "mode": "REQUIRED",
+          "type": "RECORD"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "namespace_1": {
+                  "properties": {
+                    "field_1": {
+                      "type": "integer"
+                    },
+                    "field_3": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "namespace_1": {
+                  "properties": {
+                    "field_2": {
+                      "type": "boolean"
+                    },
+                    "field_3": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "field_4": {
+                  "type": "boolean"
+                },
+                "field_5": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_incompatible_oneof_atomic_and_object",
+      "test": {
+        "avro": {
+          "type": "string"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "STRING"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "test_incompatible_oneof_object",
+      "test": {
+        "avro": {
+          "type": "string"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "STRING"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "field_1": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "field_1": {
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": [
+        "Test behavior of creating an incompatible leaf on a complex object.",
+        "NOTE: A conflict at a node invalidates the entire tree. Another ",
+        "conflict resolution method is to treat diffs as json blobs while ",
+        "retaining as much structure as possible."
+      ],
+      "name": "test_incompatible_oneof_object_with_complex",
+      "test": {
+        "avro": {
+          "type": "string"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "STRING"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "namespace_1": {
+                  "properties": {
+                    "field_1": {
+                      "type": "string"
+                    },
+                    "field_2": {
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "properties": {
+                "namespace_1": {
+                  "properties": {
+                    "field_1": {
+                      "type": "boolean"
+                    },
+                    "field_2": {
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": [
+        "Test for nullability across two variants with required fields"
+      ],
+      "name": "test_oneof_object_merge_nullability",
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "name": "shared",
+              "type": {
+                "type": "long"
+              }
+            },
+            {
+              "default": null,
+              "name": "type_a",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "long"
+                }
+              ]
+            },
+            {
+              "default": null,
+              "name": "type_b",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "long"
+                }
+              ]
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": {
+          "fields": [
+            {
+              "mode": "REQUIRED",
+              "name": "shared",
+              "type": "INT64"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "type_a",
+              "type": "INT64"
+            },
+            {
+              "mode": "NULLABLE",
+              "name": "type_b",
+              "type": "INT64"
+            }
+          ],
+          "mode": "REQUIRED",
+          "type": "RECORD"
+        },
+        "json": {
+          "oneOf": [
+            {
+              "properties": {
+                "shared": {
+                  "type": "integer"
+                },
+                "type_a": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "shared",
+                "type_a"
+              ]
+            },
+            {
+              "properties": {
+                "shared": {
+                  "type": "integer"
+                },
+                "type_b": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "shared",
+                "type_b"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
