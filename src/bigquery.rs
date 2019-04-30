@@ -27,49 +27,21 @@ pub enum Mode {
     Repeated,
 }
 
-#[derive(Serialize, Debug)]
-#[serde(rename_all = "UPPERCASE", tag = "type")]
-pub enum Type {
-    Atom(Atom),
-    // Array(Tag)
-    // Struct
-    Record(Record),
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "UPPERCASE", tag = "type")]
-        enum TypeHelper {
-            Record,
-        };
-
-        let v = Value::deserialize(deserializer)?;
-
-        // Try to deserialize the type as an atom first
-        if let Ok(atom) = Atom::deserialize(&v) {
-            return Ok(Type::Atom(atom));
-        } else if let Ok(data_type) = TypeHelper::deserialize(&v) {
-            return match data_type {
-                TypeHelper::Record => {
-                    let record = Record::deserialize(&v).map_err(de::Error::custom)?;
-                    Ok(Type::Record(record))
-                }
-            };
-        } else {
-            return Err(de::Error::custom("Error deserializing type!"));
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag="type", rename = "RECORD")]
 pub struct Record {
     #[serde(with = "fields_as_vec")]
     fields: HashMap<String, Box<Tag>>,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Type {
+    Atom(Atom),
+    Record(Record),
+    Root(Vec<Tag>),
+}
+
 
 /// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
 #[derive(Serialize, Deserialize, Debug)]
@@ -110,6 +82,14 @@ impl From<ast::Tag> for Tag {
                     tag.fully_qualified_name()
                 );
                 Type::Atom(Atom::String)
+            }
+            ast::Type::Object(object) if tag.is_root => {
+                let mut vec: Vec<_> = object.fields.iter()
+                    .map(|(k, v)| (k.to_string(), Tag::from(*v.clone())))
+                    .collect();
+                vec.sort_by_key(|(k, _)| k.to_string());
+                let columns: Vec<Tag> = vec.into_iter().map(|(_, v)| v).collect();
+                Type::Root(columns)
             }
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = object
