@@ -1,6 +1,4 @@
 use super::ast;
-use serde::de::{self, Deserialize, Deserializer};
-use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -28,7 +26,7 @@ pub enum Mode {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag="type", rename = "RECORD")]
+#[serde(tag = "type", rename = "RECORD")]
 pub struct Record {
     #[serde(with = "fields_as_vec")]
     fields: HashMap<String, Box<Tag>>,
@@ -41,7 +39,6 @@ pub enum Type {
     Record(Record),
     Root(Vec<Tag>),
 }
-
 
 /// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
 #[derive(Serialize, Deserialize, Debug)]
@@ -84,7 +81,9 @@ impl From<ast::Tag> for Tag {
                 Type::Atom(Atom::String)
             }
             ast::Type::Object(object) if tag.is_root => {
-                let mut vec: Vec<_> = object.fields.iter()
+                let mut vec: Vec<_> = object
+                    .fields
+                    .iter()
                     .map(|(k, v)| (k.to_string(), Tag::from(*v.clone())))
                     .collect();
                 vec.sort_by_key(|(k, _)| k.to_string());
