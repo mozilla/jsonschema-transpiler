@@ -139,22 +139,18 @@
           "name": "root",
           "type": "record"
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "NULLABLE",
-              "name": "field_1",
-              "type": "INT64"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_2",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REQUIRED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "mode": "NULLABLE",
+            "name": "field_1",
+            "type": "INT64"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "field_2",
+            "type": "INT64"
+          }
+        ],
         "json": {
           "oneOf": [
             {
@@ -231,27 +227,23 @@
           "name": "root",
           "type": "record"
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "NULLABLE",
-              "name": "field_1",
-              "type": "INT64"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_2",
-              "type": "BOOL"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_3",
-              "type": "FLOAT64"
-            }
-          ],
-          "mode": "REQUIRED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "mode": "NULLABLE",
+            "name": "field_1",
+            "type": "INT64"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "field_2",
+            "type": "BOOL"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "field_3",
+            "type": "FLOAT64"
+          }
+        ],
         "json": {
           "oneOf": [
             {
@@ -365,44 +357,40 @@
           "name": "root",
           "type": "record"
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "NULLABLE",
-              "name": "field_4",
-              "type": "BOOL"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_5",
-              "type": "FLOAT64"
-            },
-            {
-              "fields": [
-                {
-                  "mode": "NULLABLE",
-                  "name": "field_1",
-                  "type": "INT64"
-                },
-                {
-                  "mode": "NULLABLE",
-                  "name": "field_2",
-                  "type": "BOOL"
-                },
-                {
-                  "mode": "NULLABLE",
-                  "name": "field_3",
-                  "type": "FLOAT64"
-                }
-              ],
-              "mode": "NULLABLE",
-              "name": "namespace_1",
-              "type": "RECORD"
-            }
-          ],
-          "mode": "REQUIRED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "mode": "NULLABLE",
+            "name": "field_4",
+            "type": "BOOL"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "field_5",
+            "type": "FLOAT64"
+          },
+          {
+            "fields": [
+              {
+                "mode": "NULLABLE",
+                "name": "field_1",
+                "type": "INT64"
+              },
+              {
+                "mode": "NULLABLE",
+                "name": "field_2",
+                "type": "BOOL"
+              },
+              {
+                "mode": "NULLABLE",
+                "name": "field_3",
+                "type": "FLOAT64"
+              }
+            ],
+            "mode": "NULLABLE",
+            "name": "namespace_1",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "oneOf": [
             {
@@ -607,27 +595,23 @@
           "name": "root",
           "type": "record"
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "shared",
-              "type": "INT64"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "type_a",
-              "type": "INT64"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "type_b",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REQUIRED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "mode": "REQUIRED",
+            "name": "shared",
+            "type": "INT64"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "type_a",
+            "type": "INT64"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "type_b",
+            "type": "INT64"
+          }
+        ],
         "json": {
           "oneOf": [
             {
