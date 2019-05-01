@@ -95,6 +95,7 @@ impl From<ast::Tag> for Tag {
                 ast::Atom::Integer => Atom::Int64,
                 ast::Atom::Number => Atom::Float64,
                 ast::Atom::String => Atom::String,
+                ast::Atom::Datetime => Atom::Datetime,
                 ast::Atom::JSON => {
                     warn!(
                         "{} - Treating subschema as JSON string",
@@ -511,6 +512,21 @@ mod tests {
             {"name": "key", "type": "STRING", "mode": "REQUIRED"},
             {"name": "value", "type": "INT64", "mode": "REQUIRED"},
         ]});
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_from_ast_datetime() {
+        let data = json!({
+            "type": {"atom": "datetime"},
+            "nullable": true
+        });
+        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Tag = jschema.into();
+        let expect = json!({
+           "type": "DATETIME",
+           "mode": "NULLABLE",
+        });
         assert_eq!(expect, json!(bq));
     }
 }

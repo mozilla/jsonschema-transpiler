@@ -87,6 +87,21 @@
           ]
         }
       }
+    },
+    {
+      "name": "test_datetime",
+      "test": {
+        "avro": {
+          "type": "string"
+        },
+        "bigquery": {
+          "mode": "REQUIRED",
+          "type": "DATETIME"
+        },
+        "json": {
+          "type": "date-time"
+        }
+      }
     }
   ]
 }
