@@ -122,23 +122,28 @@ impl From<ast::Tag> for Tag {
 #[serde(untagged)]
 pub enum Schema {
     Root(Vec<Tag>),
-    Field(Tag),
 }
 
 impl From<ast::Tag> for Schema {
     fn from(tag: ast::Tag) -> Self {
-        let bq_tag = Tag::from(tag.clone());
-        if tag.is_root && tag.is_object() {
-            if let Type::Record(record) = *bq_tag.data_type {
+        let mut bq_tag = Tag::from(tag.clone());
+        match *bq_tag.data_type {
+            Type::Record(_) if tag.is_array() || tag.is_map() => {
+                assert!(bq_tag.name.is_none());
+                bq_tag.name = Some("root".into());
+                Schema::Root(vec![bq_tag])
+            }
+            Type::Atom(_) => {
+                assert!(bq_tag.name.is_none());
+                bq_tag.name = Some("root".into());
+                Schema::Root(vec![bq_tag])
+            }
+            Type::Record(record) => {
                 let mut vec: Vec<_> = record.fields.into_iter().collect();
                 vec.sort_by_key(|(key, _)| key.to_string());
                 let columns = vec.into_iter().map(|(_, v)| *v).collect();
                 Schema::Root(columns)
-            } else {
-                panic!("the root must be an object")
             }
-        } else {
-            Schema::Field(bq_tag)
         }
     }
 }
