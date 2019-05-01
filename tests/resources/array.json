@@ -10,10 +10,13 @@
           },
           "type": "array"
         },
-        "bigquery": {
-          "mode": "REPEATED",
-          "type": "INT64"
-        },
+        "bigquery": [
+          {
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "INT64"
+          }
+        ],
         "json": {
           "items": {
             "type": "integer"
@@ -59,22 +62,25 @@
           },
           "type": "array"
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "NULLABLE",
-              "name": "field_1",
-              "type": "STRING"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_2",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "NULLABLE",
+                "name": "field_1",
+                "type": "STRING"
+              },
+              {
+                "mode": "NULLABLE",
+                "name": "field_2",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "items": {
             "properties": {

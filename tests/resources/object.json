@@ -357,10 +357,13 @@
         "avro": {
           "type": "string"
         },
-        "bigquery": {
-          "mode": "REQUIRED",
-          "type": "STRING"
-        },
+        "bigquery": [
+          {
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "STRING"
+          }
+        ],
         "json": {
           "properties": {},
           "type": "object"

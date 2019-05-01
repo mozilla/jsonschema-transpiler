@@ -13,10 +13,13 @@ fn bigquery_test_array_with_atomics() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REPEATED",
-      "type": "INT64"
-    }
+    [
+      {
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -42,22 +45,25 @@ fn bigquery_test_array_with_complex() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "NULLABLE",
-          "name": "field_1",
-          "type": "STRING"
-        },
-        {
-          "mode": "NULLABLE",
-          "name": "field_2",
-          "type": "INT64"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "NULLABLE",
+            "name": "field_1",
+            "type": "STRING"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "field_2",
+            "type": "INT64"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -72,10 +78,13 @@ fn bigquery_test_atomic() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "INT64"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -93,10 +102,13 @@ fn bigquery_test_atomic_with_null() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "NULLABLE",
-      "type": "INT64"
-    }
+    [
+      {
+        "mode": "NULLABLE",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -114,10 +126,13 @@ fn bigquery_test_incompatible_atomic_multitype() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -136,10 +151,13 @@ fn bigquery_test_incompatible_atomic_multitype_with_null() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "NULLABLE",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "NULLABLE",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -176,22 +194,25 @@ fn bigquery_test_map_with_atomics() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "INT64"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "INT64"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -217,34 +238,37 @@ fn bigquery_test_map_with_complex() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "fields": [
-            {
-              "mode": "NULLABLE",
-              "name": "field_1",
-              "type": "STRING"
-            },
-            {
-              "mode": "NULLABLE",
-              "name": "field_2",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "RECORD"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "fields": [
+              {
+                "mode": "NULLABLE",
+                "name": "field_1",
+                "type": "STRING"
+              },
+              {
+                "mode": "NULLABLE",
+                "name": "field_2",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "RECORD"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -265,22 +289,25 @@ fn bigquery_test_map_with_pattern_properties() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "INT64"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "INT64"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -303,22 +330,25 @@ fn bigquery_test_map_with_pattern_and_additional_properties() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "INT64"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "INT64"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -342,22 +372,25 @@ fn bigquery_test_incompatible_map_with_pattern_properties() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "STRING"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "STRING"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -380,22 +413,25 @@ fn bigquery_test_incompatible_map_with_pattern_and_additional_properties() {
     }
     "#;
     let expected_data = r#"
-    {
-      "fields": [
-        {
-          "mode": "REQUIRED",
-          "name": "key",
-          "type": "STRING"
-        },
-        {
-          "mode": "REQUIRED",
-          "name": "value",
-          "type": "STRING"
-        }
-      ],
-      "mode": "REPEATED",
-      "type": "RECORD"
-    }
+    [
+      {
+        "fields": [
+          {
+            "mode": "REQUIRED",
+            "name": "key",
+            "type": "STRING"
+          },
+          {
+            "mode": "REQUIRED",
+            "name": "value",
+            "type": "STRING"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "RECORD"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -602,10 +638,13 @@ fn bigquery_test_object_empty_record() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -627,10 +666,13 @@ fn bigquery_test_oneof_atomic() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "INT64"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -652,10 +694,13 @@ fn bigquery_test_oneof_atomic_with_null() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "NULLABLE",
-      "type": "INT64"
-    }
+    [
+      {
+        "mode": "NULLABLE",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -677,10 +722,13 @@ fn bigquery_test_incompatible_oneof_atomic() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -705,10 +753,13 @@ fn bigquery_test_incompatible_oneof_atomic_with_null() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "NULLABLE",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "NULLABLE",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -930,10 +981,13 @@ fn bigquery_test_incompatible_oneof_atomic_and_object() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -965,10 +1019,13 @@ fn bigquery_test_incompatible_oneof_object() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -1016,10 +1073,13 @@ fn bigquery_test_incompatible_oneof_object_with_complex() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "STRING"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();

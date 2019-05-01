@@ -17,22 +17,25 @@
             "type": "long"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": {
             "type": "integer"
@@ -78,34 +81,37 @@
             "type": "record"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "fields": [
-                {
-                  "mode": "NULLABLE",
-                  "name": "field_1",
-                  "type": "STRING"
-                },
-                {
-                  "mode": "NULLABLE",
-                  "name": "field_2",
-                  "type": "INT64"
-                }
-              ],
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "RECORD"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "fields": [
+                  {
+                    "mode": "NULLABLE",
+                    "name": "field_1",
+                    "type": "STRING"
+                  },
+                  {
+                    "mode": "NULLABLE",
+                    "name": "field_2",
+                    "type": "INT64"
+                  }
+                ],
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "RECORD"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": {
             "properties": {
@@ -131,22 +137,25 @@
             "type": "long"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": false,
           "patternProperties": {
@@ -167,22 +176,25 @@
             "type": "long"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "INT64"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": {
             "type": "integer"
@@ -205,22 +217,25 @@
             "type": "string"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "STRING"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "STRING"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": false,
           "patternProperties": {
@@ -244,22 +259,25 @@
             "type": "string"
           }
         },
-        "bigquery": {
-          "fields": [
-            {
-              "mode": "REQUIRED",
-              "name": "key",
-              "type": "STRING"
-            },
-            {
-              "mode": "REQUIRED",
-              "name": "value",
-              "type": "STRING"
-            }
-          ],
-          "mode": "REPEATED",
-          "type": "RECORD"
-        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "mode": "REQUIRED",
+                "name": "value",
+                "type": "STRING"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "RECORD"
+          }
+        ],
         "json": {
           "additionalProperties": {
             "type": "integer"
