@@ -9,7 +9,7 @@ use super::ast;
 /// available fields in the flattened tag. In JSONSchema parlance, these are
 /// known as `simpleTypes`.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 enum Atom {
     Null,
     Boolean,
@@ -18,6 +18,7 @@ enum Atom {
     String,
     Object,
     Array,
+    DateTime,
 }
 
 enum Type {
@@ -124,6 +125,7 @@ impl Tag {
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
             Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
+            Atom::DateTime => ast::Tag::new(ast::Type::Atom(ast::Atom::Datetime), None, false),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
@@ -606,6 +608,29 @@ mod tests {
                         "type": "null"
                     }
                 ]}}});
+        assert_eq!(expect, json!(ast))
+    }
+
+    #[test]
+    fn test_deserialize_type_datetime() {
+        let data = json!({
+            "type": "date-time"
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        assert_eq!(schema.data_type.as_str().unwrap(), "date-time");
+    }
+
+    #[test]
+    fn test_into_ast_atom_datetime() {
+        let data = json!({
+            "type": "date-time"
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let ast: ast::Tag = schema.into();
+        let expect = json!({
+            "type": {"atom": "datetime"},
+            "nullable": false,
+        });
         assert_eq!(expect, json!(ast))
     }
 }

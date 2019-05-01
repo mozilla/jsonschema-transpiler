@@ -9,6 +9,7 @@ pub enum Atom {
     Integer,
     Number,
     String,
+    Datetime,
     JSON,
 }
 

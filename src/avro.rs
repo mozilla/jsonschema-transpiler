@@ -122,6 +122,7 @@ impl From<ast::Tag> for Type {
                 ast::Atom::Integer => Primitive::Long,
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
+                ast::Atom::Datetime => Primitive::String,
                 ast::Atom::JSON => {
                     warn!(
                         "{} - Treating subschema as JSON string",
@@ -578,6 +579,13 @@ mod tests {
             {"type": "null"},
             {"type": "boolean"}
         ]);
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
+    fn from_ast_datetime() {
+        let ast = json!({"type": {"atom": "datetime"}});
+        let avro = json!({"type": "string"});
         assert_from_ast_eq(ast, avro);
     }
 }
