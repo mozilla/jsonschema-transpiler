@@ -37,7 +37,6 @@ pub struct Record {
 pub enum Type {
     Atom(Atom),
     Record(Record),
-    Root(Vec<Tag>),
 }
 
 /// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
@@ -53,7 +52,7 @@ pub struct Tag {
 }
 
 impl From<ast::Tag> for Tag {
-    fn from(tag: ast::Tag) -> Tag {
+    fn from(tag: ast::Tag) -> Self {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -79,16 +78,6 @@ impl From<ast::Tag> for Tag {
                     tag.fully_qualified_name()
                 );
                 Type::Atom(Atom::String)
-            }
-            ast::Type::Object(object) if tag.is_root => {
-                let mut vec: Vec<_> = object
-                    .fields
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), Tag::from(*v.clone())))
-                    .collect();
-                vec.sort_by_key(|(k, _)| k.to_string());
-                let columns: Vec<Tag> = vec.into_iter().map(|(_, v)| v).collect();
-                Type::Root(columns)
             }
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = object
@@ -125,6 +114,31 @@ impl From<ast::Tag> for Tag {
             name: tag.name.clone(),
             data_type: Box::new(data_type),
             mode,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Schema {
+    Root(Vec<Tag>),
+    Field(Tag),
+}
+
+impl From<ast::Tag> for Schema {
+    fn from(tag: ast::Tag) -> Self {
+        let bq_tag = Tag::from(tag.clone());
+        if tag.is_root && tag.is_object() {
+            if let Type::Record(record) = *bq_tag.data_type {
+                let mut vec: Vec<_> = record.fields.into_iter().collect();
+                vec.sort_by_key(|(key, _)| key.to_string());
+                let columns = vec.into_iter().map(|(_, v)| *v).collect();
+                Schema::Root(columns)
+            } else {
+                panic!("the root must be an object")
+            }
+        } else {
+            Schema::Field(bq_tag)
         }
     }
 }
