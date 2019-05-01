@@ -9,7 +9,7 @@ use super::ast;
 /// available fields in the flattened tag. In JSONSchema parlance, these are
 /// known as `simpleTypes`.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 enum Atom {
     Null,
     Boolean,
@@ -18,8 +18,7 @@ enum Atom {
     String,
     Object,
     Array,
-#[serde(rename = "date-time")]
-    Datetime,
+    DateTime,
 }
 
 enum Type {
@@ -126,7 +125,7 @@ impl Tag {
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
             Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
-            Atom::Datetime => ast::Tag::new(ast::Type::Atom(ast::Atom::Datetime), None, false),
+            Atom::DateTime => ast::Tag::new(ast::Type::Atom(ast::Atom::Datetime), None, false),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
