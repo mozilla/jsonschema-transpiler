@@ -99,7 +99,8 @@
           "type": "DATETIME"
         },
         "json": {
-          "type": "date-time"
+          "format": "date-time",
+          "type": "string"
         }
       }
     }

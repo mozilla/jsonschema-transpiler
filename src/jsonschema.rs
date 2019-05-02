@@ -88,9 +88,11 @@ pub struct Tag {
 impl Tag {
     fn get_type(&self) -> Type {
         match (&self.data_type, &self.format) {
-            (Value::String(string), Some(format_str)) if string == "string" && format_str == "date-time" => {
-                Type::Atom(Atom::DateTime)
-            }
+            (Value::String(string), Some(format_str))
+                 if string == "string" && format_str == "date-time" =>
+             {
+                 Type::Atom(Atom::DateTime)
+             }
             (Value::String(string), None) => {
                 let atom: Atom = serde_json::from_value(json!(string)).unwrap();
                 Type::Atom(atom)
