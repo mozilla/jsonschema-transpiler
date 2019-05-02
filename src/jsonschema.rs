@@ -71,6 +71,8 @@ struct Array {
 pub struct Tag {
     #[serde(rename = "type", default)]
     data_type: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    format: Option<String>,
     #[serde(flatten)]
     object: Object,
     #[serde(flatten)]
@@ -85,12 +87,15 @@ pub struct Tag {
 
 impl Tag {
     fn get_type(&self) -> Type {
-        match &self.data_type {
-            Value::String(string) => {
+        match (&self.data_type, &self.format) {
+            (Value::String(string), Some(format_str)) if string == "string" && format_str == "date-time" => {
+                Type::Atom(Atom::DateTime)
+            }
+            (Value::String(string), None) => {
                 let atom: Atom = serde_json::from_value(json!(string)).unwrap();
                 Type::Atom(atom)
             }
-            Value::Array(array) => {
+            (Value::Array(array), None) => {
                 let list: Vec<Atom> = array
                     .iter()
                     .map(|v| serde_json::from_value(json!(v)).unwrap())
@@ -614,16 +619,18 @@ mod tests {
     #[test]
     fn test_deserialize_type_datetime() {
         let data = json!({
-            "type": "date-time"
+            "type": "string",
+            "format": "date-time"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        assert_eq!(schema.data_type.as_str().unwrap(), "date-time");
+        assert_eq!(schema.data_type.as_str().unwrap(), "string");
     }
 
     #[test]
     fn test_into_ast_atom_datetime() {
         let data = json!({
-            "type": "date-time"
+            "type": "string",
+            "format": "date-time"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
         let ast: ast::Tag = schema.into();
