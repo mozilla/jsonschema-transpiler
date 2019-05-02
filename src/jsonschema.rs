@@ -68,7 +68,9 @@ struct Array {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 enum Format {
-    DateTime
+    DateTime,
+    #[serde(other)]
+    Other,
 }
 
 /// Container for the main body of the schema.
@@ -632,6 +634,16 @@ mod tests {
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
         assert_eq!(schema.format.unwrap(), Format::DateTime);
+    }
+
+    #[test]
+    fn test_deserialize_type_alternate_format() {
+        let data = json!({
+            "type": "string",
+            "format": "email"
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        assert_eq!(schema.format.unwrap(), Format::Other);
     }
 
     #[test]
