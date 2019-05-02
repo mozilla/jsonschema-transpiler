@@ -96,9 +96,7 @@ pub struct Tag {
 impl Tag {
     fn get_type(&self) -> Type {
         match (&self.data_type, &self.format) {
-            (Value::String(string), Some(Format::DateTime))
-                if string == "string" =>
-            {
+            (Value::String(string), Some(Format::DateTime)) if string == "string" => {
                 Type::Atom(Atom::DateTime)
             }
             (Value::String(string), _) => {
