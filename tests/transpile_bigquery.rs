@@ -150,7 +150,8 @@ fn bigquery_test_incompatible_atomic_multitype_with_null() {
 fn bigquery_test_datetime() {
     let input_data = r#"
     {
-      "type": "date-time"
+      "format": "date-time",
+      "type": "string"
     }
     "#;
     let expected_data = r#"
