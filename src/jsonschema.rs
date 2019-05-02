@@ -65,6 +65,12 @@ struct Array {
     items: Option<ArrayType>,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+enum Format {
+    DateTime
+}
+
 /// Container for the main body of the schema.
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -72,7 +78,7 @@ pub struct Tag {
     #[serde(rename = "type", default)]
     data_type: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
-    format: Option<String>,
+    format: Option<Format>,
     #[serde(flatten)]
     object: Object,
     #[serde(flatten)]
@@ -88,16 +94,16 @@ pub struct Tag {
 impl Tag {
     fn get_type(&self) -> Type {
         match (&self.data_type, &self.format) {
-            (Value::String(string), Some(format_str))
-                if string == "string" && format_str == "date-time" =>
+            (Value::String(string), Some(Format::DateTime))
+                if string == "string" =>
             {
                 Type::Atom(Atom::DateTime)
             }
-            (Value::String(string), None) => {
+            (Value::String(string), _) => {
                 let atom: Atom = serde_json::from_value(json!(string)).unwrap();
                 Type::Atom(atom)
             }
-            (Value::Array(array), None) => {
+            (Value::Array(array), _) => {
                 let list: Vec<Atom> = array
                     .iter()
                     .map(|v| serde_json::from_value(json!(v)).unwrap())
@@ -625,7 +631,7 @@ mod tests {
             "format": "date-time"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        assert_eq!(schema.data_type.as_str().unwrap(), "string");
+        assert_eq!(schema.format.unwrap(), Format::DateTime);
     }
 
     #[test]
