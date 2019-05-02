@@ -22,13 +22,13 @@ the canonical source of truth for JSON schemas in the Firefox Data Platform.
 ## Installation
 
 ```
-cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler
+cargo install jsonschema-transpiler
 ```
 
 ## Usage
 
 ```
-jsonschema-transpiler 0.2.0
+jsonschema-transpiler 0.4.0
 A tool to transpile JSON Schema into schemas for data processing
 
 USAGE:
