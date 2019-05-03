@@ -173,10 +173,13 @@ fn bigquery_test_datetime() {
     }
     "#;
     let expected_data = r#"
-    {
-      "mode": "REQUIRED",
-      "type": "TIMESTAMP"
-    }
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "TIMESTAMP"
+      }
+    ]
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();

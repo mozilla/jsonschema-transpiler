@@ -106,10 +106,13 @@
         "avro": {
           "type": "string"
         },
-        "bigquery": {
-          "mode": "REQUIRED",
-          "type": "TIMESTAMP"
-        },
+        "bigquery": [
+          {
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "TIMESTAMP"
+          }
+        ],
         "json": {
           "format": "date-time",
           "type": "string"
