@@ -120,6 +120,12 @@ impl From<ast::Tag> for Tag {
     }
 }
 
+/// BigQuery expects a schema that begins as JSON array when creating or
+/// updating a table. This enum extracts or wraps the appropriate tag generated
+/// from the ast. When the root is a record, the fields will be extracted from
+/// the schema that is logically equivalent to `jq '.fields'`. When it is an
+/// atom, array, or map, the tag is renamed to `root` and placed as a single
+/// element in a wrapped array.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Schema {
@@ -130,6 +136,8 @@ impl From<ast::Tag> for Schema {
     fn from(tag: ast::Tag) -> Self {
         let mut bq_tag = Tag::from(tag.clone());
         match *bq_tag.data_type {
+            // Maps and arrays are both treated as a Record type with different
+            // modes. These should not be extracted if they are the root-type.
             Type::Record(_) if tag.is_array() || tag.is_map() => {
                 assert!(bq_tag.name.is_none());
                 bq_tag.name = Some(DEFAULT_COLUMN.into());
@@ -150,7 +158,10 @@ impl From<ast::Tag> for Schema {
     }
 }
 
-// See: https://serde.rs/custom-date-format.html#date-in-a-custom-format
+/// Allows serialization from a HashMap to a Vector. This makes it possible to
+/// traverse any given path in time linear to the depth of the schema.
+///
+/// See: https://serde.rs/custom-date-format.html#date-in-a-custom-format
 mod fields_as_vec {
     use super::Tag;
     use serde::ser::{SerializeSeq, Serializer};
