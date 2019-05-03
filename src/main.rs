@@ -9,7 +9,6 @@ use std::io::{self, BufReader};
 
 fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
             Arg::with_name("FILE")

@@ -28,7 +28,6 @@ cargo install jsonschema-transpiler
 ## Usage
 
 ```
-jsonschema-transpiler 0.4.0
 A tool to transpile JSON Schema into schemas for data processing
 
 USAGE:
