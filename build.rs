@@ -144,6 +144,10 @@ use serde_json::Value;
     let mut paths: Vec<_> = fs::read_dir(test_cases)
         .unwrap()
         .map(|e| e.unwrap().path())
+        .filter(|e| match e.file_name() {
+            Some(os_str) => !os_str.to_str().unwrap().starts_with("."),
+            None => false
+        })
         .collect();
     paths.sort();
     for path in paths {
