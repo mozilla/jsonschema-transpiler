@@ -96,7 +96,7 @@
         },
         "bigquery": {
           "mode": "REQUIRED",
-          "type": "DATETIME"
+          "type": "TIMESTAMP"
         },
         "json": {
           "format": "date-time",

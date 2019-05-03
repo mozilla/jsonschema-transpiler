@@ -157,7 +157,7 @@ fn bigquery_test_datetime() {
     let expected_data = r#"
     {
       "mode": "REQUIRED",
-      "type": "DATETIME"
+      "type": "TIMESTAMP"
     }
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
