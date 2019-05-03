@@ -1,5 +1,5 @@
-[![CircleCI](https://circleci.com/gh/acmiyaguchi/jsonschema-transpiler.svg?style=svg)](https://circleci.com/gh/acmiyaguchi/jsonschema-transpiler)
 # jsonschema-transpiler
+[![CircleCI](https://circleci.com/gh/mozilla/jsonschema-transpiler.svg?style=svg)](https://circleci.com/gh/mozilla/jsonschema-transpiler)
 
 A tool for transpiling [JSON Schema](https://json-schema.org/) into schemas for
 [Avro](https://avro.apache.org/docs/current/index.html#schemas) and
