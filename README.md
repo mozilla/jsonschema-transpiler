@@ -1,5 +1,5 @@
-[![CircleCI](https://circleci.com/gh/acmiyaguchi/jsonschema-transpiler.svg?style=svg)](https://circleci.com/gh/acmiyaguchi/jsonschema-transpiler)
 # jsonschema-transpiler
+[![CircleCI](https://circleci.com/gh/mozilla/jsonschema-transpiler.svg?style=svg)](https://circleci.com/gh/mozilla/jsonschema-transpiler)
 
 A tool for transpiling [JSON Schema](https://json-schema.org/) into schemas for
 [Avro](https://avro.apache.org/docs/current/index.html#schemas) and
@@ -28,7 +28,6 @@ cargo install jsonschema-transpiler
 ## Usage
 
 ```
-jsonschema-transpiler 0.4.0
 A tool to transpile JSON Schema into schemas for data processing
 
 USAGE:
@@ -138,3 +137,13 @@ The following schemas are currently supported:
 In the future, it may be possible to support schemas from similar systems like
 Parquet and Spark, or into various interactive data languages (IDL) like
 Avro IDL.
+
+## Publishing
+
+The jsonschema-transpiler is distributed as a crate via Cargo. Follow this
+checklist for deploying to [crates.io](https://crates.io/crates/jsonschema-transpiler).
+
+1. Bump the version number in the `Cargo.toml`, as per [Semantic Versioning](https://semver.org/).
+2. Double check that `cargo test` and CI succeeds.
+3. Run `cargo publish`. It must be run with the `--no-verify` flag due to issue #59.
+4. Draft a new release in GitHub corresponding with the version bump.
