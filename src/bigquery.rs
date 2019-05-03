@@ -1,7 +1,7 @@
 use super::ast;
-use serde::de::{self, Deserialize, Deserializer};
-use serde_json::Value;
 use std::collections::HashMap;
+
+const DEFAULT_COLUMN: &str = "root";
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE", tag = "type")]
@@ -27,48 +27,18 @@ pub enum Mode {
     Repeated,
 }
 
-#[derive(Serialize, Debug)]
-#[serde(rename_all = "UPPERCASE", tag = "type")]
-pub enum Type {
-    Atom(Atom),
-    // Array(Tag)
-    // Struct
-    Record(Record),
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "UPPERCASE", tag = "type")]
-        enum TypeHelper {
-            Record,
-        };
-
-        let v = Value::deserialize(deserializer)?;
-
-        // Try to deserialize the type as an atom first
-        if let Ok(atom) = Atom::deserialize(&v) {
-            return Ok(Type::Atom(atom));
-        } else if let Ok(data_type) = TypeHelper::deserialize(&v) {
-            return match data_type {
-                TypeHelper::Record => {
-                    let record = Record::deserialize(&v).map_err(de::Error::custom)?;
-                    Ok(Type::Record(record))
-                }
-            };
-        } else {
-            return Err(de::Error::custom("Error deserializing type!"));
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type", rename = "RECORD")]
 pub struct Record {
     #[serde(with = "fields_as_vec")]
     fields: HashMap<String, Box<Tag>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Type {
+    Atom(Atom),
+    Record(Record),
 }
 
 /// See: https://cloud.google.com/bigquery/docs/schemas#standard_sql_data_types
@@ -84,7 +54,7 @@ pub struct Tag {
 }
 
 impl From<ast::Tag> for Tag {
-    fn from(tag: ast::Tag) -> Tag {
+    fn from(tag: ast::Tag) -> Self {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -150,7 +120,48 @@ impl From<ast::Tag> for Tag {
     }
 }
 
-// See: https://serde.rs/custom-date-format.html#date-in-a-custom-format
+/// BigQuery expects a schema that begins as JSON array when creating or
+/// updating a table. This enum extracts or wraps the appropriate tag generated
+/// from the ast. When the root is a record, the fields will be extracted from
+/// the schema that is logically equivalent to `jq '.fields'`. When it is an
+/// atom, array, or map, the tag is renamed to `root` and placed as a single
+/// element in a wrapped array.
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Schema {
+    Root(Vec<Tag>),
+}
+
+impl From<ast::Tag> for Schema {
+    fn from(tag: ast::Tag) -> Self {
+        let mut bq_tag = Tag::from(tag.clone());
+        match *bq_tag.data_type {
+            // Maps and arrays are both treated as a Record type with different
+            // modes. These should not be extracted if they are the root-type.
+            Type::Record(_) if tag.is_array() || tag.is_map() => {
+                assert!(bq_tag.name.is_none());
+                bq_tag.name = Some(DEFAULT_COLUMN.into());
+                Schema::Root(vec![bq_tag])
+            }
+            Type::Atom(_) => {
+                assert!(bq_tag.name.is_none());
+                bq_tag.name = Some(DEFAULT_COLUMN.into());
+                Schema::Root(vec![bq_tag])
+            }
+            Type::Record(record) => {
+                let mut vec: Vec<_> = record.fields.into_iter().collect();
+                vec.sort_by_key(|(key, _)| key.to_string());
+                let columns = vec.into_iter().map(|(_, v)| *v).collect();
+                Schema::Root(columns)
+            }
+        }
+    }
+}
+
+/// Allows serialization from a HashMap to a Vector. This makes it possible to
+/// traverse any given path in time linear to the depth of the schema.
+///
+/// See: https://serde.rs/custom-date-format.html#date-in-a-custom-format
 mod fields_as_vec {
     use super::Tag;
     use serde::ser::{SerializeSeq, Serializer};
@@ -527,6 +538,73 @@ mod tests {
            "type": "TIMESTAMP",
            "mode": "NULLABLE",
         });
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_schema_from_ast_atom() {
+        // Nameless tags are top-level fields that should be rooted by default
+        let data = json!({"type": {"atom": "integer"}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": DEFAULT_COLUMN,
+            "mode": "REQUIRED",
+            "type": "INT64"
+        }]);
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_schema_from_ast_object() {
+        // The single column is extracted
+        let data = json!({
+        "type": {
+            "object": {
+                "required": ["test-object"],
+                "fields": {
+                    "test-object": {"type": {
+                        "object": {
+                            "required": ["test-nested-atom"],
+                            "fields": {
+                                "test-nested-atom": {"type": {"atom": "boolean"}}
+                            }}}}}}}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": "test_object",
+            "mode": "REQUIRED",
+            "type": "RECORD",
+            "fields": [
+                {
+                    "name": "test_nested_atom",
+                    "mode": "REQUIRED",
+                    "type": "BOOL"
+                }
+            ]
+        }]);
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_schema_from_ast_map() {
+        let data = json!({
+        "type": {
+            "map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {"type": {"atom": "integer"}}
+        }}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": "root",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "value", "type": "INT64", "mode": "REQUIRED"},
+            ]}]
+        );
         assert_eq!(expect, json!(bq));
     }
 }

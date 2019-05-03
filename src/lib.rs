@@ -29,6 +29,6 @@ pub fn convert_avro(input: &Value) -> Value {
 
 /// Convert JSON Schema into a BigQuery compatible schema
 pub fn convert_bigquery(input: &Value) -> Value {
-    let bq = bigquery::Tag::from(into_ast(input));
+    let bq = bigquery::Schema::from(into_ast(input));
     json!(bq)
 }
