@@ -1,6 +1,8 @@
 use super::ast;
 use std::collections::HashMap;
 
+const DEFAULT_COLUMN: &str = "root";
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE", tag = "type")]
 pub enum Atom {
@@ -130,12 +132,12 @@ impl From<ast::Tag> for Schema {
         match *bq_tag.data_type {
             Type::Record(_) if tag.is_array() || tag.is_map() => {
                 assert!(bq_tag.name.is_none());
-                bq_tag.name = Some("root".into());
+                bq_tag.name = Some(DEFAULT_COLUMN.into());
                 Schema::Root(vec![bq_tag])
             }
             Type::Atom(_) => {
                 assert!(bq_tag.name.is_none());
-                bq_tag.name = Some("root".into());
+                bq_tag.name = Some(DEFAULT_COLUMN.into());
                 Schema::Root(vec![bq_tag])
             }
             Type::Record(record) => {
