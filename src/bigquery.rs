@@ -529,4 +529,71 @@ mod tests {
         });
         assert_eq!(expect, json!(bq));
     }
+
+    #[test]
+    fn test_schema_from_ast_atom() {
+        // Nameless tags are top-level fields that should be rooted by default
+        let data = json!({"type": {"atom": "integer"}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": DEFAULT_COLUMN,
+            "mode": "REQUIRED",
+            "type": "INT64"
+        }]);
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_schema_from_ast_object() {
+        // The single column is extracted
+        let data = json!({
+        "type": {
+            "object": {
+                "required": ["test-object"],
+                "fields": {
+                    "test-object": {"type": {
+                        "object": {
+                            "required": ["test-nested-atom"],
+                            "fields": {
+                                "test-nested-atom": {"type": {"atom": "boolean"}}
+                            }}}}}}}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": "test_object",
+            "mode": "REQUIRED",
+            "type": "RECORD",
+            "fields": [
+                {
+                    "name": "test_nested_atom",
+                    "mode": "REQUIRED",
+                    "type": "BOOL"
+                }
+            ]
+        }]);
+        assert_eq!(expect, json!(bq));
+    }
+
+    #[test]
+    fn test_schema_from_ast_map() {
+        let data = json!({
+        "type": {
+            "map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {"type": {"atom": "integer"}}
+        }}});
+        let ast: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq: Schema = ast.into();
+        let expect = json!([{
+            "name": "root",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "value", "type": "INT64", "mode": "REQUIRED"},
+            ]}]
+        );
+        assert_eq!(expect, json!(bq));
+    }
 }
