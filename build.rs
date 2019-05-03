@@ -146,7 +146,7 @@ use serde_json::Value;
         .map(|e| e.unwrap().path())
         .filter(|e| match e.file_name() {
             Some(os_str) => !os_str.to_str().unwrap().starts_with("."),
-            None => false
+            None => false,
         })
         .collect();
     paths.sort();
