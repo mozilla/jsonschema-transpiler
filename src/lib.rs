@@ -10,15 +10,17 @@ mod ast;
 mod avro;
 mod bigquery;
 mod jsonschema;
+mod traits;
 
 use serde_json::{json, Value};
+use traits::Translate;
 
 fn into_ast(input: &Value) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
         Err(e) => panic!(format!("{:#?}", e)),
     };
-    ast::Tag::from(jsonschema)
+    ast::Tag::translate(jsonschema).unwrap()
 }
 
 /// Convert JSON Schema into an Avro compatible schema
