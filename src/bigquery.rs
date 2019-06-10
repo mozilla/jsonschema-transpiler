@@ -1,4 +1,5 @@
 use super::ast;
+use super::traits::{Translate, TranslateInto};
 use std::collections::HashMap;
 
 const DEFAULT_COLUMN: &str = "root";
@@ -53,8 +54,10 @@ pub struct Tag {
     mode: Mode,
 }
 
-impl From<ast::Tag> for Tag {
-    fn from(tag: ast::Tag) -> Self {
+impl Translate<ast::Tag> for Tag {
+    type Error = &'static str;
+
+    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -85,14 +88,14 @@ impl From<ast::Tag> for Tag {
                 let fields: HashMap<String, Box<Tag>> = object
                     .fields
                     .iter()
-                    .map(|(k, v)| (k.to_string(), Box::new(Tag::from(*v.clone()))))
+                    .map(|(k, v)| (k.to_string(), Box::new(Tag::translate(*v.clone()).unwrap())))
                     .collect();
                 Type::Record(Record { fields })
             }
-            ast::Type::Array(array) => *Tag::from(*array.items.clone()).data_type,
+            ast::Type::Array(array) => *Tag::translate(*array.items.clone()).unwrap().data_type,
             ast::Type::Map(map) => {
-                let key = Tag::from(*map.key.clone());
-                let value = Tag::from(*map.value.clone());
+                let key = Tag::translate(*map.key.clone()).unwrap();
+                let value = Tag::translate(*map.value.clone()).unwrap();
                 let fields: HashMap<String, Box<Tag>> = vec![("key", key), ("value", value)]
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), Box::new(v)))
@@ -112,11 +115,11 @@ impl From<ast::Tag> for Tag {
         } else {
             Mode::Required
         };
-        Tag {
+        Ok(Tag {
             name: tag.name.clone(),
             data_type: Box::new(data_type),
             mode,
-        }
+        })
     }
 }
 
@@ -132,27 +135,29 @@ pub enum Schema {
     Root(Vec<Tag>),
 }
 
-impl From<ast::Tag> for Schema {
-    fn from(tag: ast::Tag) -> Self {
-        let mut bq_tag = Tag::from(tag.clone());
+impl Translate<ast::Tag> for Schema {
+    type Error = &'static str;
+
+    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
+        let mut bq_tag = Tag::translate(tag.clone()).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
             // modes. These should not be extracted if they are the root-type.
             Type::Record(_) if tag.is_array() || tag.is_map() => {
                 assert!(bq_tag.name.is_none());
                 bq_tag.name = Some(DEFAULT_COLUMN.into());
-                Schema::Root(vec![bq_tag])
+                Ok(Schema::Root(vec![bq_tag]))
             }
             Type::Atom(_) => {
                 assert!(bq_tag.name.is_none());
                 bq_tag.name = Some(DEFAULT_COLUMN.into());
-                Schema::Root(vec![bq_tag])
+                Ok(Schema::Root(vec![bq_tag]))
             }
             Type::Record(record) => {
                 let mut vec: Vec<_> = record.fields.into_iter().collect();
                 vec.sort_by_key(|(key, _)| key.to_string());
                 let columns = vec.into_iter().map(|(_, v)| *v).collect();
-                Schema::Root(columns)
+                Ok(Schema::Root(columns))
             }
         }
     }
@@ -383,7 +388,7 @@ mod tests {
             "type": "null"
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "STRING",
             "mode": "NULLABLE",
@@ -397,7 +402,7 @@ mod tests {
             "type": {"atom": "integer"}
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REQUIRED",
@@ -412,7 +417,7 @@ mod tests {
             "nullable": true,
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
@@ -430,7 +435,7 @@ mod tests {
                     {"type": {"atom": "integer"}},
         ]}}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
@@ -453,7 +458,7 @@ mod tests {
                                 "test-nested-atom": {"type": {"atom": "number"}}
                             }}}}}}}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "RECORD",
             "mode": "REQUIRED",
@@ -477,7 +482,7 @@ mod tests {
                     "type": {"atom": "integer"}},
         }}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REPEATED",
@@ -498,7 +503,7 @@ mod tests {
             }
         });
         let tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = tag.into();
+        let bq: Tag = tag.translate_into().unwrap();;
         let expect = json!({
             "type": "STRING",
             "mode": "REQUIRED",
@@ -515,7 +520,7 @@ mod tests {
                 "value": {"type": {"atom": "integer"}}
         }}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
         "type": "RECORD",
         "mode": "REPEATED",
@@ -533,7 +538,7 @@ mod tests {
             "nullable": true
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.into();
+        let bq: Tag = jschema.translate_into().unwrap();
         let expect = json!({
            "type": "TIMESTAMP",
            "mode": "NULLABLE",
@@ -546,7 +551,7 @@ mod tests {
         // Nameless tags are top-level fields that should be rooted by default
         let data = json!({"type": {"atom": "integer"}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.into();
+        let bq: Schema = ast.translate_into().unwrap();
         let expect = json!([{
             "name": DEFAULT_COLUMN,
             "mode": "REQUIRED",
@@ -570,7 +575,7 @@ mod tests {
                                 "test-nested-atom": {"type": {"atom": "boolean"}}
                             }}}}}}}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.into();
+        let bq: Schema = ast.translate_into().unwrap();;
         let expect = json!([{
             "name": "test_object",
             "mode": "REQUIRED",
@@ -595,7 +600,7 @@ mod tests {
                 "value": {"type": {"atom": "integer"}}
         }}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.into();
+        let bq: Schema = ast.translate_into().unwrap();;
         let expect = json!([{
             "name": "root",
             "type": "RECORD",
