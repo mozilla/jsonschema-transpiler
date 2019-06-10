@@ -8,6 +8,8 @@ use std::fs::File;
 use std::io::{self, BufReader};
 
 fn main() {
+    env_logger::init();
+
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
