@@ -25,7 +25,7 @@ fn into_ast(input: &Value) -> ast::Tag {
 
 /// Convert JSON Schema into an Avro compatible schema
 pub fn convert_avro(input: &Value) -> Value {
-    let avro = avro::Type::from(into_ast(input));
+    let avro = avro::Type::translate(into_ast(input)).unwrap();
     json!(avro)
 }
 

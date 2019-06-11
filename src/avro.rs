@@ -1,5 +1,6 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
+use super::traits::Translate;
 use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -103,8 +104,10 @@ impl Default for Type {
     }
 }
 
-impl From<ast::Tag> for Type {
-    fn from(tag: ast::Tag) -> Self {
+impl Translate<ast::Tag> for Type {
+    type Error = &'static str;
+
+    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -144,7 +147,7 @@ impl From<ast::Tag> for Type {
                     .iter()
                     .map(|(k, v)| Field {
                         name: k.to_string(),
-                        data_type: Type::from(*v.clone()),
+                        data_type: Type::translate(*v.clone()).unwrap(),
                         default: if v.nullable { Some(json!(null)) } else { None },
                         ..Default::default()
                     })
@@ -166,10 +169,10 @@ impl From<ast::Tag> for Type {
                 Type::Complex(Complex::Record(record))
             }
             ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
-                items: Box::new(Type::from(*array.items.clone())),
+                items: Box::new(Type::translate(*array.items.clone()).unwrap()),
             })),
             ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
-                values: Box::new(Type::from(*map.value.clone())),
+                values: Box::new(Type::translate(*map.value.clone()).unwrap()),
             })),
             _ => {
                 warn!("{} - Unsupported conversion", tag.fully_qualified_name());
@@ -177,9 +180,12 @@ impl From<ast::Tag> for Type {
             }
         };
         if tag.nullable && !tag.is_null() {
-            Type::Union(vec![Type::Primitive(Primitive::Null), data_type])
+            Ok(Type::Union(vec![
+                Type::Primitive(Primitive::Null),
+                data_type,
+            ]))
         } else {
-            data_type
+            Ok(data_type)
         }
     }
 }
@@ -200,7 +206,7 @@ mod tests {
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::from(tag);
+        let from_tag = Type::translate(tag).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 
