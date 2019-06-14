@@ -1,6 +1,6 @@
 use super::ast;
 use super::traits::{Translate, TranslateInto};
-use super::Context;
+use super::{Context, ResolveMethod};
 use std::collections::HashMap;
 
 const DEFAULT_COLUMN: &str = "root";
@@ -71,11 +71,22 @@ impl Translate<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::JSON => {
-                    warn!(
-                        "{} - Treating subschema as JSON string",
-                        tag.fully_qualified_name()
-                    );
-                    Atom::String
+                    if let Some(context) = context {
+                        match context.resolve_method {
+                            ResolveMethod::Cast => Atom::String,
+                            ResolveMethod::Panic => panic!(),
+                            ResolveMethod::Drop => {
+                                // terminate early
+                                return Err("json atom");
+                            }
+                        }
+                    } else {
+                        warn!(
+                            "{} - Treating subschema as JSON string",
+                            tag.fully_qualified_name()
+                        );
+                        Atom::String
+                    }
                 }
             }),
             ast::Type::Object(object) if object.fields.is_empty() => {
