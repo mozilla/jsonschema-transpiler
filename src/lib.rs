@@ -15,6 +15,16 @@ mod traits;
 use serde_json::{json, Value};
 use traits::Translate;
 
+pub enum ResolveMethod {
+    Cast,
+    Drop,
+    Panic,
+}
+
+pub struct Context {
+    pub resolve_method: ResolveMethod,
+}
+
 fn into_ast(input: &Value) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
