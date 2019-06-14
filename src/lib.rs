@@ -15,32 +15,34 @@ mod traits;
 use serde_json::{json, Value};
 use traits::Translate;
 
+#[derive(Copy, Clone)]
 pub enum ResolveMethod {
     Cast,
     Drop,
     Panic,
 }
 
+#[derive(Copy, Clone)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
 }
 
-fn into_ast(input: &Value) -> ast::Tag {
+fn into_ast(input: &Value, context: Option<Context>) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
         Err(e) => panic!(format!("{:#?}", e)),
     };
-    ast::Tag::translate(jsonschema).unwrap()
+    ast::Tag::translate(jsonschema, context).unwrap()
 }
 
 /// Convert JSON Schema into an Avro compatible schema
-pub fn convert_avro(input: &Value) -> Value {
-    let avro = avro::Type::translate(into_ast(input)).unwrap();
+pub fn convert_avro(input: &Value, context: Option<Context>) -> Value {
+    let avro = avro::Type::translate(into_ast(input, context), context).unwrap();
     json!(avro)
 }
 
 /// Convert JSON Schema into a BigQuery compatible schema
-pub fn convert_bigquery(input: &Value) -> Value {
-    let bq = bigquery::Schema::translate(into_ast(input)).unwrap();
+pub fn convert_bigquery(input: &Value, context: Option<Context>) -> Value {
+    let bq = bigquery::Schema::translate(into_ast(input, context), context).unwrap();
     json!(bq)
 }

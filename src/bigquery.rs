@@ -1,5 +1,6 @@
 use super::ast;
 use super::traits::{Translate, TranslateInto};
+use super::Context;
 use std::collections::HashMap;
 
 const DEFAULT_COLUMN: &str = "root";
@@ -57,7 +58,7 @@ pub struct Tag {
 impl Translate<ast::Tag> for Tag {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
+    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -88,14 +89,23 @@ impl Translate<ast::Tag> for Tag {
                 let fields: HashMap<String, Box<Tag>> = object
                     .fields
                     .iter()
-                    .map(|(k, v)| (k.to_string(), Box::new(Tag::translate(*v.clone()).unwrap())))
+                    .map(|(k, v)| {
+                        (
+                            k.to_string(),
+                            Box::new(Tag::translate(*v.clone(), context).unwrap()),
+                        )
+                    })
                     .collect();
                 Type::Record(Record { fields })
             }
-            ast::Type::Array(array) => *Tag::translate(*array.items.clone()).unwrap().data_type,
+            ast::Type::Array(array) => {
+                *Tag::translate(*array.items.clone(), context)
+                    .unwrap()
+                    .data_type
+            }
             ast::Type::Map(map) => {
-                let key = Tag::translate(*map.key.clone()).unwrap();
-                let value = Tag::translate(*map.value.clone()).unwrap();
+                let key = Tag::translate(*map.key.clone(), context).unwrap();
+                let value = Tag::translate(*map.value.clone(), context).unwrap();
                 let fields: HashMap<String, Box<Tag>> = vec![("key", key), ("value", value)]
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), Box::new(v)))
@@ -138,8 +148,8 @@ pub enum Schema {
 impl Translate<ast::Tag> for Schema {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
-        let mut bq_tag = Tag::translate(tag.clone()).unwrap();
+    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+        let mut bq_tag = Tag::translate(tag.clone(), context).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
             // modes. These should not be extracted if they are the root-type.

@@ -64,8 +64,8 @@ fn main() {
     };
 
     let output = match matches.value_of("type").unwrap() {
-        "avro" => jst::convert_avro(&data),
-        "bigquery" => jst::convert_bigquery(&data),
+        "avro" => jst::convert_avro(&data, context),
+        "bigquery" => jst::convert_bigquery(&data, context),
         _ => panic!("Unknown type!"),
     };
     let pretty = serde_json::to_string_pretty(&output).unwrap();

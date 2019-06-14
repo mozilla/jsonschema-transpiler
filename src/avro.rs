@@ -1,6 +1,7 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
 use super::traits::Translate;
+use super::Context;
 use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -107,7 +108,7 @@ impl Default for Type {
 impl Translate<ast::Tag> for Type {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag) -> Result<Self, Self::Error> {
+    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -147,7 +148,7 @@ impl Translate<ast::Tag> for Type {
                     .iter()
                     .map(|(k, v)| Field {
                         name: k.to_string(),
-                        data_type: Type::translate(*v.clone()).unwrap(),
+                        data_type: Type::translate(*v.clone(), context).unwrap(),
                         default: if v.nullable { Some(json!(null)) } else { None },
                         ..Default::default()
                     })
@@ -169,10 +170,10 @@ impl Translate<ast::Tag> for Type {
                 Type::Complex(Complex::Record(record))
             }
             ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
-                items: Box::new(Type::translate(*array.items.clone()).unwrap()),
+                items: Box::new(Type::translate(*array.items.clone(), context).unwrap()),
             })),
             ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
-                values: Box::new(Type::translate(*map.value.clone()).unwrap()),
+                values: Box::new(Type::translate(*map.value.clone(), context).unwrap()),
             })),
             _ => {
                 warn!("{} - Unsupported conversion", tag.fully_qualified_name());
@@ -206,7 +207,7 @@ mod tests {
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::translate(tag).unwrap();
+        let from_tag = Type::translate(tag, None).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 

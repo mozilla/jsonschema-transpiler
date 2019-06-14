@@ -1,5 +1,6 @@
 use super::jsonschema;
 use super::traits::{Translate, TranslateInto};
+use super::Context;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -508,7 +509,7 @@ impl Tag {
 impl Translate<jsonschema::Tag> for Tag {
     type Error = &'static str;
 
-    fn translate(tag: jsonschema::Tag) -> Result<Self, Self::Error> {
+    fn translate(tag: jsonschema::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
         tag.infer_nullability();
