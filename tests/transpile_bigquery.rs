@@ -23,7 +23,7 @@ fn bigquery_test_array_with_atomics() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn bigquery_test_array_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn bigquery_test_atomic() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn bigquery_test_atomic_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn bigquery_test_incompatible_atomic_multitype() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn bigquery_test_incompatible_atomic_multitype_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn bigquery_test_datetime() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -219,7 +219,7 @@ fn bigquery_test_map_with_atomics() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -275,7 +275,7 @@ fn bigquery_test_map_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -314,7 +314,7 @@ fn bigquery_test_map_with_pattern_properties() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -355,7 +355,7 @@ fn bigquery_test_map_with_pattern_and_additional_properties() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -397,7 +397,7 @@ fn bigquery_test_incompatible_map_with_pattern_properties() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -438,7 +438,7 @@ fn bigquery_test_incompatible_map_with_pattern_and_additional_properties() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -488,7 +488,7 @@ fn bigquery_test_object_with_atomics_is_sorted() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -534,7 +534,7 @@ fn bigquery_test_object_with_atomics_required() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -583,7 +583,7 @@ fn bigquery_test_object_with_atomics_required_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -629,7 +629,7 @@ fn bigquery_test_object_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -651,7 +651,7 @@ fn bigquery_test_object_empty_record() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -679,7 +679,7 @@ fn bigquery_test_oneof_atomic() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -707,7 +707,7 @@ fn bigquery_test_oneof_atomic_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -735,7 +735,7 @@ fn bigquery_test_incompatible_oneof_atomic() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -766,7 +766,7 @@ fn bigquery_test_incompatible_oneof_atomic_with_null() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -815,7 +815,7 @@ fn bigquery_test_oneof_object_with_atomics() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -869,7 +869,7 @@ fn bigquery_test_oneof_object_merge() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -961,7 +961,7 @@ fn bigquery_test_oneof_object_merge_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -994,7 +994,7 @@ fn bigquery_test_incompatible_oneof_atomic_and_object() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -1032,7 +1032,7 @@ fn bigquery_test_incompatible_oneof_object() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -1086,7 +1086,7 @@ fn bigquery_test_incompatible_oneof_object_with_complex() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }
 
 #[test]
@@ -1146,5 +1146,5 @@ fn bigquery_test_oneof_object_merge_nullability() {
     "#;
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, None));
 }

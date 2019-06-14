@@ -398,7 +398,7 @@ mod tests {
             "type": "null"
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "STRING",
             "mode": "NULLABLE",
@@ -412,7 +412,7 @@ mod tests {
             "type": {"atom": "integer"}
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REQUIRED",
@@ -427,7 +427,7 @@ mod tests {
             "nullable": true,
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
@@ -445,7 +445,7 @@ mod tests {
                     {"type": {"atom": "integer"}},
         ]}}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
@@ -468,7 +468,7 @@ mod tests {
                                 "test-nested-atom": {"type": {"atom": "number"}}
                             }}}}}}}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "RECORD",
             "mode": "REQUIRED",
@@ -492,7 +492,7 @@ mod tests {
                     "type": {"atom": "integer"}},
         }}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REPEATED",
@@ -513,7 +513,7 @@ mod tests {
             }
         });
         let tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = tag.translate_into().unwrap();;
+        let bq: Tag = tag.translate_into(None).unwrap();;
         let expect = json!({
             "type": "STRING",
             "mode": "REQUIRED",
@@ -530,7 +530,7 @@ mod tests {
                 "value": {"type": {"atom": "integer"}}
         }}});
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
         "type": "RECORD",
         "mode": "REPEATED",
@@ -548,7 +548,7 @@ mod tests {
             "nullable": true
         });
         let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into().unwrap();
+        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
            "type": "TIMESTAMP",
            "mode": "NULLABLE",
@@ -561,7 +561,7 @@ mod tests {
         // Nameless tags are top-level fields that should be rooted by default
         let data = json!({"type": {"atom": "integer"}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into().unwrap();
+        let bq: Schema = ast.translate_into(None).unwrap();
         let expect = json!([{
             "name": DEFAULT_COLUMN,
             "mode": "REQUIRED",
@@ -585,7 +585,7 @@ mod tests {
                                 "test-nested-atom": {"type": {"atom": "boolean"}}
                             }}}}}}}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into().unwrap();;
+        let bq: Schema = ast.translate_into(None).unwrap();;
         let expect = json!([{
             "name": "test_object",
             "mode": "REQUIRED",
@@ -610,7 +610,7 @@ mod tests {
                 "value": {"type": {"atom": "integer"}}
         }}});
         let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into().unwrap();;
+        let bq: Schema = ast.translate_into(None).unwrap();;
         let expect = json!([{
             "name": "root",
             "type": "RECORD",

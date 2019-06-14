@@ -448,7 +448,7 @@ mod tests {
             "type": "null"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": "null",
             "nullable": true,
@@ -462,7 +462,7 @@ mod tests {
             "type": "integer"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {"atom": "integer"},
             "nullable": false,
@@ -476,7 +476,7 @@ mod tests {
             "type": ["null", "integer"]
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {
                 "union": {
@@ -511,7 +511,7 @@ mod tests {
                     "test-null": {"type": "null"}
                 }}}});
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -549,7 +549,7 @@ mod tests {
             }
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -583,7 +583,7 @@ mod tests {
             }
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -605,7 +605,7 @@ mod tests {
             ],
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": true,
         "type": {
@@ -652,7 +652,7 @@ mod tests {
             "format": "date-time"
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into().unwrap();
+        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {"atom": "datetime"},
             "nullable": false,
