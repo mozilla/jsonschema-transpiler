@@ -239,7 +239,16 @@ mod fields_as_vec {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use serde_json::{self, json};
+    use serde_json::{self, json, Value};
+
+    fn transform(data: Value) -> Value {
+        let context = Context {
+            resolve_method: ResolveMethod::Cast,
+        };
+        let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq_tag: Tag = ast_tag.translate_into(None).unwrap();
+        json!(bq_tag)
+    }
 
     #[test]
     fn test_serialize_atom() {
@@ -421,13 +430,11 @@ mod tests {
         let data = json!({
             "type": "null"
         });
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "STRING",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -435,13 +442,11 @@ mod tests {
         let data = json!({
             "type": {"atom": "integer"}
         });
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REQUIRED",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -450,13 +455,11 @@ mod tests {
             "type": {"atom": "integer"},
             "nullable": true,
         });
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -468,13 +471,11 @@ mod tests {
                     {"type": "null"},
                     {"type": {"atom": "integer"}},
         ]}}});
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -491,8 +492,6 @@ mod tests {
                             "fields": {
                                 "test-nested-atom": {"type": {"atom": "number"}}
                             }}}}}}}});
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "RECORD",
             "mode": "REQUIRED",
@@ -504,7 +503,7 @@ mod tests {
                 ]},
             ]
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -515,13 +514,11 @@ mod tests {
                 "items": {
                     "type": {"atom": "integer"}},
         }}});
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
             "type": "INT64",
             "mode": "REPEATED",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -536,13 +533,11 @@ mod tests {
                 }
             }
         });
-        let tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = tag.translate_into(None).unwrap();;
         let expect = json!({
             "type": "STRING",
             "mode": "REQUIRED",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -553,8 +548,6 @@ mod tests {
                 "key": {"type": {"atom": "string"}},
                 "value": {"type": {"atom": "integer"}}
         }}});
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
         "type": "RECORD",
         "mode": "REPEATED",
@@ -562,7 +555,7 @@ mod tests {
             {"name": "key", "type": "STRING", "mode": "REQUIRED"},
             {"name": "value", "type": "INT64", "mode": "REQUIRED"},
         ]});
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -571,27 +564,23 @@ mod tests {
             "type": {"atom": "datetime"},
             "nullable": true
         });
-        let jschema: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Tag = jschema.translate_into(None).unwrap();
         let expect = json!({
            "type": "TIMESTAMP",
            "mode": "NULLABLE",
         });
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
     fn test_schema_from_ast_atom() {
         // Nameless tags are top-level fields that should be rooted by default
         let data = json!({"type": {"atom": "integer"}});
-        let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into(None).unwrap();
         let expect = json!([{
             "name": DEFAULT_COLUMN,
             "mode": "REQUIRED",
             "type": "INT64"
         }]);
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -608,8 +597,6 @@ mod tests {
                             "fields": {
                                 "test-nested-atom": {"type": {"atom": "boolean"}}
                             }}}}}}}});
-        let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into(None).unwrap();;
         let expect = json!([{
             "name": "test_object",
             "mode": "REQUIRED",
@@ -622,7 +609,7 @@ mod tests {
                 }
             ]
         }]);
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 
     #[test]
@@ -633,8 +620,6 @@ mod tests {
                 "key": {"type": {"atom": "string"}},
                 "value": {"type": {"atom": "integer"}}
         }}});
-        let ast: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq: Schema = ast.translate_into(None).unwrap();;
         let expect = json!([{
             "name": "root",
             "type": "RECORD",
@@ -644,6 +629,6 @@ mod tests {
                 {"name": "value", "type": "INT64", "mode": "REQUIRED"},
             ]}]
         );
-        assert_eq!(expect, json!(bq));
+        assert_eq!(expect, transform(data));
     }
 }
