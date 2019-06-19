@@ -71,52 +71,58 @@ impl Translate<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::JSON => {
-                    if let Some(context) = context {
-                        match context.resolve_method {
-                            ResolveMethod::Cast => Atom::String,
-                            ResolveMethod::Panic => panic!(),
-                            ResolveMethod::Drop => {
-                                // terminate early
-                                return Err("json atom");
-                            }
+                    let context = context.unwrap();
+                    match context.resolve_method {
+                        ResolveMethod::Cast => {
+                            warn!(
+                                "{} - Treating subschema as JSON string",
+                                tag.fully_qualified_name()
+                            );
+                            Atom::String
                         }
-                    } else {
-                        warn!(
-                            "{} - Treating subschema as JSON string",
-                            tag.fully_qualified_name()
-                        );
-                        Atom::String
+                        ResolveMethod::Panic => panic!(),
+                        ResolveMethod::Drop => {
+                            return Err("json atom");
+                        }
                     }
                 }
             }),
-            ast::Type::Object(object) if object.fields.is_empty() => {
-                warn!(
-                    "{} - Empty records are not supported, casting into a JSON string",
-                    tag.fully_qualified_name()
-                );
-                Type::Atom(Atom::String)
-            }
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = object
                     .fields
                     .iter()
-                    .map(|(k, v)| {
-                        (
-                            k.to_string(),
-                            Box::new(Tag::translate(*v.clone(), context).unwrap()),
-                        )
-                    })
+                    .map(|(k, v)| (k.to_string(), Tag::translate(*v.clone(), context)))
+                    .filter(|(_, v)| v.is_ok())
+                    .map(|(k, v)| (k, Box::new(v.unwrap())))
                     .collect();
-                Type::Record(Record { fields })
+
+                if fields.is_empty() {
+                    let context = context.unwrap();
+                    match context.resolve_method {
+                        ResolveMethod::Cast => {
+                            warn!(
+                                "{} - Empty records are not supported, casting into a JSON string",
+                                tag.fully_qualified_name()
+                            );
+                            Type::Atom(Atom::String)
+                        }
+                        ResolveMethod::Panic => panic!(),
+                        ResolveMethod::Drop => return Err("empty object"),
+                    }
+                } else {
+                    Type::Record(Record { fields })
+                }
             }
-            ast::Type::Array(array) => {
-                *Tag::translate(*array.items.clone(), context)
-                    .unwrap()
-                    .data_type
-            }
+            ast::Type::Array(array) => match Tag::translate(*array.items.clone(), context) {
+                Ok(tag) => *tag.data_type,
+                Err(_) => return Err("untyped array"),
+            },
             ast::Type::Map(map) => {
                 let key = Tag::translate(*map.key.clone(), context).unwrap();
-                let value = Tag::translate(*map.value.clone(), context).unwrap();
+                let value = match Tag::translate(*map.value.clone(), context) {
+                    Ok(tag) => tag,
+                    Err(_) => return Err("untyped map value"),
+                };
                 let fields: HashMap<String, Box<Tag>> = vec![("key", key), ("value", value)]
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), Box::new(v)))
@@ -124,8 +130,15 @@ impl Translate<ast::Tag> for Tag {
                 Type::Record(Record { fields })
             }
             _ => {
-                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
-                Type::Atom(Atom::String)
+                let context = context.unwrap();
+                match context.resolve_method {
+                    ResolveMethod::Cast => {
+                        warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                        Type::Atom(Atom::String)
+                    }
+                    ResolveMethod::Panic => panic!(),
+                    ResolveMethod::Drop => return Err("unsupported type"),
+                }
             }
         };
 
