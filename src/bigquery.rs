@@ -88,13 +88,17 @@ impl Translate<ast::Tag> for Tag {
                 }
             }),
             ast::Type::Object(object) => {
-                let fields: HashMap<String, Box<Tag>> = object
-                    .fields
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), Tag::translate(*v.clone(), context)))
-                    .filter(|(_, v)| v.is_ok())
-                    .map(|(k, v)| (k, Box::new(v.unwrap())))
-                    .collect();
+                let fields: HashMap<String, Box<Tag>> = if object.fields.is_empty() {
+                    HashMap::new()
+                } else {
+                    object
+                        .fields
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), Tag::translate(*v.clone(), context)))
+                        .filter(|(_, v)| v.is_ok())
+                        .map(|(k, v)| (k, Box::new(v.unwrap())))
+                        .collect()
+                };
 
                 if fields.is_empty() {
                     let context = context.unwrap();
@@ -241,12 +245,21 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::{self, json, Value};
 
-    fn transform(data: Value) -> Value {
+    fn transform_tag(data: Value) -> Value {
         let context = Context {
             resolve_method: ResolveMethod::Cast,
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq_tag: Tag = ast_tag.translate_into(None).unwrap();
+        let bq_tag: Tag = ast_tag.translate_into(Some(context)).unwrap();
+        json!(bq_tag)
+    }
+
+    fn transform_schema(data: Value) -> Value {
+        let context = Context {
+            resolve_method: ResolveMethod::Cast,
+        };
+        let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq_tag: Schema = ast_tag.translate_into(Some(context)).unwrap();
         json!(bq_tag)
     }
 
@@ -434,7 +447,7 @@ mod tests {
             "type": "STRING",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -446,7 +459,7 @@ mod tests {
             "type": "INT64",
             "mode": "REQUIRED",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -459,7 +472,7 @@ mod tests {
             "type": "INT64",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -475,7 +488,7 @@ mod tests {
             "type": "INT64",
             "mode": "NULLABLE",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -503,7 +516,7 @@ mod tests {
                 ]},
             ]
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -518,7 +531,7 @@ mod tests {
             "type": "INT64",
             "mode": "REPEATED",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -537,7 +550,7 @@ mod tests {
             "type": "STRING",
             "mode": "REQUIRED",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -555,7 +568,7 @@ mod tests {
             {"name": "key", "type": "STRING", "mode": "REQUIRED"},
             {"name": "value", "type": "INT64", "mode": "REQUIRED"},
         ]});
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -568,7 +581,7 @@ mod tests {
            "type": "TIMESTAMP",
            "mode": "NULLABLE",
         });
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_tag(data));
     }
 
     #[test]
@@ -580,7 +593,7 @@ mod tests {
             "mode": "REQUIRED",
             "type": "INT64"
         }]);
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_schema(data));
     }
 
     #[test]
@@ -609,7 +622,7 @@ mod tests {
                 }
             ]
         }]);
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_schema(data));
     }
 
     #[test]
@@ -629,6 +642,6 @@ mod tests {
                 {"name": "value", "type": "INT64", "mode": "REQUIRED"},
             ]}]
         );
-        assert_eq!(expect, transform(data));
+        assert_eq!(expect, transform_schema(data));
     }
 }
