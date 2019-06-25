@@ -22,9 +22,7 @@ fn bigquery_test_array_with_atomics() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -69,9 +67,7 @@ fn bigquery_test_array_with_complex() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -93,9 +89,7 @@ fn bigquery_test_atomic() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -120,9 +114,7 @@ fn bigquery_test_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -147,9 +139,7 @@ fn bigquery_test_incompatible_atomic_multitype() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -175,9 +165,7 @@ fn bigquery_test_incompatible_atomic_multitype_with_null() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -200,9 +188,7 @@ fn bigquery_test_datetime() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -239,9 +225,7 @@ fn bigquery_test_map_with_atomics() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -298,9 +282,7 @@ fn bigquery_test_map_with_complex() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -340,9 +322,7 @@ fn bigquery_test_map_with_pattern_properties() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -384,9 +364,7 @@ fn bigquery_test_map_with_pattern_and_additional_properties() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -429,9 +407,7 @@ fn bigquery_test_incompatible_map_with_pattern_properties() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -473,9 +449,7 @@ fn bigquery_test_incompatible_map_with_pattern_and_additional_properties() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -526,9 +500,7 @@ fn bigquery_test_object_with_atomics_is_sorted() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -575,9 +547,7 @@ fn bigquery_test_object_with_atomics_required() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -627,9 +597,7 @@ fn bigquery_test_object_with_atomics_required_with_null() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -676,9 +644,7 @@ fn bigquery_test_object_with_complex() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -701,9 +667,7 @@ fn bigquery_test_object_empty_record() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -732,9 +696,7 @@ fn bigquery_test_oneof_atomic() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -763,9 +725,7 @@ fn bigquery_test_oneof_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -794,9 +754,7 @@ fn bigquery_test_incompatible_oneof_atomic() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -828,9 +786,7 @@ fn bigquery_test_incompatible_oneof_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -880,9 +836,7 @@ fn bigquery_test_oneof_object_with_atomics() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -937,9 +891,7 @@ fn bigquery_test_oneof_object_merge() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -1032,9 +984,7 @@ fn bigquery_test_oneof_object_merge_with_complex() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -1068,9 +1018,7 @@ fn bigquery_test_incompatible_oneof_atomic_and_object() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -1109,9 +1057,7 @@ fn bigquery_test_incompatible_oneof_object() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -1166,9 +1112,7 @@ fn bigquery_test_incompatible_oneof_object_with_complex() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
@@ -1229,9 +1173,7 @@ fn bigquery_test_oneof_object_merge_nullability() {
       }
     ]
     "#;
-    let context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
+    let context = Context { resolve_method: ResolveMethod::Cast };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));
