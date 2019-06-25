@@ -1,7 +1,7 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
 use super::traits::Translate;
-use super::Context;
+use super::{Context, ResolveMethod};
 use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -128,56 +128,93 @@ impl Translate<ast::Tag> for Type {
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
                 ast::Atom::JSON => {
-                    warn!(
-                        "{} - Treating subschema as JSON string",
-                        tag.fully_qualified_name()
-                    );
-                    Primitive::String
+                    let context = context.unwrap();
+                    match context.resolve_method {
+                        ResolveMethod::Cast => {
+                            warn!(
+                                "{} - Treating subschema as JSON string",
+                                tag.fully_qualified_name()
+                            );
+                            Primitive::String
+                        }
+                        ResolveMethod::Drop => return Err("json atom"),
+                        ResolveMethod::Panic => panic!("json atom"),
+                    }
                 }
             }),
-            ast::Type::Object(object) if object.fields.is_empty() => {
-                warn!(
-                    "{} - Empty records are not supported, casting into a JSON string",
-                    tag.fully_qualified_name()
-                );
-                Type::Primitive(Primitive::String)
-            }
             ast::Type::Object(object) => {
-                let mut fields: Vec<Field> = object
-                    .fields
-                    .iter()
-                    .map(|(k, v)| Field {
-                        name: k.to_string(),
-                        data_type: Type::translate(*v.clone(), context).unwrap(),
-                        default: if v.nullable { Some(json!(null)) } else { None },
-                        ..Default::default()
-                    })
-                    .collect();
-                fields.sort_by_key(|v| v.name.to_string());
-
-                let record = Record {
-                    common: CommonAttributes {
-                        // This is not a safe assumption
-                        name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
-                        namespace: tag.namespace.clone(),
-                        ..Default::default()
-                    },
-                    fields,
+                let mut fields: Vec<Field> = if object.fields.is_empty() {
+                    Vec::new()
+                } else {
+                    object
+                        .fields
+                        .iter()
+                        .map(|(k, v)| {
+                            let default = if v.nullable { Some(json!(null)) } else { None };
+                            (k.to_string(), Type::translate(*v.clone(), context), default)
+                        })
+                        .filter(|(_, v, _)| v.is_ok())
+                        .map(|(name, data_type, default)| Field {
+                            name: name,
+                            data_type: data_type.unwrap(),
+                            default: default,
+                            ..Default::default()
+                        })
+                        .collect()
                 };
-                if record.common.name == "__UNNAMED__" {
-                    warn!("{} - Unnamed field", tag.fully_qualified_name());
+
+                if fields.is_empty() {
+                    let context = context.unwrap();
+                    match context.resolve_method {
+                        ResolveMethod::Cast => {
+                            warn!(
+                                "{} - Empty records are not supported, casting into a JSON string",
+                                tag.fully_qualified_name()
+                            );
+                            Type::Primitive(Primitive::String)
+                        }
+                        ResolveMethod::Panic => panic!(),
+                        ResolveMethod::Drop => return Err("empty object"),
+                    }
+                } else {
+                    fields.sort_by_key(|v| v.name.to_string());
+                    let record = Record {
+                        common: CommonAttributes {
+                            // This is not a safe assumption
+                            name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
+                            namespace: tag.namespace.clone(),
+                            ..Default::default()
+                        },
+                        fields,
+                    };
+                    if record.common.name == "__UNNAMED__" {
+                        warn!("{} - Unnamed field", tag.fully_qualified_name());
+                    }
+                    Type::Complex(Complex::Record(record))
                 }
-                Type::Complex(Complex::Record(record))
             }
-            ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
-                items: Box::new(Type::translate(*array.items.clone(), context).unwrap()),
-            })),
-            ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
-                values: Box::new(Type::translate(*map.value.clone(), context).unwrap()),
-            })),
+            ast::Type::Array(array) => match Type::translate(*array.items.clone(), context) {
+                Ok(data_type) => Type::Complex(Complex::Array(Array {
+                    items: Box::new(data_type),
+                })),
+                Err(_) => return Err("untyped array"),
+            },
+            ast::Type::Map(map) => match Type::translate(*map.value.clone(), context) {
+                Ok(data_type) => Type::Complex(Complex::Map(Map {
+                    values: Box::new(data_type),
+                })),
+                Err(_) => return Err("untyped map value"),
+            },
             _ => {
-                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
-                Type::Primitive(Primitive::String)
+                let context = context.unwrap();
+                match context.resolve_method {
+                    ResolveMethod::Cast => {
+                        warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                        Type::Primitive(Primitive::String)
+                    }
+                    ResolveMethod::Panic => panic!(),
+                    ResolveMethod::Drop => return Err("unsupported type"),
+                }
             }
         };
         if tag.nullable && !tag.is_null() {
@@ -206,8 +243,11 @@ mod tests {
     }
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
+        let context = Context {
+            resolve_method: ResolveMethod::Cast,
+        };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::translate(tag, None).unwrap();
+        let from_tag = Type::translate(tag, Some(context)).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 
