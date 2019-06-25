@@ -13,7 +13,7 @@ mod jsonschema;
 mod traits;
 
 use serde_json::{json, Value};
-use traits::Translate;
+use traits::TranslateFrom;
 
 #[derive(Copy, Clone)]
 pub enum ResolveMethod {
@@ -32,17 +32,17 @@ fn into_ast(input: &Value, context: Option<Context>) -> ast::Tag {
         Ok(tag) => tag,
         Err(e) => panic!(format!("{:#?}", e)),
     };
-    ast::Tag::translate(jsonschema, context).unwrap()
+    ast::Tag::translate_from(jsonschema, context).unwrap()
 }
 
 /// Convert JSON Schema into an Avro compatible schema
 pub fn convert_avro(input: &Value, context: Option<Context>) -> Value {
-    let avro = avro::Type::translate(into_ast(input, context), context).unwrap();
+    let avro = avro::Type::translate_from(into_ast(input, context), context).unwrap();
     json!(avro)
 }
 
 /// Convert JSON Schema into a BigQuery compatible schema
 pub fn convert_bigquery(input: &Value, context: Option<Context>) -> Value {
-    let bq = bigquery::Schema::translate(into_ast(input, context), context).unwrap();
+    let bq = bigquery::Schema::translate_from(into_ast(input, context), context).unwrap();
     json!(bq)
 }

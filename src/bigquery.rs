@@ -1,5 +1,5 @@
 use super::ast;
-use super::traits::Translate;
+use super::TranslateFrom;
 use super::{Context, ResolveMethod};
 use std::collections::HashMap;
 
@@ -55,10 +55,10 @@ pub struct Tag {
     mode: Mode,
 }
 
-impl Translate<ast::Tag> for Tag {
+impl TranslateFrom<ast::Tag> for Tag {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -94,7 +94,7 @@ impl Translate<ast::Tag> for Tag {
                     object
                         .fields
                         .iter()
-                        .map(|(k, v)| (k.to_string(), Tag::translate(*v.clone(), context)))
+                        .map(|(k, v)| (k.to_string(), Tag::translate_from(*v.clone(), context)))
                         .filter(|(_, v)| v.is_ok())
                         .map(|(k, v)| (k, Box::new(v.unwrap())))
                         .collect()
@@ -117,13 +117,13 @@ impl Translate<ast::Tag> for Tag {
                     Type::Record(Record { fields })
                 }
             }
-            ast::Type::Array(array) => match Tag::translate(*array.items.clone(), context) {
+            ast::Type::Array(array) => match Tag::translate_from(*array.items.clone(), context) {
                 Ok(tag) => *tag.data_type,
                 Err(_) => return Err("untyped array"),
             },
             ast::Type::Map(map) => {
-                let key = Tag::translate(*map.key.clone(), context).unwrap();
-                let value = match Tag::translate(*map.value.clone(), context) {
+                let key = Tag::translate_from(*map.key.clone(), context).unwrap();
+                let value = match Tag::translate_from(*map.value.clone(), context) {
                     Ok(tag) => tag,
                     Err(_) => return Err("untyped map value"),
                 };
@@ -173,11 +173,11 @@ pub enum Schema {
     Root(Vec<Tag>),
 }
 
-impl Translate<ast::Tag> for Schema {
+impl TranslateFrom<ast::Tag> for Schema {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
-        let mut bq_tag = Tag::translate(tag.clone(), context).unwrap();
+    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+        let mut bq_tag = Tag::translate_from(tag.clone(), context).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
             // modes. These should not be extracted if they are the root-type.

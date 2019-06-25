@@ -1,6 +1,6 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
-use super::traits::Translate;
+use super::TranslateFrom;
 use super::{Context, ResolveMethod};
 use serde_json::{json, Value};
 
@@ -105,10 +105,10 @@ impl Default for Type {
     }
 }
 
-impl Translate<ast::Tag> for Type {
+impl TranslateFrom<ast::Tag> for Type {
     type Error = &'static str;
 
-    fn translate(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -151,7 +151,7 @@ impl Translate<ast::Tag> for Type {
                         .iter()
                         .map(|(k, v)| {
                             let default = if v.nullable { Some(json!(null)) } else { None };
-                            (k.to_string(), Type::translate(*v.clone(), context), default)
+                            (k.to_string(), Type::translate_from(*v.clone(), context), default)
                         })
                         .filter(|(_, v, _)| v.is_ok())
                         .map(|(name, data_type, default)| Field {
@@ -193,13 +193,13 @@ impl Translate<ast::Tag> for Type {
                     Type::Complex(Complex::Record(record))
                 }
             }
-            ast::Type::Array(array) => match Type::translate(*array.items.clone(), context) {
+            ast::Type::Array(array) => match Type::translate_from(*array.items.clone(), context) {
                 Ok(data_type) => Type::Complex(Complex::Array(Array {
                     items: Box::new(data_type),
                 })),
                 Err(_) => return Err("untyped array"),
             },
-            ast::Type::Map(map) => match Type::translate(*map.value.clone(), context) {
+            ast::Type::Map(map) => match Type::translate_from(*map.value.clone(), context) {
                 Ok(data_type) => Type::Complex(Complex::Map(Map {
                     values: Box::new(data_type),
                 })),
@@ -247,7 +247,7 @@ mod tests {
             resolve_method: ResolveMethod::Cast,
         };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::translate(tag, Some(context)).unwrap();
+        let from_tag = Type::translate_from(tag, Some(context)).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 
