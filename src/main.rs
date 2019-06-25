@@ -48,19 +48,13 @@ fn main() {
         None => Box::new(io::stdin()),
     };
     let data: Value = serde_json::from_reader(reader).unwrap();
-    let context: Option<Context> = match matches.value_of("resolve") {
-        Some(resolve) => {
-            let method = match resolve {
-                "cast" => ResolveMethod::Cast,
-                "panic" => ResolveMethod::Panic,
-                "drop" => ResolveMethod::Drop,
-                _ => panic!("Unknown resolution method!"),
-            };
-            Some(Context {
-                resolve_method: method,
-            })
-        }
-        None => None,
+    let context = Context {
+        resolve_method: match matches.value_of("resolve").unwrap() {
+            "cast" => ResolveMethod::Cast,
+            "panic" => ResolveMethod::Panic,
+            "drop" => ResolveMethod::Drop,
+            _ => panic!("Unknown resolution method!"),
+        },
     };
 
     let output = match matches.value_of("type").unwrap() {

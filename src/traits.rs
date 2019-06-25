@@ -4,13 +4,13 @@ use super::Context;
 pub trait TranslateFrom<T>: Sized {
     type Error;
 
-    fn translate_from(value: T, context: Option<Context>) -> Result<Self, Self::Error>;
+    fn translate_from(value: T, context: Context) -> Result<Self, Self::Error>;
 }
 
 pub trait TranslateInto<T>: Sized {
     type Error;
 
-    fn translate_into(self, context: Option<Context>) -> Result<T, Self::Error>;
+    fn translate_into(self, context: Context) -> Result<T, Self::Error>;
 }
 
 // TranslateFrom implies TranslateInto
@@ -19,7 +19,7 @@ where
     U: TranslateFrom<T>,
 {
     type Error = U::Error;
-    fn translate_into(self, context: Option<Context>) -> Result<U, U::Error> {
+    fn translate_into(self, context: Context) -> Result<U, U::Error> {
         U::translate_from(self, context)
     }
 }

@@ -58,7 +58,7 @@ pub struct Tag {
 impl TranslateFrom<ast::Tag> for Tag {
     type Error = &'static str;
 
-    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
@@ -70,22 +70,19 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::Number => Atom::Float64,
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
-                ast::Atom::JSON => {
-                    let context = context.unwrap();
-                    match context.resolve_method {
-                        ResolveMethod::Cast => {
-                            warn!(
-                                "{} - Treating subschema as JSON string",
-                                tag.fully_qualified_name()
-                            );
-                            Atom::String
-                        }
-                        ResolveMethod::Panic => panic!(),
-                        ResolveMethod::Drop => {
-                            return Err("json atom");
-                        }
+                ast::Atom::JSON => match context.resolve_method {
+                    ResolveMethod::Cast => {
+                        warn!(
+                            "{} - Treating subschema as JSON string",
+                            tag.fully_qualified_name()
+                        );
+                        Atom::String
                     }
-                }
+                    ResolveMethod::Panic => panic!(),
+                    ResolveMethod::Drop => {
+                        return Err("json atom");
+                    }
+                },
             }),
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = if object.fields.is_empty() {
@@ -101,7 +98,6 @@ impl TranslateFrom<ast::Tag> for Tag {
                 };
 
                 if fields.is_empty() {
-                    let context = context.unwrap();
                     match context.resolve_method {
                         ResolveMethod::Cast => {
                             warn!(
@@ -133,17 +129,14 @@ impl TranslateFrom<ast::Tag> for Tag {
                     .collect();
                 Type::Record(Record { fields })
             }
-            _ => {
-                let context = context.unwrap();
-                match context.resolve_method {
-                    ResolveMethod::Cast => {
-                        warn!("{} - Unsupported conversion", tag.fully_qualified_name());
-                        Type::Atom(Atom::String)
-                    }
-                    ResolveMethod::Panic => panic!(),
-                    ResolveMethod::Drop => return Err("unsupported type"),
+            _ => match context.resolve_method {
+                ResolveMethod::Cast => {
+                    warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                    Type::Atom(Atom::String)
                 }
-            }
+                ResolveMethod::Panic => panic!(),
+                ResolveMethod::Drop => return Err("unsupported type"),
+            },
         };
 
         let mode = if tag.is_array() || tag.is_map() {
@@ -176,7 +169,7 @@ pub enum Schema {
 impl TranslateFrom<ast::Tag> for Schema {
     type Error = &'static str;
 
-    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut bq_tag = Tag::translate_from(tag.clone(), context).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
@@ -251,7 +244,7 @@ mod tests {
             resolve_method: ResolveMethod::Cast,
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq_tag: Tag = ast_tag.translate_into(Some(context)).unwrap();
+        let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
         json!(bq_tag)
     }
 
@@ -260,7 +253,7 @@ mod tests {
             resolve_method: ResolveMethod::Cast,
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq_tag: Schema = ast_tag.translate_into(Some(context)).unwrap();
+        let bq_tag: Schema = ast_tag.translate_into(context).unwrap();
         json!(bq_tag)
     }
 

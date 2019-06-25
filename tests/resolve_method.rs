@@ -5,7 +5,7 @@ use serde_json::Value;
 #[test]
 fn test_bigquery_object_error_resolution() {
     let mut expected: Value;
-    let mut context: Option<Context>;
+    let mut context: Context;
 
     let input: Value = serde_json::from_str(
         r#"
@@ -38,9 +38,9 @@ fn test_bigquery_object_error_resolution() {
     )
     .unwrap();
 
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Cast,
-    });
+    };
     assert_eq!(expected, convert_bigquery(&input, context));
 
     expected = serde_json::from_str(
@@ -55,21 +55,21 @@ fn test_bigquery_object_error_resolution() {
         "#,
     )
     .unwrap();
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Drop,
-    });
+    };
     assert_eq!(expected, convert_bigquery(&input, context));
 
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Panic,
-    });
+    };
     assert!(std::panic::catch_unwind(|| convert_bigquery(&input, context)).is_err());
 }
 
 #[test]
 fn test_avro_object_error_resolution() {
     let mut expected: Value;
-    let mut context: Option<Context>;
+    let mut context: Context;
 
     let input: Value = serde_json::from_str(
         r#"
@@ -112,9 +112,9 @@ fn test_avro_object_error_resolution() {
     )
     .unwrap();
 
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Cast,
-    });
+    };
     assert_eq!(expected, convert_avro(&input, context));
 
     expected = serde_json::from_str(
@@ -136,13 +136,13 @@ fn test_avro_object_error_resolution() {
         "#,
     )
     .unwrap();
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Drop,
-    });
+    };
     assert_eq!(expected, convert_avro(&input, context));
 
-    context = Some(Context {
+    context = Context {
         resolve_method: ResolveMethod::Panic,
-    });
+    };
     assert!(std::panic::catch_unwind(|| convert_avro(&input, context)).is_err());
 }

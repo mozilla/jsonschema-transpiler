@@ -108,7 +108,7 @@ impl Default for Type {
 impl TranslateFrom<ast::Tag> for Type {
     type Error = &'static str;
 
-    fn translate_from(tag: ast::Tag, context: Option<Context>) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -127,20 +127,17 @@ impl TranslateFrom<ast::Tag> for Type {
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
-                ast::Atom::JSON => {
-                    let context = context.unwrap();
-                    match context.resolve_method {
-                        ResolveMethod::Cast => {
-                            warn!(
-                                "{} - Treating subschema as JSON string",
-                                tag.fully_qualified_name()
-                            );
-                            Primitive::String
-                        }
-                        ResolveMethod::Drop => return Err("json atom"),
-                        ResolveMethod::Panic => panic!("json atom"),
+                ast::Atom::JSON => match context.resolve_method {
+                    ResolveMethod::Cast => {
+                        warn!(
+                            "{} - Treating subschema as JSON string",
+                            tag.fully_qualified_name()
+                        );
+                        Primitive::String
                     }
-                }
+                    ResolveMethod::Drop => return Err("json atom"),
+                    ResolveMethod::Panic => panic!("json atom"),
+                },
             }),
             ast::Type::Object(object) => {
                 let mut fields: Vec<Field> = if object.fields.is_empty() {
@@ -168,7 +165,6 @@ impl TranslateFrom<ast::Tag> for Type {
                 };
 
                 if fields.is_empty() {
-                    let context = context.unwrap();
                     match context.resolve_method {
                         ResolveMethod::Cast => {
                             warn!(
@@ -209,17 +205,14 @@ impl TranslateFrom<ast::Tag> for Type {
                 })),
                 Err(_) => return Err("untyped map value"),
             },
-            _ => {
-                let context = context.unwrap();
-                match context.resolve_method {
-                    ResolveMethod::Cast => {
-                        warn!("{} - Unsupported conversion", tag.fully_qualified_name());
-                        Type::Primitive(Primitive::String)
-                    }
-                    ResolveMethod::Panic => panic!(),
-                    ResolveMethod::Drop => return Err("unsupported type"),
+            _ => match context.resolve_method {
+                ResolveMethod::Cast => {
+                    warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                    Type::Primitive(Primitive::String)
                 }
-            }
+                ResolveMethod::Panic => panic!(),
+                ResolveMethod::Drop => return Err("unsupported type"),
+            },
         };
         if tag.nullable && !tag.is_null() {
             Ok(Type::Union(vec![
@@ -251,7 +244,7 @@ mod tests {
             resolve_method: ResolveMethod::Cast,
         };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::translate_from(tag, Some(context)).unwrap();
+        let from_tag = Type::translate_from(tag, context).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 

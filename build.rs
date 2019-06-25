@@ -83,7 +83,7 @@ fn avro_{name}() {{
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input, Some(context)));
+    assert_eq!(expected, convert_avro(&input, context));
 }}
 "##,
             name = case.name,
@@ -111,7 +111,7 @@ fn bigquery_{name}() {{
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input, Some(context)));
+    assert_eq!(expected, convert_bigquery(&input, context));
 }}
 "##,
             name = case.name,

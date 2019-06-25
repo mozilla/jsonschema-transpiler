@@ -235,7 +235,7 @@ mod tests {
             resolve_method: ResolveMethod::Cast,
         };
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(Some(context)).unwrap();
+        let ast: ast::Tag = schema.translate_into(context).unwrap();
         json!(ast)
     }
 
