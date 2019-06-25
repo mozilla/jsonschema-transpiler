@@ -347,7 +347,7 @@ mod tests {
         .unwrap();
 
         let test_int = match &*record.data_type {
-            Type::Record(record) => record.fields.get("test-int").unwrap(),
+            Type::Record(record) => &record.fields["test-int"],
             _ => panic!(),
         };
         match *test_int.data_type {
@@ -426,11 +426,11 @@ mod tests {
         });
         let record_a: Tag = serde_json::from_value(data).unwrap();
         let record_b = match &*record_a.data_type {
-            Type::Record(record) => record.fields.get("test-record-b").unwrap(),
+            Type::Record(record) => &record.fields["test-record-b"],
             _ => panic!(),
         };
         let test_int = match &*record_b.data_type {
-            Type::Record(record) => record.fields.get("test-int").unwrap(),
+            Type::Record(record) => &record.fields["test-int"],
             _ => panic!(),
         };
         match *test_int.data_type {

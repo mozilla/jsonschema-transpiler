@@ -282,7 +282,7 @@ mod tests {
         let schema: Tag = serde_json::from_value(data).unwrap();
         let props = schema.object.properties.unwrap();
         assert_eq!(props.len(), 2);
-        let test_int = props.get("test-int").unwrap();
+        let test_int = &props["test-int"];
         assert_eq!(test_int.data_type, json!("integer"));
         assert_eq!(
             schema.object.required.unwrap(),
