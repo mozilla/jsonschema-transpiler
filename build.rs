@@ -78,7 +78,9 @@ fn avro_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
-    let context = Context {{ resolve_method: ResolveMethod::Cast }};
+    let context = Context {{
+        resolve_method: ResolveMethod::Cast,
+    }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -104,7 +106,9 @@ fn bigquery_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
-    let context = Context {{ resolve_method: ResolveMethod::Cast }};
+    let context = Context {{
+        resolve_method: ResolveMethod::Cast,
+    }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, Some(context)));

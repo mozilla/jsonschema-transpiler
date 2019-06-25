@@ -21,7 +21,9 @@ fn avro_test_array_with_atomics() {
       "type": "array"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -81,7 +83,9 @@ fn avro_test_array_with_complex() {
       "type": "array"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -99,7 +103,9 @@ fn avro_test_atomic() {
       "type": "long"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -125,7 +131,9 @@ fn avro_test_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -146,7 +154,9 @@ fn avro_test_incompatible_atomic_multitype() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -173,7 +183,9 @@ fn avro_test_incompatible_atomic_multitype_with_null() {
       }
     ]
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -192,7 +204,9 @@ fn avro_test_datetime() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -216,7 +230,9 @@ fn avro_test_map_with_atomics() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -276,7 +292,9 @@ fn avro_test_map_with_complex() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -303,7 +321,9 @@ fn avro_test_map_with_pattern_properties() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -332,7 +352,9 @@ fn avro_test_map_with_pattern_and_additional_properties() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -362,7 +384,9 @@ fn avro_test_incompatible_map_with_pattern_properties() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -391,7 +415,9 @@ fn avro_test_incompatible_map_with_pattern_and_additional_properties() {
       }
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -474,7 +500,9 @@ fn avro_test_object_with_atomics_is_sorted() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -534,7 +562,9 @@ fn avro_test_object_with_atomics_required() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -603,7 +633,9 @@ fn avro_test_object_with_atomics_required_with_null() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -677,7 +709,9 @@ fn avro_test_object_with_complex() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -696,7 +730,9 @@ fn avro_test_object_empty_record() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -721,7 +757,9 @@ fn avro_test_oneof_atomic() {
       "type": "long"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -751,7 +789,9 @@ fn avro_test_oneof_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -776,7 +816,9 @@ fn avro_test_incompatible_oneof_atomic() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -809,7 +851,9 @@ fn avro_test_incompatible_oneof_atomic_with_null() {
       }
     ]
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -877,7 +921,9 @@ fn avro_test_oneof_object_with_atomics() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -957,7 +1003,9 @@ fn avro_test_oneof_object_merge() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -1098,7 +1146,9 @@ fn avro_test_oneof_object_merge_with_complex() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -1128,7 +1178,9 @@ fn avro_test_incompatible_oneof_atomic_and_object() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -1163,7 +1215,9 @@ fn avro_test_incompatible_oneof_object() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -1214,7 +1268,9 @@ fn avro_test_incompatible_oneof_object_with_complex() {
       "type": "string"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
@@ -1294,7 +1350,9 @@ fn avro_test_oneof_object_merge_nullability() {
       "type": "record"
     }
     "#;
-    let context = Context { resolve_method: ResolveMethod::Cast };
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_avro(&input, Some(context)));
