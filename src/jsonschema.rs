@@ -226,8 +226,18 @@ impl Tag {
 #[cfg(test)]
 mod tests {
     use super::super::traits::TranslateInto;
+    use super::super::{Context, ResolveMethod};
     use super::*;
     use pretty_assertions::assert_eq;
+
+    fn translate(data: Value) -> Value {
+        let context = Context {
+            resolve_method: ResolveMethod::Cast,
+        };
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let ast: ast::Tag = schema.translate_into(Some(context)).unwrap();
+        json!(ast)
+    }
 
     #[test]
     fn test_serialize_type_null() {
@@ -447,13 +457,11 @@ mod tests {
         let data = json!({
             "type": "null"
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": "null",
             "nullable": true,
         });
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -461,13 +469,11 @@ mod tests {
         let data = json!({
             "type": "integer"
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {"atom": "integer"},
             "nullable": false,
         });
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -475,8 +481,6 @@ mod tests {
         let data = json!({
             "type": ["null", "integer"]
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {
                 "union": {
@@ -495,7 +499,7 @@ mod tests {
             },
             "nullable": true,
         });
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -510,8 +514,6 @@ mod tests {
                 "properties": {
                     "test-null": {"type": "null"}
                 }}}});
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -534,7 +536,7 @@ mod tests {
                                         "type": "null",
                                         "nullable": true,
                                     }}}}}}}}});
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -548,8 +550,6 @@ mod tests {
                 }
             }
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -571,7 +571,7 @@ mod tests {
                                     "nullable": true,
                                     "type": {"atom": "integer"}
                                 }}}}}}}});
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -582,8 +582,6 @@ mod tests {
                 "type": "integer"
             }
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -593,7 +591,7 @@ mod tests {
                     "nullable": false,
                     "type": {"atom": "integer"}
                 }}}});
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -604,8 +602,6 @@ mod tests {
                 {"type": "null"}
             ],
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
         "nullable": true,
         "type": {
@@ -622,7 +618,7 @@ mod tests {
                         "type": "null"
                     }
                 ]}}});
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 
     #[test]
@@ -651,12 +647,10 @@ mod tests {
             "type": "string",
             "format": "date-time"
         });
-        let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(None).unwrap();
         let expect = json!({
             "type": {"atom": "datetime"},
             "nullable": false,
         });
-        assert_eq!(expect, json!(ast))
+        assert_eq!(expect, translate(data))
     }
 }

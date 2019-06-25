@@ -151,7 +151,11 @@ impl TranslateFrom<ast::Tag> for Type {
                         .iter()
                         .map(|(k, v)| {
                             let default = if v.nullable { Some(json!(null)) } else { None };
-                            (k.to_string(), Type::translate_from(*v.clone(), context), default)
+                            (
+                                k.to_string(),
+                                Type::translate_from(*v.clone(), context),
+                                default,
+                            )
                         })
                         .filter(|(_, v, _)| v.is_ok())
                         .map(|(name, data_type, default)| Field {
