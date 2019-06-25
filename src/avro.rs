@@ -155,9 +155,9 @@ impl Translate<ast::Tag> for Type {
                         })
                         .filter(|(_, v, _)| v.is_ok())
                         .map(|(name, data_type, default)| Field {
-                            name: name,
+                            name,
                             data_type: data_type.unwrap(),
-                            default: default,
+                            default,
                             ..Default::default()
                         })
                         .collect()

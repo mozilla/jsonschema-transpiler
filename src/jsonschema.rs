@@ -4,7 +4,6 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 use super::ast;
-use super::traits::TranslateInto;
 
 /// The type enumeration does not contain any data and is used to determine
 /// available fields in the flattened tag. In JSONSchema parlance, these are
@@ -188,7 +187,7 @@ impl Tag {
                                 Some(vec) => {
                                     let items: Vec<ast::Tag> =
                                         vec.iter().map(|item| item.type_into_ast()).collect();
-                                    let nullable: bool = items.iter().any(|x| x.is_null());
+                                    let nullable: bool = items.iter().any(ast::Tag::is_null);
                                     ast::Tag::new(
                                         ast::Type::Union(ast::Union::new(items)),
                                         None,
@@ -226,6 +225,7 @@ impl Tag {
 
 #[cfg(test)]
 mod tests {
+    use super::super::traits::TranslateInto;
     use super::*;
     use pretty_assertions::assert_eq;
 

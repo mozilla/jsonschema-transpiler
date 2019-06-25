@@ -1,5 +1,5 @@
 use super::ast;
-use super::traits::{Translate, TranslateInto};
+use super::traits::Translate;
 use super::{Context, ResolveMethod};
 use std::collections::HashMap;
 
@@ -241,6 +241,7 @@ mod fields_as_vec {
 
 #[cfg(test)]
 mod tests {
+    use super::super::traits::TranslateInto;
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::{self, json, Value};
