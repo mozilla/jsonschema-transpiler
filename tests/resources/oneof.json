@@ -3,6 +3,7 @@
   "tests": [
     {
       "name": "test_oneof_atomic",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "long"
@@ -28,6 +29,7 @@
     },
     {
       "name": "test_oneof_atomic_with_null",
+      "compatible": true,
       "test": {
         "avro": [
           {
@@ -58,6 +60,7 @@
     },
     {
       "name": "test_incompatible_oneof_atomic",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"
@@ -87,6 +90,7 @@
         "`null` has a logical-OR like behavior when there are choices of types."
       ],
       "name": "test_incompatible_oneof_atomic_with_null",
+      "compatible": false,
       "test": {
         "avro": [
           {
@@ -120,6 +124,7 @@
     },
     {
       "name": "test_oneof_object_with_atomics",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -196,6 +201,7 @@
         "Test schemas that share common structure"
       ],
       "name": "test_oneof_object_merge",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -286,6 +292,7 @@
     },
     {
       "name": "test_oneof_object_merge_with_complex",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -454,6 +461,7 @@
     },
     {
       "name": "test_incompatible_oneof_atomic_and_object",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"
@@ -484,6 +492,7 @@
     },
     {
       "name": "test_incompatible_oneof_object",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"
@@ -525,6 +534,7 @@
         "retaining as much structure as possible."
       ],
       "name": "test_incompatible_oneof_object_with_complex",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"
@@ -579,6 +589,7 @@
         "Test for nullability across two variants with required fields"
       ],
       "name": "test_oneof_object_merge_nullability",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
