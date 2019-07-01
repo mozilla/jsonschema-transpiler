@@ -106,7 +106,7 @@ impl Default for Type {
 }
 
 impl TranslateFrom<ast::Tag> for Type {
-    type Error = &'static str;
+    type Error = String;
 
     fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
@@ -119,6 +119,21 @@ impl TranslateFrom<ast::Tag> for Type {
             tag.infer_name();
         }
         tag.infer_nullability();
+
+        let fmt_reason =
+            |reason: &str| -> String { format!("{} - {}", tag.fully_qualified_name(), reason) };
+        let handle_error = |reason: &str| -> Result<Type, Self::Error> {
+            let message = fmt_reason(reason);
+            match context.resolve_method {
+                ResolveMethod::Cast => {
+                    warn!("{}", message);
+                    Ok(Type::Primitive(Primitive::String))
+                }
+                ResolveMethod::Drop => Err(message),
+                ResolveMethod::Panic => panic!(message),
+            }
+        };
+
         let data_type = match &tag.data_type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
             ast::Type::Atom(atom) => Type::Primitive(match atom {
@@ -127,13 +142,9 @@ impl TranslateFrom<ast::Tag> for Type {
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
-                ast::Atom::JSON => match context.resolve_method {
-                    ResolveMethod::Cast => {
-                        warn!("{} - json atom", tag.fully_qualified_name());
-                        Primitive::String
-                    }
-                    ResolveMethod::Drop => return Err("json atom"),
-                    ResolveMethod::Panic => panic!("{} - json atom", tag.fully_qualified_name()),
+                ast::Atom::JSON => match handle_error("json atom") {
+                    Ok(_) => Primitive::String,
+                    Err(reason) => return Err(reason),
                 },
             }),
             ast::Type::Object(object) => {
@@ -162,16 +173,7 @@ impl TranslateFrom<ast::Tag> for Type {
                 };
 
                 if fields.is_empty() {
-                    match context.resolve_method {
-                        ResolveMethod::Cast => {
-                            warn!("{} - empty object", tag.fully_qualified_name());
-                            Type::Primitive(Primitive::String)
-                        }
-                        ResolveMethod::Drop => return Err("empty object"),
-                        ResolveMethod::Panic => {
-                            panic!("{} - empty object", tag.fully_qualified_name())
-                        }
-                    }
+                    handle_error("empty object")?
                 } else {
                     fields.sort_by_key(|v| v.name.to_string());
                     let record = Record {
@@ -193,22 +195,15 @@ impl TranslateFrom<ast::Tag> for Type {
                 Ok(data_type) => Type::Complex(Complex::Array(Array {
                     items: Box::new(data_type),
                 })),
-                Err(_) => return Err("untyped array"),
+                Err(_) => return Err(fmt_reason("untyped array")),
             },
             ast::Type::Map(map) => match Type::translate_from(*map.value.clone(), context) {
                 Ok(data_type) => Type::Complex(Complex::Map(Map {
                     values: Box::new(data_type),
                 })),
-                Err(_) => return Err("untyped map value"),
+                Err(_) => return Err(fmt_reason("untyped map value")),
             },
-            _ => match context.resolve_method {
-                ResolveMethod::Cast => {
-                    warn!("{} - unsupported type", tag.fully_qualified_name());
-                    Type::Primitive(Primitive::String)
-                }
-                ResolveMethod::Drop => return Err("unsupported type"),
-                ResolveMethod::Panic => panic!("{} - unsupported type", tag.fully_qualified_name()),
-            },
+            _ => handle_error("unknown type")?,
         };
         if tag.nullable && !tag.is_null() {
             Ok(Type::Union(vec![

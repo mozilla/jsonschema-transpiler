@@ -56,13 +56,28 @@ pub struct Tag {
 }
 
 impl TranslateFrom<ast::Tag> for Tag {
-    type Error = &'static str;
+    type Error = String;
 
     fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name();
         tag.infer_nullability();
+
+        let fmt_reason =
+            |reason: &str| -> String { format!("{} - {}", tag.fully_qualified_name(), reason) };
+        let handle_error = |reason: &str| -> Result<Type, Self::Error> {
+            let message = fmt_reason(reason);
+            match context.resolve_method {
+                ResolveMethod::Cast => {
+                    warn!("{}", message);
+                    Ok(Type::Atom(Atom::String))
+                }
+                ResolveMethod::Drop => Err(message),
+                ResolveMethod::Panic => panic!(message),
+            }
+        };
+
         let data_type = match &tag.data_type {
             ast::Type::Atom(atom) => Type::Atom(match atom {
                 ast::Atom::Boolean => Atom::Bool,
@@ -70,15 +85,9 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::Number => Atom::Float64,
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
-                ast::Atom::JSON => match context.resolve_method {
-                    ResolveMethod::Cast => {
-                        warn!("{} - json atom", tag.fully_qualified_name());
-                        Atom::String
-                    }
-                    ResolveMethod::Drop => {
-                        return Err("json atom");
-                    }
-                    ResolveMethod::Panic => panic!("{} - json atom", tag.fully_qualified_name()),
+                ast::Atom::JSON => match handle_error("json atom") {
+                    Ok(_) => Atom::String,
+                    Err(reason) => return Err(reason),
                 },
             }),
             ast::Type::Object(object) => {
@@ -95,29 +104,20 @@ impl TranslateFrom<ast::Tag> for Tag {
                 };
 
                 if fields.is_empty() {
-                    match context.resolve_method {
-                        ResolveMethod::Cast => {
-                            warn!("{} - empty object", tag.fully_qualified_name());
-                            Type::Atom(Atom::String)
-                        }
-                        ResolveMethod::Drop => return Err("empty object"),
-                        ResolveMethod::Panic => {
-                            panic!("{} - empty object", tag.fully_qualified_name())
-                        }
-                    }
+                    handle_error("empty object")?
                 } else {
                     Type::Record(Record { fields })
                 }
             }
             ast::Type::Array(array) => match Tag::translate_from(*array.items.clone(), context) {
                 Ok(tag) => *tag.data_type,
-                Err(_) => return Err("untyped array"),
+                Err(_) => return Err(fmt_reason("untyped array")),
             },
             ast::Type::Map(map) => {
                 let key = Tag::translate_from(*map.key.clone(), context).unwrap();
                 let value = match Tag::translate_from(*map.value.clone(), context) {
                     Ok(tag) => tag,
-                    Err(_) => return Err("untyped map value"),
+                    Err(_) => return Err(fmt_reason("untyped map value")),
                 };
                 let fields: HashMap<String, Box<Tag>> = vec![("key", key), ("value", value)]
                     .into_iter()
@@ -125,14 +125,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                     .collect();
                 Type::Record(Record { fields })
             }
-            _ => match context.resolve_method {
-                ResolveMethod::Cast => {
-                    warn!("{} - unsupported type", tag.fully_qualified_name());
-                    Type::Atom(Atom::String)
-                }
-                ResolveMethod::Drop => return Err("unsupported type"),
-                ResolveMethod::Panic => panic!("{} - unsupported type", tag.fully_qualified_name()),
-            },
+            _ => handle_error("unknown type")?,
         };
 
         let mode = if tag.is_array() || tag.is_map() {
