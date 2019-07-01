@@ -64,11 +64,12 @@ fn test_bigquery_resolve_error_drop() {
 }
 
 #[test]
+#[should_panic]
 fn test_bigquery_resolve_error_panic() {
     let context = Context {
         resolve_method: ResolveMethod::Panic,
     };
-    assert!(std::panic::catch_unwind(|| convert_bigquery(&test_data(), context)).is_err());
+    convert_bigquery(&test_data(), context);
 }
 
 #[test]
@@ -135,9 +136,10 @@ fn test_avro_resolve_error_drop() {
 }
 
 #[test]
+#[should_panic]
 fn test_avro_resolve_error_panic() {
     let context = Context {
         resolve_method: ResolveMethod::Panic,
     };
-    assert!(std::panic::catch_unwind(|| convert_avro(&test_data(), context)).is_err());
+    convert_avro(&test_data(), context);
 }
