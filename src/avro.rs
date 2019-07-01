@@ -129,10 +129,7 @@ impl TranslateFrom<ast::Tag> for Type {
                 ast::Atom::Datetime => Primitive::String,
                 ast::Atom::JSON => match context.resolve_method {
                     ResolveMethod::Cast => {
-                        warn!(
-                            "{} - Treating subschema as JSON string",
-                            tag.fully_qualified_name()
-                        );
+                        warn!("{} - json atom", tag.fully_qualified_name());
                         Primitive::String
                     }
                     ResolveMethod::Drop => return Err("json atom"),
@@ -167,13 +164,10 @@ impl TranslateFrom<ast::Tag> for Type {
                 if fields.is_empty() {
                     match context.resolve_method {
                         ResolveMethod::Cast => {
-                            warn!(
-                                "{} - Empty records are not supported, casting into a JSON string",
-                                tag.fully_qualified_name()
-                            );
+                            warn!("{} - empty object", tag.fully_qualified_name());
                             Type::Primitive(Primitive::String)
                         }
-                        ResolveMethod::Panic => panic!(),
+                        ResolveMethod::Panic => panic!("empty object"),
                         ResolveMethod::Drop => return Err("empty object"),
                     }
                 } else {
@@ -207,10 +201,10 @@ impl TranslateFrom<ast::Tag> for Type {
             },
             _ => match context.resolve_method {
                 ResolveMethod::Cast => {
-                    warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                    warn!("{} - unsupported type", tag.fully_qualified_name());
                     Type::Primitive(Primitive::String)
                 }
-                ResolveMethod::Panic => panic!(),
+                ResolveMethod::Panic => panic!("unsupported type"),
                 ResolveMethod::Drop => return Err("unsupported type"),
             },
         };

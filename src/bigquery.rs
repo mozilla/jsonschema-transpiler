@@ -72,13 +72,10 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::JSON => match context.resolve_method {
                     ResolveMethod::Cast => {
-                        warn!(
-                            "{} - Treating subschema as JSON string",
-                            tag.fully_qualified_name()
-                        );
+                        warn!("{} - json atom", tag.fully_qualified_name());
                         Atom::String
                     }
-                    ResolveMethod::Panic => panic!(),
+                    ResolveMethod::Panic => panic!("json atom"),
                     ResolveMethod::Drop => {
                         return Err("json atom");
                     }
@@ -100,13 +97,10 @@ impl TranslateFrom<ast::Tag> for Tag {
                 if fields.is_empty() {
                     match context.resolve_method {
                         ResolveMethod::Cast => {
-                            warn!(
-                                "{} - Empty records are not supported, casting into a JSON string",
-                                tag.fully_qualified_name()
-                            );
+                            warn!("{} - empty object", tag.fully_qualified_name());
                             Type::Atom(Atom::String)
                         }
-                        ResolveMethod::Panic => panic!(),
+                        ResolveMethod::Panic => panic!("empty object"),
                         ResolveMethod::Drop => return Err("empty object"),
                     }
                 } else {
@@ -131,10 +125,10 @@ impl TranslateFrom<ast::Tag> for Tag {
             }
             _ => match context.resolve_method {
                 ResolveMethod::Cast => {
-                    warn!("{} - Unsupported conversion", tag.fully_qualified_name());
+                    warn!("{} - unsupported type", tag.fully_qualified_name());
                     Type::Atom(Atom::String)
                 }
-                ResolveMethod::Panic => panic!(),
+                ResolveMethod::Panic => panic!("unsupported type"),
                 ResolveMethod::Drop => return Err("unsupported type"),
             },
         };
