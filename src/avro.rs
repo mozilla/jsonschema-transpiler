@@ -133,7 +133,7 @@ impl TranslateFrom<ast::Tag> for Type {
                         Primitive::String
                     }
                     ResolveMethod::Drop => return Err("json atom"),
-                    ResolveMethod::Panic => panic!("json atom"),
+                    ResolveMethod::Panic => panic!("{} - json atom", tag.fully_qualified_name()),
                 },
             }),
             ast::Type::Object(object) => {
@@ -167,8 +167,10 @@ impl TranslateFrom<ast::Tag> for Type {
                             warn!("{} - empty object", tag.fully_qualified_name());
                             Type::Primitive(Primitive::String)
                         }
-                        ResolveMethod::Panic => panic!("empty object"),
                         ResolveMethod::Drop => return Err("empty object"),
+                        ResolveMethod::Panic => {
+                            panic!("{} - empty object", tag.fully_qualified_name())
+                        }
                     }
                 } else {
                     fields.sort_by_key(|v| v.name.to_string());
@@ -204,8 +206,8 @@ impl TranslateFrom<ast::Tag> for Type {
                     warn!("{} - unsupported type", tag.fully_qualified_name());
                     Type::Primitive(Primitive::String)
                 }
-                ResolveMethod::Panic => panic!("unsupported type"),
                 ResolveMethod::Drop => return Err("unsupported type"),
+                ResolveMethod::Panic => panic!("{} - unsupported type", tag.fully_qualified_name()),
             },
         };
         if tag.nullable && !tag.is_null() {

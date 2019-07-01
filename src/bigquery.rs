@@ -75,10 +75,10 @@ impl TranslateFrom<ast::Tag> for Tag {
                         warn!("{} - json atom", tag.fully_qualified_name());
                         Atom::String
                     }
-                    ResolveMethod::Panic => panic!("json atom"),
                     ResolveMethod::Drop => {
                         return Err("json atom");
                     }
+                    ResolveMethod::Panic => panic!("{} - json atom", tag.fully_qualified_name()),
                 },
             }),
             ast::Type::Object(object) => {
@@ -100,8 +100,10 @@ impl TranslateFrom<ast::Tag> for Tag {
                             warn!("{} - empty object", tag.fully_qualified_name());
                             Type::Atom(Atom::String)
                         }
-                        ResolveMethod::Panic => panic!("empty object"),
                         ResolveMethod::Drop => return Err("empty object"),
+                        ResolveMethod::Panic => {
+                            panic!("{} - empty object", tag.fully_qualified_name())
+                        }
                     }
                 } else {
                     Type::Record(Record { fields })
@@ -128,8 +130,8 @@ impl TranslateFrom<ast::Tag> for Tag {
                     warn!("{} - unsupported type", tag.fully_qualified_name());
                     Type::Atom(Atom::String)
                 }
-                ResolveMethod::Panic => panic!("unsupported type"),
                 ResolveMethod::Drop => return Err("unsupported type"),
+                ResolveMethod::Panic => panic!("{} - unsupported type", tag.fully_qualified_name()),
             },
         };
 
