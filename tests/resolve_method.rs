@@ -2,25 +2,27 @@ use jst::{convert_avro, convert_bigquery};
 use jst::{Context, ResolveMethod};
 use serde_json::Value;
 
-#[test]
-fn test_bigquery_object_error_resolution() {
-    let mut expected: Value;
-    let mut context: Context;
-
-    let input: Value = serde_json::from_str(
+fn test_data() -> Value {
+    serde_json::from_str(
         r#"
-        {
-            "type": "object",
-            "properties": {
-                "empty": {},
-                "int": {"type": "integer"}
-            }
+    {
+        "type": "object",
+        "properties": {
+            "empty": {},
+            "int": {"type": "integer"}
         }
-        "#,
+    }
+    "#,
     )
-    .unwrap();
+    .unwrap()
+}
 
-    expected = serde_json::from_str(
+#[test]
+fn test_bigquery_resolve_error_cast() {
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
+    let expected: Value = serde_json::from_str(
         r#"
         [
             {
@@ -38,12 +40,15 @@ fn test_bigquery_object_error_resolution() {
     )
     .unwrap();
 
-    context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
-    assert_eq!(expected, convert_bigquery(&input, context));
+    assert_eq!(expected, convert_bigquery(&test_data(), context));
+}
 
-    expected = serde_json::from_str(
+#[test]
+fn test_bigquery_resolve_error_drop() {
+    let context = Context {
+        resolve_method: ResolveMethod::Drop,
+    };
+    let expected: Value = serde_json::from_str(
         r#"
         [
             {
@@ -55,36 +60,23 @@ fn test_bigquery_object_error_resolution() {
         "#,
     )
     .unwrap();
-    context = Context {
-        resolve_method: ResolveMethod::Drop,
-    };
-    assert_eq!(expected, convert_bigquery(&input, context));
-
-    context = Context {
-        resolve_method: ResolveMethod::Panic,
-    };
-    assert!(std::panic::catch_unwind(|| convert_bigquery(&input, context)).is_err());
+    assert_eq!(expected, convert_bigquery(&test_data(), context));
 }
 
 #[test]
-fn test_avro_object_error_resolution() {
-    let mut expected: Value;
-    let mut context: Context;
+fn test_bigquery_resolve_error_panic() {
+    let context = Context {
+        resolve_method: ResolveMethod::Panic,
+    };
+    assert!(std::panic::catch_unwind(|| convert_bigquery(&test_data(), context)).is_err());
+}
 
-    let input: Value = serde_json::from_str(
-        r#"
-        {
-            "type": "object",
-            "properties": {
-                "empty": {},
-                "int": {"type": "integer"}
-            }
-        }
-        "#,
-    )
-    .unwrap();
-
-    expected = serde_json::from_str(
+#[test]
+fn test_avro_resolve_error_cast() {
+    let context = Context {
+        resolve_method: ResolveMethod::Cast,
+    };
+    let expected: Value = serde_json::from_str(
         r#"
         {
             "fields": [
@@ -112,12 +104,15 @@ fn test_avro_object_error_resolution() {
     )
     .unwrap();
 
-    context = Context {
-        resolve_method: ResolveMethod::Cast,
-    };
-    assert_eq!(expected, convert_avro(&input, context));
+    assert_eq!(expected, convert_avro(&test_data(), context));
+}
 
-    expected = serde_json::from_str(
+#[test]
+fn test_avro_resolve_error_drop() {
+    let context = Context {
+        resolve_method: ResolveMethod::Drop,
+    };
+    let expected: Value = serde_json::from_str(
         r#"
         {
             "fields": [
@@ -136,13 +131,13 @@ fn test_avro_object_error_resolution() {
         "#,
     )
     .unwrap();
-    context = Context {
-        resolve_method: ResolveMethod::Drop,
-    };
-    assert_eq!(expected, convert_avro(&input, context));
+    assert_eq!(expected, convert_avro(&test_data(), context));
+}
 
-    context = Context {
+#[test]
+fn test_avro_resolve_error_panic() {
+    let context = Context {
         resolve_method: ResolveMethod::Panic,
     };
-    assert!(std::panic::catch_unwind(|| convert_avro(&input, context)).is_err());
+    assert!(std::panic::catch_unwind(|| convert_avro(&test_data(), context)).is_err());
 }
