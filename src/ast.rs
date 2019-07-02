@@ -1,4 +1,6 @@
 use super::jsonschema;
+use super::Context;
+use super::TranslateFrom;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -77,14 +79,12 @@ impl Map {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Union {
-    items: Vec<Box<Tag>>,
+    items: Vec<Tag>,
 }
 
 impl Union {
     pub fn new(items: Vec<Tag>) -> Self {
-        Union {
-            items: items.into_iter().map(Box::new).collect(),
-        }
+        Union { items }
     }
 
     /// Collapse a union of types into a structurally compatible type.
@@ -95,7 +95,7 @@ impl Union {
     /// be consumed by the JSON type. In a similar fashion, a table schema is determined
     /// to be nullable or required via occurances of null types in unions.
     pub fn collapse(&self) -> Tag {
-        let is_null = self.items.iter().any(|x| x.is_null());
+        let is_null = self.items.iter().any(Tag::is_null);
 
         if self.items.is_empty() {
             panic!("empty union is not allowed")
@@ -109,7 +109,7 @@ impl Union {
             };
         }
 
-        let items: Vec<Box<Tag>> = self
+        let items: Vec<Tag> = self
             .items
             .iter()
             .filter(|x| !x.is_null())
@@ -117,7 +117,7 @@ impl Union {
                 if let Type::Union(union) = &x.data_type {
                     let mut tag = union.collapse();
                     tag.name = x.name.clone();
-                    Box::new(tag)
+                    tag
                 } else {
                     x.clone()
                 }
@@ -128,7 +128,7 @@ impl Union {
         // the preprocessing step, check for nullability based on the immediate level of tags
         let nullable = is_null || items.iter().any(|tag| tag.nullable);
 
-        let data_type: Type = if items.iter().all(|x| x.is_atom()) {
+        let data_type: Type = if items.iter().all(Tag::is_atom) {
             items
                 .into_iter()
                 .fold(Type::Null, |acc, x| match (acc, &x.data_type) {
@@ -153,7 +153,7 @@ impl Union {
                         Type::Atom(Atom::JSON)
                     }
                 })
-        } else if items.iter().all(|x| x.is_object()) {
+        } else if items.iter().all(Tag::is_object) {
             items
                 .into_iter()
                 .fold(Type::Null, |acc, x| match (&acc, &x.data_type) {
@@ -185,7 +185,7 @@ impl Union {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
                                     (Some(x), Some(y)) => {
-                                        Some(x.intersection(&y).map(|x| x.to_string()).collect())
+                                        Some(x.intersection(&y).map(ToString::to_string).collect())
                                     }
                                     (Some(x), None) | (None, Some(x)) => Some(x.clone()),
                                     _ => None,
@@ -201,7 +201,7 @@ impl Union {
                         Type::Atom(Atom::JSON)
                     }
                 })
-        } else if items.iter().all(|x| x.is_map()) {
+        } else if items.iter().all(Tag::is_map) {
             let tags: Vec<Tag> = items
                 .into_iter()
                 .map(|x| match &x.data_type {
@@ -210,7 +210,7 @@ impl Union {
                 })
                 .collect();
             Type::Map(Map::new(None, Union::new(tags).collapse()))
-        } else if items.iter().all(|x| x.is_array()) {
+        } else if items.iter().all(Tag::is_array) {
             let tags: Vec<Tag> = items
                 .into_iter()
                 .map(|x| match &x.data_type {
@@ -494,7 +494,7 @@ impl Tag {
                         .map(String::as_str)
                         .map(Tag::rename_string_bigquery)
                         .filter(Option::is_some)
-                        .map(|x| x.unwrap())
+                        .map(Option::unwrap)
                         .collect();
                     Some(renamed)
                 }
@@ -504,13 +504,15 @@ impl Tag {
     }
 }
 
-impl From<jsonschema::Tag> for Tag {
-    fn from(tag: jsonschema::Tag) -> Self {
+impl TranslateFrom<jsonschema::Tag> for Tag {
+    type Error = &'static str;
+
+    fn translate_from(tag: jsonschema::Tag, _context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag.type_into_ast();
         tag.infer_name();
         tag.infer_nullability();
         tag.is_root = true;
-        tag
+        Ok(tag)
     }
 }
 
@@ -674,7 +676,7 @@ mod tests {
         };
         let union = Tag {
             data_type: Type::Union(Union {
-                items: vec![Box::new(test_int), Box::new(test_null)],
+                items: vec![test_int, test_null],
             }),
             ..Default::default()
         };

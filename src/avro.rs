@@ -1,5 +1,7 @@
 /// https://avro.apache.org/docs/current/spec.html
 use super::ast;
+use super::TranslateFrom;
+use super::{Context, ResolveMethod};
 use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -103,8 +105,10 @@ impl Default for Type {
     }
 }
 
-impl From<ast::Tag> for Type {
-    fn from(tag: ast::Tag) -> Self {
+impl TranslateFrom<ast::Tag> for Type {
+    type Error = String;
+
+    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -115,6 +119,21 @@ impl From<ast::Tag> for Type {
             tag.infer_name();
         }
         tag.infer_nullability();
+
+        let fmt_reason =
+            |reason: &str| -> String { format!("{} - {}", tag.fully_qualified_name(), reason) };
+        let handle_error = |reason: &str| -> Result<Type, Self::Error> {
+            let message = fmt_reason(reason);
+            match context.resolve_method {
+                ResolveMethod::Cast => {
+                    warn!("{}", message);
+                    Ok(Type::Primitive(Primitive::String))
+                }
+                ResolveMethod::Drop => Err(message),
+                ResolveMethod::Panic => panic!(message),
+            }
+        };
+
         let data_type = match &tag.data_type {
             ast::Type::Null => Type::Primitive(Primitive::Null),
             ast::Type::Atom(atom) => Type::Primitive(match atom {
@@ -123,63 +142,76 @@ impl From<ast::Tag> for Type {
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
-                ast::Atom::JSON => {
-                    warn!(
-                        "{} - Treating subschema as JSON string",
-                        tag.fully_qualified_name()
-                    );
-                    Primitive::String
-                }
+                ast::Atom::JSON => match handle_error("json atom") {
+                    Ok(_) => Primitive::String,
+                    Err(reason) => return Err(reason),
+                },
             }),
-            ast::Type::Object(object) if object.fields.is_empty() => {
-                warn!(
-                    "{} - Empty records are not supported, casting into a JSON string",
-                    tag.fully_qualified_name()
-                );
-                Type::Primitive(Primitive::String)
-            }
             ast::Type::Object(object) => {
-                let mut fields: Vec<Field> = object
-                    .fields
-                    .iter()
-                    .map(|(k, v)| Field {
-                        name: k.to_string(),
-                        data_type: Type::from(*v.clone()),
-                        default: if v.nullable { Some(json!(null)) } else { None },
-                        ..Default::default()
-                    })
-                    .collect();
-                fields.sort_by_key(|v| v.name.to_string());
-
-                let record = Record {
-                    common: CommonAttributes {
-                        // This is not a safe assumption
-                        name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
-                        namespace: tag.namespace.clone(),
-                        ..Default::default()
-                    },
-                    fields,
+                let mut fields: Vec<Field> = if object.fields.is_empty() {
+                    Vec::new()
+                } else {
+                    object
+                        .fields
+                        .iter()
+                        .map(|(k, v)| {
+                            let default = if v.nullable { Some(json!(null)) } else { None };
+                            (
+                                k.to_string(),
+                                Type::translate_from(*v.clone(), context),
+                                default,
+                            )
+                        })
+                        .filter(|(_, v, _)| v.is_ok())
+                        .map(|(name, data_type, default)| Field {
+                            name,
+                            data_type: data_type.unwrap(),
+                            default,
+                            ..Default::default()
+                        })
+                        .collect()
                 };
-                if record.common.name == "__UNNAMED__" {
-                    warn!("{} - Unnamed field", tag.fully_qualified_name());
+
+                if fields.is_empty() {
+                    handle_error("empty object")?
+                } else {
+                    fields.sort_by_key(|v| v.name.to_string());
+                    let record = Record {
+                        common: CommonAttributes {
+                            // This is not a safe assumption
+                            name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
+                            namespace: tag.namespace.clone(),
+                            ..Default::default()
+                        },
+                        fields,
+                    };
+                    if record.common.name == "__UNNAMED__" {
+                        warn!("{} - Unnamed field", tag.fully_qualified_name());
+                    }
+                    Type::Complex(Complex::Record(record))
                 }
-                Type::Complex(Complex::Record(record))
             }
-            ast::Type::Array(array) => Type::Complex(Complex::Array(Array {
-                items: Box::new(Type::from(*array.items.clone())),
-            })),
-            ast::Type::Map(map) => Type::Complex(Complex::Map(Map {
-                values: Box::new(Type::from(*map.value.clone())),
-            })),
-            _ => {
-                warn!("{} - Unsupported conversion", tag.fully_qualified_name());
-                Type::Primitive(Primitive::String)
-            }
+            ast::Type::Array(array) => match Type::translate_from(*array.items.clone(), context) {
+                Ok(data_type) => Type::Complex(Complex::Array(Array {
+                    items: Box::new(data_type),
+                })),
+                Err(_) => return Err(fmt_reason("untyped array")),
+            },
+            ast::Type::Map(map) => match Type::translate_from(*map.value.clone(), context) {
+                Ok(data_type) => Type::Complex(Complex::Map(Map {
+                    values: Box::new(data_type),
+                })),
+                Err(_) => return Err(fmt_reason("untyped map value")),
+            },
+            _ => handle_error("unknown type")?,
         };
         if tag.nullable && !tag.is_null() {
-            Type::Union(vec![Type::Primitive(Primitive::Null), data_type])
+            Ok(Type::Union(vec![
+                Type::Primitive(Primitive::Null),
+                data_type,
+            ]))
         } else {
-            data_type
+            Ok(data_type)
         }
     }
 }
@@ -199,8 +231,11 @@ mod tests {
     }
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
+        let context = Context {
+            resolve_method: ResolveMethod::Cast,
+        };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::from(tag);
+        let from_tag = Type::translate_from(tag, context).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 

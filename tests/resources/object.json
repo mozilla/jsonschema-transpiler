@@ -7,6 +7,7 @@
         "Sorting makes the output schema deterministic."
       ],
       "name": "test_object_with_atomics_is_sorted",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -109,6 +110,7 @@
         "This changes the mode of the underlying atomic field."
       ],
       "name": "test_object_with_atomics_required",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -184,6 +186,7 @@
         "Since the underlying field is null, the field is then casted back to nullable."
       ],
       "name": "test_object_with_atomics_required_with_null",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -263,6 +266,7 @@
     },
     {
       "name": "test_object_with_complex",
+      "compatible": true,
       "test": {
         "avro": {
           "fields": [
@@ -353,6 +357,7 @@
         "as empty documents."
       ],
       "name": "test_object_empty_record",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"

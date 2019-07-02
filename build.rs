@@ -20,6 +20,9 @@ struct TestCase {
     #[serde(default, skip_serializing_if = "Value::is_null")]
     description: Value,
     name: String,
+    // True if the schema does not involve ambiguous sections
+    #[serde(default)]
+    compatible: bool,
     test: TestData,
 }
 
@@ -70,7 +73,7 @@ fn write_avro_tests(mut outfile: &File, suite: &TestSuite) {
     for case in &suite.tests {
         let formatted = format!(
             r##"
-#[test]
+#[test]{should_panic}
 fn avro_{name}() {{
     let input_data = r#"
     {input_data}
@@ -78,12 +81,23 @@ fn avro_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
+    let mut context = Context {{
+        resolve_method: ResolveMethod::Cast,
+    }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input));
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
 }}
 "##,
             name = case.name,
+            should_panic = if case.compatible {
+                ""
+            } else {
+                "\n#[should_panic]"
+            },
             input_data = format_json(case.test.json.clone()),
             expected = format_json(case.test.avro.clone()),
         );
@@ -103,9 +117,12 @@ fn bigquery_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
+    let context = Context {{
+        resolve_method: ResolveMethod::Cast,
+    }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input));
+    assert_eq!(expected, convert_bigquery(&input, context));
 }}
 "##,
             name = case.name,
@@ -126,6 +143,7 @@ fn main() {
     write!(
         avro_fp,
         r#"use jst::convert_avro;
+use jst::{{Context, ResolveMethod}};
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 "#
@@ -135,6 +153,7 @@ use serde_json::Value;
     write!(
         bq_fp,
         r#"use jst::convert_bigquery;
+use jst::{{Context, ResolveMethod}};
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 "#

@@ -3,6 +3,7 @@
   "tests": [
     {
       "name": "test_array_with_atomics",
+      "compatible": true,
       "test": {
         "avro": {
           "items": {
@@ -27,6 +28,7 @@
     },
     {
       "name": "test_array_with_complex",
+      "compatible": true,
       "test": {
         "avro": {
           "items": {

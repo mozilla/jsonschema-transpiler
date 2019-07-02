@@ -3,6 +3,7 @@
   "tests": [
     {
       "name": "test_atomic",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "long"
@@ -21,6 +22,7 @@
     },
     {
       "name": "test_atomic_with_null",
+      "compatible": true,
       "test": {
         "avro": [
           {
@@ -50,6 +52,7 @@
         "Test that overlapping types are treated as json blobs."
       ],
       "name": "test_incompatible_atomic_multitype",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "string"
@@ -75,6 +78,7 @@
         "A field is null if any of it's types are null."
       ],
       "name": "test_incompatible_atomic_multitype_with_null",
+      "compatible": false,
       "test": {
         "avro": [
           {
@@ -102,6 +106,7 @@
     },
     {
       "name": "test_datetime",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "string"

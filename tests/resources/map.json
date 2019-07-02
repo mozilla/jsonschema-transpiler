@@ -10,6 +10,7 @@
   "tests": [
     {
       "name": "test_map_with_atomics",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "map",
@@ -46,6 +47,7 @@
     },
     {
       "name": "test_map_with_complex",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "map",
@@ -130,6 +132,7 @@
     },
     {
       "name": "test_map_with_pattern_properties",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "map",
@@ -169,6 +172,7 @@
     },
     {
       "name": "test_map_with_pattern_and_additional_properties",
+      "compatible": true,
       "test": {
         "avro": {
           "type": "map",
@@ -210,6 +214,7 @@
     },
     {
       "name": "test_incompatible_map_with_pattern_properties",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "map",
@@ -252,6 +257,7 @@
     },
     {
       "name": "test_incompatible_map_with_pattern_and_additional_properties",
+      "compatible": false,
       "test": {
         "avro": {
           "type": "map",
