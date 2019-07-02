@@ -3,12 +3,11 @@ use super::Context;
 /// A translation between two schema formats that may fail under certain
 /// conditions.
 ///
-/// This is the similar to the `TryFrom` trait, but also requires the
-/// implementor to include a context struct for run-time modifications to the
-/// schema. The most concrete use of the context struct is to provide an
-/// appropriate error handling mechanism when the JSON Schema contains an empty
-/// field. Depending on the use-case, it may be more appropriate to signal
-/// immediate failure over something like dropping the field.
+/// This is similar to the `TryFrom` trait, but requires the implementor to pass
+/// a Context struct for runtime modifications to the schema. A concrete use
+/// context is to decide on an appropriate error handling mechanism when a JSON
+/// Schema contains an empty field. Given a use-case, it may be more appropriate
+/// to fail fast and panic over dropping or casting the field.
 ///
 /// https://doc.rust-lang.org/src/core/convert.rs.html#478-486
 pub trait TranslateFrom<T>: Sized {

@@ -15,24 +15,25 @@ mod traits;
 use serde_json::{json, Value};
 use traits::TranslateFrom;
 
-/// Options for error handling in the [`TranslateFrom`] and [`TranslateInto`]
-/// interfaces for converting between schema formats.
+/// The error resoluton method in the [`TranslateFrom`] and [`TranslateInto`]
+/// interfaces when converting between schema formats.
 ///
 /// The `Cast` method will represent under-specified (e.g. empty objects) and
 /// incompatible (e.g. variant-types or conflicting oneOf definitions) as
 /// strings. This behavior is useful for compacting complex types into a single
 /// column. In Spark and BigQuery, a casted column can be processed via a user
-/// defined function that works on JSON. This method can cause issues with
-/// schema evolution that require migration work.
+/// defined function that works on JSON. However, this method may cause issues
+/// with schema evolution, for example when adding properties to empty objects.
 ///
 /// The `Drop` method will drop fields if they do not fall neatly into one of
 /// the supported types. This method ensures forward compatibility with schemas,
-/// but requires support during data processing to capture the dropped data from
-/// the structured section of the schema.
+/// but it can lose large portions of nested data. Support from the data
+/// processing side can recover dropped data from the structured section of the
+/// schema.
 ///
-/// The `Panic` method will panic if the JSON Schema is inconsistent in any way,
-/// or uses features that the transpiler does not support. This method is useful
-/// way to test for incompatible schemas.
+/// The `Panic` method will panic if the JSON Schema is inconsistent or uses
+/// unsupported features. This method is a useful way to test for incompatible
+/// schemas.
 #[derive(Copy, Clone)]
 pub enum ResolveMethod {
     Cast,
