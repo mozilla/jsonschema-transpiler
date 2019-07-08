@@ -286,17 +286,6 @@ impl Tag {
         }
     }
 
-    pub fn fully_qualified_name(&self) -> String {
-        let name = match &self.name {
-            Some(name) => name.clone(),
-            None => "__unknown__".to_string(),
-        };
-        match &self.namespace {
-            Some(ns) => format!("{}.{}", ns, name),
-            None => name,
-        }
-    }
-
     pub fn is_null(&self) -> bool {
         match self.data_type {
             Type::Null => true,
@@ -332,14 +321,83 @@ impl Tag {
         }
     }
 
-    fn fill_names(&mut self, name: String, namespace: String) {
-        self.name = Some(name);
-        if !namespace.is_empty() {
-            self.namespace = Some(namespace);
+    pub fn fully_qualified_name(&self) -> String {
+        let name = match &self.name {
+            Some(name) => name.clone(),
+            None => "__unknown__".to_string(),
+        };
+        match &self.namespace {
+            Some(ns) => format!("{}.{}", ns, name),
+            None => name,
         }
     }
 
-    fn infer_name_helper(&mut self, namespace: String) {
+    /// Set a fully qualified name to a tag with references to the name and the
+    /// namespace.
+    fn set_name(&mut self, name: &str, namespace: &str) {
+        self.name = Some(name.to_string());
+        if !namespace.is_empty() {
+            self.namespace = Some(namespace.to_string());
+        }
+    }
+
+    /// Renames a column name so it contains only letters, numbers, and
+    /// underscores while starting with a letter or underscore. This requirement
+    /// is enforced by BigQuery during table creation.
+    fn rename_string_bigquery(string: &str) -> Option<String> {
+        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+        let mut renamed = string.replace(".", "_").replace("-", "_");
+        if renamed.chars().next().unwrap().is_numeric() {
+            renamed = format!("_{}", renamed);
+        };
+        if re.is_match(&renamed) {
+            Some(renamed)
+        } else {
+            None
+        }
+    }
+
+    /// Fix properties of an object to adhere the BigQuery column name
+    /// specification.
+    ///
+    /// This modifies field names as well as required fields.
+    /// See: https://cloud.google.com/bigquery/docs/schemas
+    pub fn fix_properties(&mut self) {
+        if let Type::Object(ref mut object) = self.data_type {
+            let fields = &mut object.fields;
+            let keys: Vec<String> = fields.keys().cloned().collect();
+            for key in keys {
+                if let Some(renamed) = Tag::rename_string_bigquery(&key) {
+                    if renamed.as_str() != key.as_str() {
+                        warn!("{} replaced with {}", key, renamed);
+                        fields.insert(renamed.clone(), fields[&key].clone());
+                        fields.remove(&key.clone());
+                    }
+                } else {
+                    warn!(
+                        "{} is not a valid property name and will not be included",
+                        key
+                    );
+                    fields.remove(&key.clone());
+                }
+            }
+            object.required = match &object.required {
+                Some(required) => {
+                    let renamed: HashSet<String> = required
+                        .iter()
+                        .map(String::as_str)
+                        .map(Tag::rename_string_bigquery)
+                        .filter(Option::is_some)
+                        .map(Option::unwrap)
+                        .collect();
+                    Some(renamed)
+                }
+                None => None,
+            };
+        }
+    }
+
+    fn recurse_infer_name(&mut self, namespace: String) {
         // We remove invalid field names from the schema when we infer the names
         // for the schema (e.g. `$schema`). We also apply rules to make the
         // names consistent with BigQuery's naming scheme, like avoiding columns
@@ -349,28 +407,26 @@ impl Tag {
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    value.fill_names(key.to_string(), namespace.clone());
-                    value.infer_name_helper(format!("{}.{}", namespace, key));
+                    value.set_name(key, &namespace);
+                    value.recurse_infer_name(format!("{}.{}", namespace, key));
                 }
             }
             Type::Map(map) => {
-                map.key.fill_names("key".into(), namespace.clone());
-                map.value.fill_names("value".into(), namespace.clone());
-                map.key
-                    .infer_name_helper(format!("{}.key", namespace.clone()));
-                map.value
-                    .infer_name_helper(format!("{}.value", namespace.clone()));
+                map.key.set_name("key", &namespace);
+                map.value.set_name("value", &namespace);
+                map.key.recurse_infer_name(format!("{}.key", &namespace));
+                map.value.recurse_infer_name(format!("{}.value", &namespace));
             }
             Type::Array(array) => {
-                array.items.fill_names("items".into(), namespace.clone());
+                array.items.set_name("items", &namespace);
                 array
                     .items
-                    .infer_name_helper(format!("{}.items", namespace.clone()));
+                    .recurse_infer_name(format!("{}.items", &namespace));
             }
             Type::Union(union) => {
                 for item in union.items.iter_mut() {
-                    item.fill_names("__union__".into(), namespace.clone());
-                    item.infer_name_helper(format!("{}.__union__", namespace.clone()));
+                    item.set_name("__union__", &namespace);
+                    item.recurse_infer_name(format!("{}.__union__", &namespace));
                 }
             }
             _ => (),
@@ -383,7 +439,7 @@ impl Tag {
             Some(name) => name.clone(),
             None => "".into(),
         };
-        self.infer_name_helper(namespace);
+        self.recurse_infer_name(namespace);
     }
 
     /// These rules are primarily focused on BigQuery, although they should
@@ -444,62 +500,6 @@ impl Tag {
                 self.nullable = tag.nullable;
             }
             _ => (),
-        }
-    }
-
-    /// Renames a column name so it contains only letters, numbers, and
-    /// underscores while starting with a letter or underscore. This requirement
-    /// is enforced by BigQuery during table creation.
-    fn rename_string_bigquery(string: &str) -> Option<String> {
-        let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
-        let mut renamed = string.replace(".", "_").replace("-", "_");
-        if renamed.chars().next().unwrap().is_numeric() {
-            renamed = format!("_{}", renamed);
-        };
-        if re.is_match(&renamed) {
-            Some(renamed)
-        } else {
-            None
-        }
-    }
-
-    /// Fix properties of an object to adhere the BigQuery column name
-    /// specification.
-    ///
-    /// This modifies field names as well as required fields.
-    /// See: https://cloud.google.com/bigquery/docs/schemas
-    pub fn fix_properties(&mut self) {
-        if let Type::Object(ref mut object) = self.data_type {
-            let fields = &mut object.fields;
-            let keys: Vec<String> = fields.keys().cloned().collect();
-            for key in keys {
-                if let Some(renamed) = Tag::rename_string_bigquery(&key) {
-                    if renamed.as_str() != key.as_str() {
-                        warn!("{} replaced with {}", key, renamed);
-                        fields.insert(renamed.clone(), fields[&key].clone());
-                        fields.remove(&key.clone());
-                    }
-                } else {
-                    warn!(
-                        "{} is not a valid property name and will not be included",
-                        key
-                    );
-                    fields.remove(&key.clone());
-                }
-            }
-            object.required = match &object.required {
-                Some(required) => {
-                    let renamed: HashSet<String> = required
-                        .iter()
-                        .map(String::as_str)
-                        .map(Tag::rename_string_bigquery)
-                        .filter(Option::is_some)
-                        .map(Option::unwrap)
-                        .collect();
-                    Some(renamed)
-                }
-                None => None,
-            };
         }
     }
 }
