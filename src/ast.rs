@@ -321,6 +321,27 @@ impl Tag {
         }
     }
 
+    /// Get the path the the current tag in the context of the larger schema.
+    ///
+    /// Each tag in the schema can be unambiguously referenced by concatenating
+    /// the name of tag with the tag's namespace. For example, a document may
+    /// contain a `timestamp` field nested under different sub-documents.
+    ///
+    /// ```json
+    /// {
+    ///     "environment": { "timestamp": 64 },
+    ///     "payload": {
+    ///         "measurement": 10,
+    ///         "timestamp": 64
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// The fully qualified names are as follows:
+    ///
+    /// * `root.attributes.timestamp`
+    /// * `root.payload.measurement`
+    /// * `root.payload.timestamp`
     pub fn fully_qualified_name(&self) -> String {
         let name = match &self.name {
             Some(name) => name.clone(),
@@ -332,8 +353,7 @@ impl Tag {
         }
     }
 
-    /// Set a fully qualified name to a tag with references to the name and the
-    /// namespace.
+    /// Sets a tag with references to the name and the namespace.
     fn set_name(&mut self, name: &str, namespace: &str) {
         self.name = Some(name.to_string());
         if !namespace.is_empty() {
@@ -344,7 +364,7 @@ impl Tag {
     /// Renames a column name so it contains only letters, numbers, and
     /// underscores while starting with a letter or underscore. This requirement
     /// is enforced by BigQuery during table creation.
-    fn rename_string_bigquery(string: &str) -> Option<String> {
+    fn normalize_name_bigquery(string: &str) -> Option<String> {
         let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
         let mut renamed = string.replace(".", "_").replace("-", "_");
         if renamed.chars().next().unwrap().is_numeric() {
@@ -360,33 +380,39 @@ impl Tag {
     /// Fix properties of an object to adhere the BigQuery column name
     /// specification.
     ///
+    /// This removes invalid field names from the schema when inferring the
+    /// names for the schema (e.g. `$schema`). It also applies rules to be
+    /// consistent with BigQuery's naming scheme, like avoiding columns that
+    /// start with a number.
+    ///
     /// This modifies field names as well as required fields.
     /// See: https://cloud.google.com/bigquery/docs/schemas
-    pub fn fix_properties(&mut self) {
+    pub fn normalize_properties(&mut self) {
         if let Type::Object(ref mut object) = self.data_type {
             let fields = &mut object.fields;
             let keys: Vec<String> = fields.keys().cloned().collect();
+
             for key in keys {
-                if let Some(renamed) = Tag::rename_string_bigquery(&key) {
+                // Replace property names with the normalized property name
+                if let Some(renamed) = Tag::normalize_name_bigquery(&key) {
                     if renamed.as_str() != key.as_str() {
                         warn!("{} replaced with {}", key, renamed);
-                        fields.insert(renamed.clone(), fields[&key].clone());
-                        fields.remove(&key.clone());
+                        fields.insert(renamed, fields[&key].clone());
+                        fields.remove(&key);
                     }
                 } else {
-                    warn!(
-                        "{} is not a valid property name and will not be included",
-                        key
-                    );
-                    fields.remove(&key.clone());
+                    warn!("Omitting {} - not a valid property name", key);
+                    fields.remove(&key);
                 }
             }
+
+            // Replace the corresponding names in the required field
             object.required = match &object.required {
                 Some(required) => {
                     let renamed: HashSet<String> = required
                         .iter()
                         .map(String::as_str)
-                        .map(Tag::rename_string_bigquery)
+                        .map(Tag::normalize_name_bigquery)
                         .filter(Option::is_some)
                         .map(Option::unwrap)
                         .collect();
@@ -397,36 +423,35 @@ impl Tag {
         }
     }
 
+    /// A helper function for calculating the names and namespaces within the
+    /// schema.
+    ///
+    /// The namespaces are built from the top-down and follows the depth-first
+    /// traversal of the schema.
     fn recurse_infer_name(&mut self, namespace: String) {
-        // We remove invalid field names from the schema when we infer the names
-        // for the schema (e.g. `$schema`). We also apply rules to make the
-        // names consistent with BigQuery's naming scheme, like avoiding columns
-        // that start with a number.
-        self.fix_properties();
+        self.normalize_properties();
+
+        let set_and_recurse = |tag: &mut Tag, name: &str| {
+            tag.set_name(name, &namespace);
+            tag.recurse_infer_name(format!("{}.{}", &namespace, name))
+        };
 
         match &mut self.data_type {
             Type::Object(object) => {
                 for (key, value) in object.fields.iter_mut() {
-                    value.set_name(key, &namespace);
-                    value.recurse_infer_name(format!("{}.{}", namespace, key));
+                    set_and_recurse(value, key)
                 }
             }
             Type::Map(map) => {
-                map.key.set_name("key", &namespace);
-                map.value.set_name("value", &namespace);
-                map.key.recurse_infer_name(format!("{}.key", &namespace));
-                map.value.recurse_infer_name(format!("{}.value", &namespace));
+                set_and_recurse(&mut map.key, "key");
+                set_and_recurse(&mut map.value, "value");
             }
             Type::Array(array) => {
-                array.items.set_name("items", &namespace);
-                array
-                    .items
-                    .recurse_infer_name(format!("{}.items", &namespace));
+                set_and_recurse(&mut array.items, "items");
             }
             Type::Union(union) => {
                 for item in union.items.iter_mut() {
-                    item.set_name("__union__", &namespace);
-                    item.recurse_infer_name(format!("{}.__union__", &namespace));
+                    set_and_recurse(item, "__union__");
                 }
             }
             _ => (),
@@ -442,6 +467,9 @@ impl Tag {
         self.recurse_infer_name(namespace);
     }
 
+    /// Infer whether the current tag in the schema allows for the value to be
+    /// null.
+    ///
     /// These rules are primarily focused on BigQuery, although they should
     /// translate into other schemas. This should be run after unions have been
     /// eliminated from the tree since the behavior is currently order
@@ -479,7 +507,7 @@ impl Tag {
         }
     }
 
-    // An interface to collapse the schema of all unions
+    /// Factor out the shared parts of the union between two schemas.
     pub fn collapse(&mut self) {
         match &mut self.data_type {
             Type::Object(object) => {
@@ -1136,7 +1164,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_fix_properties() {
+    fn test_tag_normalize_properties() {
         let data = json!({
         "type": {
             "object": {
@@ -1153,7 +1181,7 @@ mod tests {
                     "64bit",
                 ]}}});
         let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.fix_properties();
+        tag.normalize_properties();
         if let Type::Object(object) = &tag.data_type {
             let expected: HashSet<String> = ["valid_name", "renamed_value_0", "_64bit"]
                 .iter()
