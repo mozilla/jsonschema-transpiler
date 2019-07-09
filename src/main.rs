@@ -61,7 +61,7 @@ fn main() {
             "drop" => ResolveMethod::Drop,
             _ => panic!("Unknown resolution method!"),
         },
-        ..Default::default()
+        normalize_case: matches.is_present("normalize-case"),
     };
 
     let output = match matches.value_of("type").unwrap() {
