@@ -82,7 +82,7 @@ fn avro_{name}() {{
     {expected}
     "#;
     let mut context = Context {{
-        resolve_method: ResolveMethod::Cast,
+        ..Default::default()
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -109,7 +109,7 @@ fn write_bigquery_tests(mut outfile: &File, suite: &TestSuite) {
     for case in &suite.tests {
         let formatted = format!(
             r##"
-#[test]
+#[test]{should_panic}
 fn bigquery_{name}() {{
     let input_data = r#"
     {input_data}
@@ -117,15 +117,23 @@ fn bigquery_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
-    let context = Context {{
-        resolve_method: ResolveMethod::Cast,
+    let mut context = Context {{
+        ..Default::default()
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
     assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
 }}
 "##,
             name = case.name,
+            should_panic = if case.compatible {
+                ""
+            } else {
+                "\n#[should_panic]"
+            },
             input_data = format_json(case.test.json.clone()),
             expected = format_json(case.test.bigquery.clone()),
         );

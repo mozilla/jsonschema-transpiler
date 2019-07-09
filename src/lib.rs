@@ -41,6 +41,12 @@ pub enum ResolveMethod {
     Panic,
 }
 
+impl Default for ResolveMethod {
+    fn default() -> Self {
+        ResolveMethod::Cast
+    }
+}
+
 /// Options for modifying the behavior of translating between two schema
 /// formats.
 ///
@@ -49,9 +55,10 @@ pub enum ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
+    pub normalize_case: bool,
 }
 
 fn into_ast(input: &Value, context: Context) -> ast::Tag {

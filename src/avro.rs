@@ -232,7 +232,7 @@ mod tests {
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
         let context = Context {
-            resolve_method: ResolveMethod::Cast,
+            ..Default::default()
         };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
         let from_tag = Type::translate_from(tag, context).unwrap();
