@@ -356,15 +356,22 @@ impl Tag {
         }
     }
 
+    /// If a name starts with a number, prefix it with an underscore.
+    fn prefix_numeric(name: String) -> String {
+        if name.chars().next().unwrap().is_numeric() {
+            format!("_{}", name)
+        } else {
+            name
+        }
+    }
+
     /// Renames a column name so it contains only letters, numbers, and
     /// underscores while starting with a letter or underscore. This requirement
     /// is enforced by BigQuery during table creation.
     fn normalize_name_bigquery(string: &str) -> Option<String> {
         let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
         let mut renamed = string.replace(".", "_").replace("-", "_");
-        if renamed.chars().next().unwrap().is_numeric() {
-            renamed = format!("_{}", renamed);
-        };
+        renamed = Tag::prefix_numeric(renamed);
         if re.is_match(&renamed) {
             Some(renamed)
         } else {
@@ -391,7 +398,7 @@ impl Tag {
                 // Replace property names with the normalized property name
                 if let Some(mut renamed) = Tag::normalize_name_bigquery(&key) {
                     renamed = if normalize_case {
-                        renamed.to_snake_case()
+                        Tag::prefix_numeric(renamed.to_snake_case())
                     } else {
                         renamed
                     };
@@ -417,7 +424,12 @@ impl Tag {
                         .map(Option::unwrap)
                         .collect();
                     if normalize_case {
-                        Some(renamed.iter().map(|s| s.to_snake_case()).collect())
+                        Some(
+                            renamed
+                                .iter()
+                                .map(|s| Tag::prefix_numeric(s.to_snake_case()))
+                                .collect(),
+                        )
                     } else {
                         Some(renamed)
                     }
@@ -1176,6 +1188,17 @@ mod tests {
 
     #[test]
     fn test_tag_normalize_properties() {
+        fn assert_normalize(tag: &Tag, renamed: Vec<&str>) {
+            if let Type::Object(object) = &tag.data_type {
+                let expected: HashSet<String> = renamed.iter().map(|x| x.to_string()).collect();
+                let actual: HashSet<String> = object.fields.keys().cloned().collect();
+                assert_eq!(expected, actual);
+                assert_eq!(expected, object.required.clone().unwrap());
+            } else {
+                panic!()
+            }
+        }
+
         let data = json!({
         "type": {
             "object": {
@@ -1191,18 +1214,12 @@ mod tests {
                     "$schema",
                     "64bit",
                 ]}}});
+
         let mut tag: Tag = serde_json::from_value(data).unwrap();
         tag.normalize_properties(false);
-        if let Type::Object(object) = &tag.data_type {
-            let expected: HashSet<String> = ["valid_name", "renamed_value_0", "_64bit"]
-                .iter()
-                .map(|x| x.to_string())
-                .collect();
-            let actual: HashSet<String> = object.fields.keys().cloned().collect();
-            assert_eq!(expected, actual);
-            assert_eq!(expected, object.required.clone().unwrap());
-        } else {
-            panic!()
-        }
+        assert_normalize(&tag, vec!["valid_name", "renamed_value_0", "_64bit"]);
+
+        tag.normalize_properties(true);
+        assert_normalize(&tag, vec!["valid_name", "renamed_value_0", "_64bit"]);
     }
 }
