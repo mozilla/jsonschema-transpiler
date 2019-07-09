@@ -1,6 +1,9 @@
+extern crate heck;
+
 use super::jsonschema;
 use super::Context;
 use super::TranslateFrom;
+use heck::SnakeCase;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -386,7 +389,12 @@ impl Tag {
 
             for key in keys {
                 // Replace property names with the normalized property name
-                if let Some(renamed) = Tag::normalize_name_bigquery(&key) {
+                if let Some(mut renamed) = Tag::normalize_name_bigquery(&key) {
+                    renamed = if normalize_case {
+                        renamed.to_snake_case()
+                    } else {
+                        renamed
+                    };
                     if renamed.as_str() != key.as_str() {
                         warn!("{} replaced with {}", key, renamed);
                         fields.insert(renamed, fields[&key].clone());
@@ -408,7 +416,11 @@ impl Tag {
                         .filter(Option::is_some)
                         .map(Option::unwrap)
                         .collect();
-                    Some(renamed)
+                    if normalize_case {
+                        Some(renamed.iter().map(|s| s.to_snake_case()).collect())
+                    } else {
+                        Some(renamed)
+                    }
                 }
                 None => None,
             };
