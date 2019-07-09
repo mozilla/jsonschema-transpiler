@@ -49,7 +49,14 @@ $ ./scripts/mps-download-sampled-schemas.py
 $ ./scripts/mps-download-sampled-data.py
 
 # Generates a folder avro/
-$ ./scripts/mps-generate-avro-schemas.sh
+$ ./scripts/mps-generate-schemas.sh
+
+# Alternatively, specify a folder and pass flags
+$ ./scripts/mps-generate-schemas.sh \
+    bq_schemas \
+    --type bigquery \
+    --resolve drop \
+    --normalize-case
 
 # Generates a folder avro-data/
 $ ./scripts/mps-generate-avro-data.sh
