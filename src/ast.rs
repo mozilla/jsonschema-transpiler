@@ -357,7 +357,7 @@ impl Tag {
     }
 
     /// If a name starts with a number, prefix it with an underscore.
-    fn prefix_numeric(name: String) -> String {
+    fn normalize_numeric_prefix(name: String) -> String {
         if name.chars().next().unwrap().is_numeric() {
             format!("_{}", name)
         } else {
@@ -370,8 +370,7 @@ impl Tag {
     /// is enforced by BigQuery during table creation.
     fn normalize_name_bigquery(string: &str) -> Option<String> {
         let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
-        let mut renamed = string.replace(".", "_").replace("-", "_");
-        renamed = Tag::prefix_numeric(renamed);
+        let renamed = Tag::normalize_numeric_prefix(string.replace(".", "_").replace("-", "_"));
         if re.is_match(&renamed) {
             Some(renamed)
         } else {
@@ -398,7 +397,8 @@ impl Tag {
                 // Replace property names with the normalized property name
                 if let Some(mut renamed) = Tag::normalize_name_bigquery(&key) {
                     renamed = if normalize_case {
-                        Tag::prefix_numeric(renamed.to_snake_case())
+                        // heck::SnakeCase will strip all punctuation outside of word boundaries.
+                        Tag::normalize_numeric_prefix(renamed.to_snake_case())
                     } else {
                         renamed
                     };
@@ -427,7 +427,7 @@ impl Tag {
                         Some(
                             renamed
                                 .iter()
-                                .map(|s| Tag::prefix_numeric(s.to_snake_case()))
+                                .map(|s| Tag::normalize_numeric_prefix(s.to_snake_case()))
                                 .collect(),
                         )
                     } else {
