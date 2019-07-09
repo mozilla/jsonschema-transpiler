@@ -353,14 +353,6 @@ impl Tag {
         }
     }
 
-    /// Sets a tag with references to the name and the namespace.
-    fn set_name(&mut self, name: &str, namespace: &str) {
-        self.name = Some(name.to_string());
-        if !namespace.is_empty() {
-            self.namespace = Some(namespace.to_string());
-        }
-    }
-
     /// Renames a column name so it contains only letters, numbers, and
     /// underscores while starting with a letter or underscore. This requirement
     /// is enforced by BigQuery during table creation.
@@ -387,7 +379,7 @@ impl Tag {
     ///
     /// This modifies field names as well as required fields.
     /// See: https://cloud.google.com/bigquery/docs/schemas
-    pub fn normalize_properties(&mut self) {
+    pub fn normalize_properties(&mut self, normalize_case: bool) {
         if let Type::Object(ref mut object) = self.data_type {
             let fields = &mut object.fields;
             let keys: Vec<String> = fields.keys().cloned().collect();
@@ -423,17 +415,25 @@ impl Tag {
         }
     }
 
+    /// Sets a tag with references to the name and the namespace.
+    fn set_name(&mut self, name: &str, namespace: &str) {
+        self.name = Some(name.to_string());
+        if !namespace.is_empty() {
+            self.namespace = Some(namespace.to_string());
+        }
+    }
+
     /// A helper function for calculating the names and namespaces within the
     /// schema.
     ///
     /// The namespaces are built from the top-down and follows the depth-first
     /// traversal of the schema.
-    fn recurse_infer_name(&mut self, namespace: String) {
-        self.normalize_properties();
+    fn recurse_infer_name(&mut self, namespace: String, normalize_case: bool) {
+        self.normalize_properties(normalize_case);
 
         let set_and_recurse = |tag: &mut Tag, name: &str| {
             tag.set_name(name, &namespace);
-            tag.recurse_infer_name(format!("{}.{}", &namespace, name))
+            tag.recurse_infer_name(format!("{}.{}", &namespace, name), normalize_case)
         };
 
         match &mut self.data_type {
@@ -459,12 +459,12 @@ impl Tag {
     }
 
     /// Assign names and namespaces to tags from parent tags.
-    pub fn infer_name(&mut self) {
+    pub fn infer_name(&mut self, normalize_case: bool) {
         let namespace = match &self.name {
             Some(name) => name.clone(),
             None => "".into(),
         };
-        self.recurse_infer_name(namespace);
+        self.recurse_infer_name(namespace, normalize_case);
     }
 
     /// Infer whether the current tag in the schema allows for the value to be
@@ -535,9 +535,9 @@ impl Tag {
 impl TranslateFrom<jsonschema::Tag> for Tag {
     type Error = &'static str;
 
-    fn translate_from(tag: jsonschema::Tag, _context: Context) -> Result<Self, Self::Error> {
+    fn translate_from(tag: jsonschema::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag.type_into_ast();
-        tag.infer_name();
+        tag.infer_name(context.normalize_case);
         tag.infer_nullability();
         tag.is_root = true;
         Ok(tag)
@@ -548,7 +548,7 @@ impl TranslateFrom<jsonschema::Tag> for Tag {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     #[test]
     fn test_serialize_null() {
@@ -928,6 +928,12 @@ mod tests {
         }
     }
 
+    fn assert_infer_name(expect: Value, actual: Value) {
+        let mut tag: Tag = serde_json::from_value(actual).unwrap();
+        tag.infer_name(false);
+        assert_eq!(expect, json!(tag))
+    }
+
     #[test]
     fn test_tag_infer_name_object() {
         let data = json!({
@@ -938,8 +944,6 @@ mod tests {
                     "atom_1": {"type": {"atom": "integer"}},
                     "atom_2": {"type": {"atom": "integer"}},
                 }}}});
-        let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.infer_name();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -949,7 +953,7 @@ mod tests {
                     "atom_1": {"name": "atom_1", "type": {"atom": "integer"}, "nullable": false},
                     "atom_2": {"name": "atom_2", "type": {"atom": "integer"}, "nullable": false},
                 }}}});
-        assert_eq!(expect, json!(tag));
+        assert_infer_name(expect, data);
     }
 
     #[test]
@@ -964,8 +968,6 @@ mod tests {
                             "fields": {
                                 "bar": {"type": {"atom": "integer"}}
                             }}}}}}});
-        let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.infer_name();
         let expect = json!({
         "nullable": false,
         "name": "foo",
@@ -985,7 +987,7 @@ mod tests {
                                     "namespace": "foo.items",
                                     "type": {"atom": "integer"}}
                             }}}}}}});
-        assert_eq!(expect, json!(tag));
+        assert_infer_name(expect, data);
     }
 
     #[test]
@@ -1001,8 +1003,6 @@ mod tests {
                             "fields": {
                                 "bar": {"type": {"atom": "integer"}}
                             }}}}}}});
-        let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.infer_name();
         let expect = json!({
         "nullable": false,
         "name": "foo",
@@ -1030,12 +1030,11 @@ mod tests {
                                     "namespace": "foo.value",
                                     "type": {"atom": "integer"}}
                             }}}}}}});
-        assert_eq!(expect, json!(tag));
+        assert_infer_name(expect, data);
     }
 
-    #[test]
-    fn test_tag_infer_name_union_object() {
-        let data = json!({
+    fn fixture_union_object() -> Value {
+        json!({
         "name": "foo",
         "type": {
             "union": {
@@ -1052,9 +1051,11 @@ mod tests {
                                 "fields": {
                                     "baz": {"type": {"atom": "boolean"}}
                                 }}}},
-                ]}}});
-        let mut tag: Tag = serde_json::from_value(data.clone()).unwrap();
-        tag.infer_name();
+                ]}}})
+    }
+
+    #[test]
+    fn test_tag_infer_name_union_object() {
         let expect = json!({
         "nullable": false,
         "name": "foo",
@@ -1090,7 +1091,7 @@ mod tests {
                                         "type": {"atom": "boolean"}}
                                 }}}},
                 ]}}});
-        assert_eq!(expect, json!(tag));
+        assert_infer_name(expect, fixture_union_object());
 
         let collapse_expect = json!({
         "nullable": false,
@@ -1111,19 +1112,19 @@ mod tests {
                         "type": {"atom": "boolean"}},
                 }}}});
         // collapse and infer name
-        let mut tag_collapse: Tag = serde_json::from_value(data.clone()).unwrap();
+        let mut tag_collapse: Tag = serde_json::from_value(fixture_union_object()).unwrap();
         tag_collapse.collapse();
-        tag_collapse.infer_name();
+        tag_collapse.infer_name(false);
         assert_eq!(collapse_expect, json!(tag_collapse));
 
         // infer and then collapse
         // NOTE: The behavior is not the same, the name and namespace need to be inferred again
-        tag_collapse = serde_json::from_value(data.clone()).unwrap();
-        tag_collapse.infer_name();
+        tag_collapse = serde_json::from_value(fixture_union_object()).unwrap();
+        tag_collapse.infer_name(false);
         tag_collapse.collapse();
 
         assert_ne!(collapse_expect, json!(tag_collapse));
-        tag_collapse.infer_name();
+        tag_collapse.infer_name(false);
         assert_eq!(collapse_expect, json!(tag_collapse));
     }
 
@@ -1140,8 +1141,6 @@ mod tests {
                                     "bar": {
                                         "type": "null"
                                         }}}}}}}}});
-        let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.infer_name();
         let expect = json!({
         "nullable": false,
         "type": {
@@ -1160,7 +1159,7 @@ mod tests {
                                         "type": "null",
                                         "nullable": false,
                                     }}}}}}}}});
-        assert_eq!(expect, json!(tag));
+        assert_infer_name(expect, data);
     }
 
     #[test]
@@ -1181,7 +1180,7 @@ mod tests {
                     "64bit",
                 ]}}});
         let mut tag: Tag = serde_json::from_value(data).unwrap();
-        tag.normalize_properties();
+        tag.normalize_properties(false);
         if let Type::Object(object) = &tag.data_type {
             let expected: HashSet<String> = ["valid_name", "renamed_value_0", "_64bit"]
                 .iter()

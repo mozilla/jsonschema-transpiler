@@ -116,7 +116,7 @@ impl TranslateFrom<ast::Tag> for Type {
             // top-down approach.
             tag.collapse();
             tag.name = Some("root".into());
-            tag.infer_name();
+            tag.infer_name(context.normalize_case);
         }
         tag.infer_nullability();
 

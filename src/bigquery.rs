@@ -61,7 +61,7 @@ impl TranslateFrom<ast::Tag> for Tag {
     fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
-        tag.infer_name();
+        tag.infer_name(context.normalize_case);
         tag.infer_nullability();
 
         let fmt_reason =
