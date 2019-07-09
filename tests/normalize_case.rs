@@ -38,22 +38,22 @@ fn test_bigquery_normalize_snake_casing() {
             {
                 "mode": "REQUIRED",
                 "name": "test_camel_case",
-                "type": "BOOLEAN"
+                "type": "BOOL"
             },
             {
                 "mode": "REQUIRED",
                 "name": "test_pascal_case",
-                "type": "BOOLEAN"
-            },
-            {
-                "mode": "REQUIRED",
-                "name": "test_snake_case",
-                "type": "BOOLEAN"
+                "type": "BOOL"
             },
             {
                 "mode": "REQUIRED",
                 "name": "test_screaming_snake_case",
-                "type": "BOOLEAN"
+                "type": "BOOL"
+            },
+            {
+                "mode": "REQUIRED",
+                "name": "test_snake_case",
+                "type": "BOOL"
             }
         ]
         "#,
@@ -66,8 +66,8 @@ fn test_bigquery_normalize_snake_casing() {
 #[test]
 fn test_avro_normalize_snake_casing() {
     let context = Context {
-        resolve_method: ResolveMethod::Cast,
-        ..Default::default()
+        normalize_case: true,
+        resolve_method: ResolveMethod::Panic,
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -82,11 +82,11 @@ fn test_avro_normalize_snake_casing() {
                 "type": {"type": "boolean"}
             },
             {
-                "name": "test_snake_case",
+                "name": "test_screaming_snake_case",
                 "type": {"type": "boolean"}
             },
             {
-                "name": "test_screaming_snake_case",
+                "name": "test_snake_case",
                 "type": {"type": "boolean"}
             }
         ],
