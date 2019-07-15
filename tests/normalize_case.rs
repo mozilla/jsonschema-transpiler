@@ -1,7 +1,14 @@
-use jst::{convert_avro, convert_bigquery};
-use jst::{Context, ResolveMethod};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+
 use pretty_assertions::assert_eq;
 use serde_json::Value;
+
+use jst::{convert_avro, convert_bigquery};
+use jst::{Context, ResolveMethod};
+use jst::casing::to_snake_case;
+
 
 fn test_data() -> Value {
     serde_json::from_str(
@@ -24,6 +31,43 @@ fn test_data() -> Value {
     "#,
     )
     .unwrap()
+}
+
+/// Get the resource path for all the casing tests
+fn resource_path() -> PathBuf {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("tests/resources/casing");
+    path
+}
+
+/// Test the `to_snake_case` method against a test file in the format
+/// `reference,expected`
+fn snake_case_test(case_name: &str) {
+    let mut path = resource_path();
+    path.push(case_name);
+    let file = File::open(&path).unwrap();
+    let reader = BufReader::new(file);
+    for line in reader.lines() {
+        let line = line.unwrap().to_string();
+        let cols: Vec<&str> = line.split(",").collect();
+        assert_eq!(cols.len(), 2);
+        assert_eq!(to_snake_case(cols[0]), cols[1]);
+    }
+}
+
+#[test]
+fn test_snake_casing_alphanum_3() {
+    snake_case_test("alphanum_3.csv");
+}
+
+#[test]
+fn test_snake_casing_word_4() {
+    snake_case_test("word_4.csv");
+}
+
+#[test]
+fn test_snake_casing_mps_diff_integration() {
+    snake_case_test("mps-diff-integration.csv");
 }
 
 #[test]

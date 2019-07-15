@@ -11,6 +11,7 @@ mod avro;
 mod bigquery;
 mod jsonschema;
 mod traits;
+pub mod casing;
 
 use serde_json::{json, Value};
 use traits::TranslateFrom;

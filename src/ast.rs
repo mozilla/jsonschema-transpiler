@@ -1,9 +1,7 @@
-extern crate heck;
-
+use super::casing::to_snake_case;
 use super::jsonschema;
 use super::Context;
 use super::TranslateFrom;
-use heck::SnakeCase;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -398,7 +396,7 @@ impl Tag {
                 if let Some(mut renamed) = Tag::normalize_name_bigquery(&key) {
                     renamed = if normalize_case {
                         // heck::SnakeCase will strip all punctuation outside of word boundaries.
-                        Tag::normalize_numeric_prefix(renamed.to_snake_case())
+                        Tag::normalize_numeric_prefix(to_snake_case(&renamed))
                     } else {
                         renamed
                     };
@@ -427,7 +425,7 @@ impl Tag {
                         Some(
                             renamed
                                 .iter()
-                                .map(|s| Tag::normalize_numeric_prefix(s.to_snake_case()))
+                                .map(|s| Tag::normalize_numeric_prefix(to_snake_case(&s)))
                                 .collect(),
                         )
                     } else {
