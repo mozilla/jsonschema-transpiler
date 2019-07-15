@@ -1,8 +1,21 @@
 use onig::Regex;
 
+/// Normalize the casing of a string to be `snake_case`.
+///
+/// This function produces strings that are transformed consistently from a
+/// variety of different input casing. The rule-set for word boundaries are
+/// derived from the withoutboats/heck crate. Underscores are considered word
+/// boundaries in addition to the standard pattern e.g. `\b`. `camelCasing` is
+/// detected by a lowercase followed by an uppercase. Numbers can take on either
+/// case depending on the preceeding symbol.
+///
+/// See: https://github.com/withoutboats/heck/blob/master/src/lib.rs#L7-L17
 pub fn to_snake_case(input: &str) -> String {
     lazy_static! {
         static ref EXTRA_SYMBOL: Regex = Regex::new(r"[^\w]|_").unwrap();
+        // This regex matches camelCase in reverse, since the lookbehind
+        // operation only accepts patterns of fixed length. Reversing let's us
+        // determine whether several digits will be uppercase or lowercase.
         static ref REV_WORD_BOUNDARY: Regex = Regex::new(
             r"(?x)
             \b                              # standard word boundary
