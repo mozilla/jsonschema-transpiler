@@ -5,10 +5,9 @@ use std::path::PathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 
+use jst::casing::to_snake_case;
 use jst::{convert_avro, convert_bigquery};
 use jst::{Context, ResolveMethod};
-use jst::casing::to_snake_case;
-
 
 fn test_data() -> Value {
     serde_json::from_str(

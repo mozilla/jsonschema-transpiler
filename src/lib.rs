@@ -1,7 +1,7 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate regex;
+extern crate onig;
 #[macro_use]
 extern crate serde;
 extern crate serde_json;
@@ -9,9 +9,9 @@ extern crate serde_json;
 mod ast;
 mod avro;
 mod bigquery;
+pub mod casing;
 mod jsonschema;
 mod traits;
-pub mod casing;
 
 use serde_json::{json, Value};
 use traits::TranslateFrom;
