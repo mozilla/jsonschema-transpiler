@@ -1217,6 +1217,8 @@ mod tests {
         tag.normalize_properties(false);
         assert_normalize(&tag, vec!["valid_name", "renamed_value_0", "_64bit"]);
 
+        // Test that numbers are properly prefixed with underscores after
+        // normalizing the case.
         tag.normalize_properties(true);
         assert_normalize(&tag, vec!["valid_name", "renamed_value_0", "_64bit"]);
     }
