@@ -142,7 +142,7 @@ fn bigquery_{name}() {{
 }
 
 fn main() {
-    let test_cases = "tests/resources";
+    let test_cases = "tests/resources/translate";
     let mut avro_fp = File::create("tests/transpile_avro.rs").unwrap();
     let mut bq_fp = File::create("tests/transpile_bigquery.rs").unwrap();
     let format_tests = get_env_var_as_bool("FORMAT_TESTS", true);
