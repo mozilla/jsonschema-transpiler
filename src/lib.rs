@@ -1,14 +1,17 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate regex;
+extern crate onig;
 #[macro_use]
 extern crate serde;
 extern crate serde_json;
+#[macro_use]
+extern crate lazy_static;
 
 mod ast;
 mod avro;
 mod bigquery;
+pub mod casing;
 mod jsonschema;
 mod traits;
 
@@ -41,6 +44,12 @@ pub enum ResolveMethod {
     Panic,
 }
 
+impl Default for ResolveMethod {
+    fn default() -> Self {
+        ResolveMethod::Cast
+    }
+}
+
 /// Options for modifying the behavior of translating between two schema
 /// formats.
 ///
@@ -49,9 +58,10 @@ pub enum ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
+    pub normalize_case: bool,
 }
 
 fn into_ast(input: &Value, context: Context) -> ast::Tag {

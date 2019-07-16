@@ -9,7 +9,7 @@ if [[ ! -d "schemas/" ]]; then
 fi
 
 cargo build
-bin="target/debug/jsonschema_transpiler"
+bin="target/debug/jsonschema-transpiler"
 
 schemas=$(find schemas/ -name "*.schema.json")
 
@@ -18,16 +18,18 @@ outdir=${1:-"avro"}
 if [[ -d $outdir ]]; then
     rm -r $outdir
 fi
+shift;
+
 mkdir $outdir
 
 total=0
 failed=0
 for schema in $schemas; do
     namespace=$(basename $(dirname $(dirname $schema)))
-    schema_filename=$(basename $schema | sed 's/schema.json/avro.json/g')
+    schema_filename=$(basename $schema)
     outfile="$outdir/$namespace.$schema_filename"
 
-    if ! $bin -f "$schema" --type avro > $outfile; then
+    if ! $bin "$@" "$schema" > $outfile; then
         echo "Failed on $schema"
         rm $outfile
         ((failed++))

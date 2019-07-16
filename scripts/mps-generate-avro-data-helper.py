@@ -81,7 +81,7 @@ outdir = "avro-data"
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
-with open(f"avro/{document}.avro.json", "r") as f:
+with open(f"avro/{document}.schema.json", "r") as f:
     schema_data = f.read()
 schema = avro.schema.Parse(schema_data)
 

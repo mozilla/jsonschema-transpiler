@@ -21,6 +21,7 @@ fn test_data() -> Value {
 fn test_bigquery_resolve_error_cast() {
     let context = Context {
         resolve_method: ResolveMethod::Cast,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -47,6 +48,7 @@ fn test_bigquery_resolve_error_cast() {
 fn test_bigquery_resolve_error_drop() {
     let context = Context {
         resolve_method: ResolveMethod::Drop,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -68,6 +70,7 @@ fn test_bigquery_resolve_error_drop() {
 fn test_bigquery_resolve_error_panic() {
     let context = Context {
         resolve_method: ResolveMethod::Panic,
+        ..Default::default()
     };
     convert_bigquery(&test_data(), context);
 }
@@ -76,6 +79,7 @@ fn test_bigquery_resolve_error_panic() {
 fn test_avro_resolve_error_cast() {
     let context = Context {
         resolve_method: ResolveMethod::Cast,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -112,6 +116,7 @@ fn test_avro_resolve_error_cast() {
 fn test_avro_resolve_error_drop() {
     let context = Context {
         resolve_method: ResolveMethod::Drop,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -140,6 +145,7 @@ fn test_avro_resolve_error_drop() {
 fn test_avro_resolve_error_panic() {
     let context = Context {
         resolve_method: ResolveMethod::Panic,
+        ..Default::default()
     };
     convert_avro(&test_data(), context);
 }

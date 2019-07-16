@@ -226,13 +226,13 @@ impl Tag {
 #[cfg(test)]
 mod tests {
     use super::super::traits::TranslateInto;
-    use super::super::{Context, ResolveMethod};
+    use super::super::Context;
     use super::*;
     use pretty_assertions::assert_eq;
 
     fn translate(data: Value) -> Value {
         let context = Context {
-            resolve_method: ResolveMethod::Cast,
+            ..Default::default()
         };
         let schema: Tag = serde_json::from_value(data).unwrap();
         let ast: ast::Tag = schema.translate_into(context).unwrap();

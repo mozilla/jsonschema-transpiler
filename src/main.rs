@@ -37,6 +37,12 @@ fn main() {
                 .possible_values(&["cast", "panic", "drop"])
                 .default_value("cast"),
         )
+        .arg(
+            Arg::with_name("normalize-case")
+                .help("snake_case column-names for consistent behavior between SQL engines")
+                .short("c")
+                .long("normalize-case"),
+        )
         .get_matches();
 
     let reader: Box<io::Read> = match matches.value_of("file") {
@@ -55,6 +61,7 @@ fn main() {
             "drop" => ResolveMethod::Drop,
             _ => panic!("Unknown resolution method!"),
         },
+        normalize_case: matches.is_present("normalize-case"),
     };
 
     let output = match matches.value_of("type").unwrap() {

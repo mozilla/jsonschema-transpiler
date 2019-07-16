@@ -116,7 +116,7 @@ impl TranslateFrom<ast::Tag> for Type {
             // top-down approach.
             tag.collapse();
             tag.name = Some("root".into());
-            tag.infer_name();
+            tag.infer_name(context.normalize_case);
         }
         tag.infer_nullability();
 
@@ -232,7 +232,7 @@ mod tests {
 
     fn assert_from_ast_eq(ast: Value, avro: Value) {
         let context = Context {
-            resolve_method: ResolveMethod::Cast,
+            ..Default::default()
         };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
         let from_tag = Type::translate_from(tag, context).unwrap();

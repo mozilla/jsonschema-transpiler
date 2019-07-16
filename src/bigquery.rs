@@ -61,7 +61,7 @@ impl TranslateFrom<ast::Tag> for Tag {
     fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
-        tag.infer_name();
+        tag.infer_name(context.normalize_case);
         tag.infer_nullability();
 
         let fmt_reason =
@@ -230,7 +230,7 @@ mod tests {
 
     fn transform_tag(data: Value) -> Value {
         let context = Context {
-            resolve_method: ResolveMethod::Cast,
+            ..Default::default()
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
         let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
@@ -239,7 +239,7 @@ mod tests {
 
     fn transform_schema(data: Value) -> Value {
         let context = Context {
-            resolve_method: ResolveMethod::Cast,
+            ..Default::default()
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
         let bq_tag: Schema = ast_tag.translate_into(context).unwrap();
