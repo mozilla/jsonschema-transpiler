@@ -56,16 +56,21 @@ fn snake_case_test(case_name: &str) {
 
 #[test]
 fn test_snake_casing_alphanum_3() {
+    // all strings of length 3 drawn from the alphabet "aA7"
     snake_case_test("alphanum_3.csv");
 }
 
 #[test]
 fn test_snake_casing_word_4() {
+    // all strings of length 4 drawn from the alphabet "aA7_"
     snake_case_test("word_4.csv");
 }
 
 #[test]
 fn test_snake_casing_mps_diff_integration() {
+    // all column names from mozilla-pipeline-schemas affected by snake_casing
+    // https://github.com/mozilla/jsonschema-transpiler/pull/79#issuecomment-509839572
+    // https://gist.github.com/acmiyaguchi/3f526c440b67ebe469bcb6ab2da5123f#file-readme-md
     snake_case_test("mps-diff-integration.csv");
 }
 

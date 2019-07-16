@@ -322,7 +322,7 @@ impl Tag {
         }
     }
 
-    /// Get the path the the current tag in the context of the larger schema.
+    /// Get the path to the current tag in the context of the larger schema.
     ///
     /// Each tag in the schema can be unambiguously referenced by concatenating
     /// the name of tag with the tag's namespace. For example, a document may
@@ -340,7 +340,7 @@ impl Tag {
     ///
     /// The fully qualified names are as follows:
     ///
-    /// * `root.attributes.timestamp`
+    /// * `root.environment.timestamp`
     /// * `root.payload.measurement`
     /// * `root.payload.timestamp`
     pub fn fully_qualified_name(&self) -> String {
@@ -395,7 +395,8 @@ impl Tag {
                 // Replace property names with the normalized property name
                 if let Some(mut renamed) = Tag::normalize_name_bigquery(&key) {
                     renamed = if normalize_case {
-                        // heck::SnakeCase will strip all punctuation outside of word boundaries.
+                        // snake_casing strips symbols outside of word
+                        // boundaries e.g. _64bit -> 64bit
                         Tag::normalize_numeric_prefix(to_snake_case(&renamed))
                     } else {
                         renamed
