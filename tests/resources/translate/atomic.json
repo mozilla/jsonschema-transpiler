@@ -123,6 +123,29 @@
           "type": "string"
         }
       }
+    },
+    {
+      "description": [
+        "Test that strings can be cast into byte strings"
+      ],
+      "name": "test_bytes_format",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "type": "bytes"
+        },
+        "bigquery": [
+          {
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "BYTES"
+          }
+        ],
+        "json": {
+          "format": "bytes",
+          "type": "string"
+        }
+      }
     }
   ]
 }

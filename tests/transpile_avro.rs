@@ -236,6 +236,30 @@ fn avro_test_datetime() {
 }
 
 #[test]
+fn avro_test_bytes_format() {
+    let input_data = r#"
+    {
+      "format": "bytes",
+      "type": "string"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "bytes"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
 fn avro_test_map_with_atomics() {
     let input_data = r#"
     {

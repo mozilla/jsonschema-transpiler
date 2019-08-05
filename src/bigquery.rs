@@ -85,6 +85,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::Number => Atom::Float64,
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
+                ast::Atom::Bytes => Atom::Bytes,
                 ast::Atom::JSON => match handle_error("json atom") {
                     Ok(_) => Atom::String,
                     Err(reason) => return Err(reason),
@@ -562,6 +563,19 @@ mod tests {
         });
         let expect = json!({
            "type": "TIMESTAMP",
+           "mode": "NULLABLE",
+        });
+        assert_eq!(expect, transform_tag(data));
+    }
+
+    #[test]
+    fn test_from_ast_bytes() {
+        let data = json!({
+            "type": {"atom": "bytes"},
+            "nullable": true
+        });
+        let expect = json!({
+           "type": "BYTES",
            "mode": "NULLABLE",
         });
         assert_eq!(expect, transform_tag(data));
