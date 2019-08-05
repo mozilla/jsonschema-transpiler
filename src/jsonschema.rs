@@ -19,6 +19,7 @@ enum Atom {
     Object,
     Array,
     DateTime,
+    Bytes,
 }
 
 enum Type {
@@ -69,6 +70,8 @@ struct Array {
 #[serde(rename_all = "kebab-case")]
 enum Format {
     DateTime,
+    // Custom format value for casting strings into byte-strings
+    Bytes,
     #[serde(other)]
     Other,
 }
@@ -98,6 +101,9 @@ impl Tag {
         match (&self.data_type, &self.format) {
             (Value::String(string), Some(Format::DateTime)) if string == "string" => {
                 Type::Atom(Atom::DateTime)
+            }
+            (Value::String(string), Some(Format::Bytes)) if string == "string" => {
+                Type::Atom(Atom::Bytes)
             }
             (Value::String(string), _) => {
                 let atom: Atom = serde_json::from_value(json!(string)).unwrap();
@@ -139,6 +145,7 @@ impl Tag {
             Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
             Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
             Atom::DateTime => ast::Tag::new(ast::Type::Atom(ast::Atom::Datetime), None, false),
+            Atom::Bytes => ast::Tag::new(ast::Type::Atom(ast::Atom::Bytes), None, false),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
@@ -632,6 +639,16 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_type_bytes() {
+        let data = json!({
+            "type": "string",
+            "format": "bytes"
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        assert_eq!(schema.format.unwrap(), Format::Bytes);
+    }
+
+    #[test]
     fn test_deserialize_type_alternate_format() {
         let data = json!({
             "type": "string",
@@ -649,6 +666,19 @@ mod tests {
         });
         let expect = json!({
             "type": {"atom": "datetime"},
+            "nullable": false,
+        });
+        assert_eq!(expect, translate(data))
+    }
+
+    #[test]
+    fn test_into_ast_atom_bytes() {
+        let data = json!({
+            "type": "string",
+            "format": "bytes"
+        });
+        let expect = json!({
+            "type": {"atom": "bytes"},
             "nullable": false,
         });
         assert_eq!(expect, translate(data))

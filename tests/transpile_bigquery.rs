@@ -232,6 +232,34 @@ fn bigquery_test_datetime() {
 }
 
 #[test]
+fn bigquery_test_bytes_format() {
+    let input_data = r#"
+    {
+      "format": "bytes",
+      "type": "string"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "BYTES"
+      }
+    ]
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_map_with_atomics() {
     let input_data = r#"
     {

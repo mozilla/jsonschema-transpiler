@@ -142,6 +142,7 @@ impl TranslateFrom<ast::Tag> for Type {
                 ast::Atom::Number => Primitive::Double,
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
+                ast::Atom::Bytes => Primitive::Bytes,
                 ast::Atom::JSON => match handle_error("json atom") {
                     Ok(_) => Primitive::String,
                     Err(reason) => return Err(reason),
@@ -621,6 +622,13 @@ mod tests {
     fn from_ast_datetime() {
         let ast = json!({"type": {"atom": "datetime"}});
         let avro = json!({"type": "string"});
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
+    fn from_ast_bytes() {
+        let ast = json!({"type": {"atom": "bytes"}});
+        let avro = json!({"type": "bytes"});
         assert_from_ast_eq(ast, avro);
     }
 }

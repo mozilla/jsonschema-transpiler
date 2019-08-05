@@ -14,6 +14,7 @@ pub enum Atom {
     String,
     Datetime,
     JSON,
+    Bytes,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
