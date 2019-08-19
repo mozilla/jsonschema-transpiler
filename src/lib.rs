@@ -62,6 +62,7 @@ impl Default for ResolveMethod {
 pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,
+    pub enforce_nullable: bool,
 }
 
 fn into_ast(input: &Value, context: Context) -> ast::Tag {
