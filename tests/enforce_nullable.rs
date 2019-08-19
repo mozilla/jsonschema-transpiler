@@ -65,9 +65,9 @@ fn test_data() -> Value {
 }
 
 #[test]
-fn test_bigquery_enforce_nullable() {
+fn test_bigquery_force_nullable() {
     let context = Context {
-        enforce_nullable: true,
+        force_nullable: true,
         ..Default::default()
     };
 
@@ -158,9 +158,9 @@ fn test_bigquery_enforce_nullable() {
 }
 
 #[test]
-fn test_avro_enforce_nullable() {
+fn test_avro_force_nullable() {
     let context = Context {
-        enforce_nullable: true,
+        force_nullable: true,
         ..Default::default()
     };
     let expected: Value = serde_json::from_str(
