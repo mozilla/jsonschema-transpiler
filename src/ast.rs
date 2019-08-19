@@ -233,7 +233,7 @@ impl Union {
             data_type,
             is_root: false,
         };
-        tag.infer_nullability();
+        tag.infer_nullability(false);
         tag
     }
 }
@@ -498,7 +498,7 @@ impl Tag {
     /// translate into other schemas. This should be run after unions have been
     /// eliminated from the tree since the behavior is currently order
     /// dependent.
-    pub fn infer_nullability(&mut self) {
+    pub fn infer_nullability(&mut self, force_nullable: bool) {
         match &mut self.data_type {
             Type::Null => {
                 self.nullable = true;
@@ -510,24 +510,36 @@ impl Tag {
                 };
                 for (key, value) in &mut object.fields {
                     // Infer whether the value is nullable
-                    value.infer_nullability();
+                    value.infer_nullability(force_nullable);
                     // A required nullable field is still nullable
                     value.nullable |= !required.contains(key);
+                    // All fields are nullable if enforced
+                    if force_nullable {
+                        value.nullable = true;
+                    }
                 }
             }
-            Type::Map(map) => map.value.infer_nullability(),
-            Type::Array(array) => array.items.infer_nullability(),
+            Type::Map(map) => map.value.infer_nullability(force_nullable),
+            Type::Array(array) => array.items.infer_nullability(force_nullable),
             Type::Tuple(tuple) => {
                 for item in tuple.items.iter_mut() {
-                    item.infer_nullability();
+                    item.infer_nullability(force_nullable);
                 }
             }
             Type::Union(union) => {
                 for item in union.items.iter_mut() {
-                    item.infer_nullability();
+                    item.infer_nullability(force_nullable);
                 }
             }
-            _ => (),
+            _ => {
+                // Other types, like atoms, are set to nullable if enforced
+                if force_nullable {
+                    self.nullable = true;
+                }
+            }
+        }
+        if force_nullable {
+            self.nullable = true
         }
     }
 
@@ -562,7 +574,7 @@ impl TranslateFrom<jsonschema::Tag> for Tag {
     fn translate_from(tag: jsonschema::Tag, context: Context) -> Result<Self, Self::Error> {
         let mut tag = tag.type_into_ast();
         tag.infer_name(context.normalize_case);
-        tag.infer_nullability();
+        tag.infer_nullability(context.force_nullable);
         tag.is_root = true;
         Ok(tag)
     }
@@ -1223,5 +1235,33 @@ mod tests {
         // normalizing the case.
         tag.normalize_properties(true);
         assert_normalize(&tag, vec!["valid_name", "renamed_value_0", "_64bit"]);
+    }
+
+    #[test]
+    fn test_infer_nullability_force_nullable() {
+        let data = json!({
+        "nullable": false,
+        "type": {
+            "object": {
+                "fields": {
+                    "atom": {"type": {"atom": "integer"}, "nullable": false},
+                    "object": {
+                        "type": {"object": {"fields": {
+                            "nested_atom": {"type": {"atom": "integer"}, "nullable": false}}}},
+                        "nullable": false}}}}});
+
+        let expect = json!({
+        "nullable": true,
+        "type": {
+            "object": {
+                "fields": {
+                    "atom": {"type": {"atom": "integer"}, "nullable": true},
+                    "object": {
+                        "type": {"object": {"fields": {
+                            "nested_atom": {"type": {"atom": "integer"}, "nullable": true}}}},
+                        "nullable": true}}}}});
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.infer_nullability(true);
+        assert_eq!(expect, json!(tag))
     }
 }

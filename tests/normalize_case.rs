@@ -79,6 +79,7 @@ fn test_bigquery_normalize_snake_casing() {
     let context = Context {
         normalize_case: true,
         resolve_method: ResolveMethod::Panic,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"
@@ -116,6 +117,7 @@ fn test_avro_normalize_snake_casing() {
     let context = Context {
         normalize_case: true,
         resolve_method: ResolveMethod::Panic,
+        ..Default::default()
     };
     let expected: Value = serde_json::from_str(
         r#"

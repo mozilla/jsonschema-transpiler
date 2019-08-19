@@ -43,6 +43,12 @@ fn main() {
                 .short("c")
                 .long("normalize-case"),
         )
+        .arg(
+            Arg::with_name("force-nullable")
+            .help("Treats all columns as NULLABLE, ignoring the required section in the JSON Schema object")
+            .short("n")
+            .long("force-nullable"),
+        )
         .get_matches();
 
     let reader: Box<io::Read> = match matches.value_of("file") {
@@ -62,6 +68,7 @@ fn main() {
             _ => panic!("Unknown resolution method!"),
         },
         normalize_case: matches.is_present("normalize-case"),
+        force_nullable: matches.is_present("force-nullable"),
     };
 
     let output = match matches.value_of("type").unwrap() {

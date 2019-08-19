@@ -62,7 +62,7 @@ impl TranslateFrom<ast::Tag> for Tag {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name(context.normalize_case);
-        tag.infer_nullability();
+        tag.infer_nullability(context.force_nullable);
 
         let fmt_reason =
             |reason: &str| -> String { format!("{} - {}", tag.fully_qualified_name(), reason) };
