@@ -531,12 +531,7 @@ impl Tag {
                     item.infer_nullability(force_nullable);
                 }
             }
-            _ => {
-                // Other types, like atoms, are set to nullable if enforced
-                if force_nullable {
-                    self.nullable = true;
-                }
-            }
+            _ => (),
         }
         if force_nullable {
             self.nullable = true
