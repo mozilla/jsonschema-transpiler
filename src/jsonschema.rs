@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 use super::ast;
+use super::Context;
 
 /// The type enumeration does not contain any data and is used to determine
 /// available fields in the flattened tag. In JSONSchema parlance, these are
@@ -130,9 +131,9 @@ impl Tag {
         }
     }
 
-    pub fn type_into_ast(&self) -> ast::Tag {
+    pub fn type_into_ast(&self, context: Context) -> Result<ast::Tag, &'static str> {
         match self.get_type() {
-            Type::Atom(atom) => self.atom_into_ast(atom),
+            Type::Atom(atom) => self.atom_into_ast(atom, context),
             Type::List(list) => {
                 let mut nullable: bool = false;
                 let mut items: Vec<ast::Tag> = Vec::new();
@@ -140,15 +141,19 @@ impl Tag {
                     if let Atom::Null = &atom {
                         nullable = true;
                     }
-                    items.push(self.atom_into_ast(atom));
+                    items.push(self.atom_into_ast(atom, context)?);
                 }
-                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, nullable)
+                Ok(ast::Tag::new(
+                    ast::Type::Union(ast::Union::new(items)),
+                    None,
+                    nullable,
+                ))
             }
         }
     }
 
-    fn atom_into_ast(&self, data_type: Atom) -> ast::Tag {
-        match data_type {
+    fn atom_into_ast(&self, data_type: Atom, context: Context) -> Result<ast::Tag, &'static str> {
+        let result = match data_type {
             Atom::Null => ast::Tag::new(ast::Type::Null, None, true),
             Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
@@ -160,7 +165,7 @@ impl Tag {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
                     for (key, value) in properties {
-                        fields.insert(key.to_string(), value.type_into_ast());
+                        fields.insert(key.to_string(), value.type_into_ast(context)?);
                     }
                     ast::Tag::new(
                         ast::Type::Object(ast::Object::new(fields, self.object.required.clone())),
@@ -176,23 +181,25 @@ impl Tag {
                     ) {
                         (Some(AdditionalProperties::Object(add)), Some(pat)) => {
                             let mut vec: Vec<ast::Tag> = Vec::new();
-                            vec.push(add.type_into_ast());
-                            vec.extend(pat.values().map(|v| v.type_into_ast()));
+                            vec.push(add.type_into_ast(context)?);
+                            let pat_vec: Result<Vec<_>, _> =
+                                pat.values().map(|v| v.type_into_ast(context)).collect();
+                            vec.extend(pat_vec?);
                             let value =
                                 ast::Tag::new(ast::Type::Union(ast::Union::new(vec)), None, false);
 
                             ast::Tag::new(ast::Type::Map(ast::Map::new(None, value)), None, false)
                         }
                         (Some(AdditionalProperties::Object(tag)), None) => ast::Tag::new(
-                            ast::Type::Map(ast::Map::new(None, tag.type_into_ast())),
+                            ast::Type::Map(ast::Map::new(None, tag.type_into_ast(context)?)),
                             None,
                             false,
                         ),
                         (_, Some(tag)) => {
+                            let items: Result<Vec<_>, _> =
+                                tag.values().map(|v| v.type_into_ast(context)).collect();
                             let union = ast::Tag::new(
-                                ast::Type::Union(ast::Union::new(
-                                    tag.values().map(|v| v.type_into_ast()).collect(),
-                                )),
+                                ast::Type::Union(ast::Union::new(items?)),
                                 None,
                                 false,
                             );
@@ -202,11 +209,14 @@ impl Tag {
                             // handle oneOf
                             match &self.one_of {
                                 Some(vec) => {
-                                    let items: Vec<ast::Tag> =
-                                        vec.iter().map(|item| item.type_into_ast()).collect();
-                                    let nullable: bool = items.iter().any(ast::Tag::is_null);
+                                    let items: Result<Vec<_>, _> = vec
+                                        .iter()
+                                        .map(|item| item.type_into_ast(context))
+                                        .collect();
+                                    let unwrapped = items?;
+                                    let nullable: bool = unwrapped.iter().any(ast::Tag::is_null);
                                     ast::Tag::new(
-                                        ast::Type::Union(ast::Union::new(items)),
+                                        ast::Type::Union(ast::Union::new(unwrapped)),
                                         None,
                                         nullable,
                                     )
@@ -223,20 +233,23 @@ impl Tag {
                 if let Some(items) = &self.array.items {
                     let data_type = match items {
                         ArrayType::Tag(items) => {
-                            ast::Type::Array(ast::Array::new(items.type_into_ast()))
+                            ast::Type::Array(ast::Array::new(items.type_into_ast(context)?))
                         }
                         ArrayType::TagTuple(items) => {
-                            let items: Vec<ast::Tag> =
-                                items.iter().map(|item| item.type_into_ast()).collect();
-                            ast::Type::Tuple(ast::Tuple::new(items))
+                            let items: Result<Vec<_>, _> = items
+                                .iter()
+                                .map(|item| item.type_into_ast(context))
+                                .collect();
+                            ast::Type::Tuple(ast::Tuple::new(items?))
                         }
                     };
                     ast::Tag::new(data_type, None, false)
                 } else {
-                    panic!(format!("array missing item: {:#?}", self))
+                    return Err("array missing item");
                 }
             }
-        }
+        };
+        Ok(result)
     }
 }
 
