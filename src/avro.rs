@@ -192,6 +192,40 @@ impl TranslateFrom<ast::Tag> for Type {
                     Type::Complex(Complex::Record(record))
                 }
             }
+            ast::Type::Tuple(tuple) => {
+                let fields = tuple
+                    .items
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| {
+                        let default = if v.nullable { Some(json!(null)) } else { None };
+                        (
+                            format!("_f{}", i),
+                            Type::translate_from(v.clone(), context),
+                            default,
+                        )
+                    })
+                    .filter(|(_, v, _)| v.is_ok())
+                    .map(|(name, data_type, default)| Field {
+                        name,
+                        data_type: data_type.unwrap(),
+                        default,
+                        ..Default::default()
+                    })
+                    .collect();
+                let record = Record {
+                    common: CommonAttributes {
+                        name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
+                        namespace: tag.namespace.clone(),
+                        ..Default::default()
+                    },
+                    fields,
+                };
+                if record.common.name == "__UNNAMED__" {
+                    warn!("{} - Unnamed field", tag.fully_qualified_name());
+                }
+                Type::Complex(Complex::Record(record))
+            }
             ast::Type::Array(array) => match Type::translate_from(*array.items.clone(), context) {
                 Ok(data_type) => Type::Complex(Complex::Array(Array {
                     items: Box::new(data_type),
@@ -596,7 +630,14 @@ mod tests {
                 }
             }
         });
-        let avro = json!({"type": "string"});
+        let avro = json!({
+            "type": "record",
+            "name": "__UNNAMED__",
+            "fields": [
+                {"name": "_f0", "type": {"type": "boolean"}},
+                {"name": "_f1", "type": {"type": "long"}}
+            ]
+        });
         assert_from_ast_eq(ast, avro);
     }
 
