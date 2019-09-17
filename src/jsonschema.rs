@@ -60,10 +60,20 @@ enum ArrayType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 struct Array {
     // Using Option<TagArray> would support tuple validation
     #[serde(skip_serializing_if = "Option::is_none")]
     items: Option<ArrayType>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    additional_items: Option<AdditionalProperties>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_items: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_items: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -407,7 +417,9 @@ mod tests {
             "items": [
                 {"type": "integer"},
                 {"type": "boolean"}
-            ]
+            ],
+            "additionalItems": {"type": "string"},
+            "maxItems": 4,
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
         if let ArrayType::TagTuple(items) = schema.array.items.unwrap() {
@@ -416,6 +428,12 @@ mod tests {
         } else {
             panic!();
         }
+        if let AdditionalProperties::Object(tag) = schema.array.additional_items.unwrap() {
+            assert_eq!(tag.data_type, json!("string"));
+        } else {
+            panic!();
+        }
+        assert_eq!(schema.array.max_items.unwrap(), 4);
     }
 
     #[test]
