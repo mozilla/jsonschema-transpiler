@@ -49,6 +49,12 @@ fn main() {
             .short("n")
             .long("force-nullable"),
         )
+        .arg(
+            Arg::with_name("tuple-struct")
+            .help("Treats tuple validation as an anonymous struct")
+            .short("t")
+            .long("tuple-struct"),
+        )
         .get_matches();
 
     let reader: Box<io::Read> = match matches.value_of("file") {
@@ -69,6 +75,7 @@ fn main() {
         },
         normalize_case: matches.is_present("normalize-case"),
         force_nullable: matches.is_present("force-nullable"),
+        tuple_struct: matches.is_present("tuple-struct"),
     };
 
     let output = match matches.value_of("type").unwrap() {

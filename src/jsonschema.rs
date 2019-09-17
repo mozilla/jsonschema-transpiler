@@ -236,11 +236,40 @@ impl Tag {
                             ast::Type::Array(ast::Array::new(items.type_into_ast(context)?))
                         }
                         ArrayType::TagTuple(items) => {
-                            let items: Result<Vec<_>, _> = items
-                                .iter()
-                                .map(|item| item.type_into_ast(context))
-                                .collect();
-                            ast::Type::Tuple(ast::Tuple::new(items?))
+                            // Instead of expanding the definition of the AST
+                            // tuple type, only a subset of tuple validation is
+                            // accepted as valid. The type must be set to
+                            // "array", the items a list of sub-schemas,
+                            // additionalItems set to a valid type, and maxItems
+                            // set to a value that is longer than the items
+                            // list. Anything else will be directly translated
+                            // into a JSON atom.
+                            if context.tuple_struct {
+                                let items: Result<Vec<_>, _> = items
+                                    .iter()
+                                    .map(|item| item.type_into_ast(context))
+                                    .collect();
+                                let mut unwrapped = items?;
+
+                                match &self.array.additional_items {
+                                    Some(AdditionalProperties::Object(tag)) => {
+                                        let max_items: usize = self.array.max_items.unwrap_or(0);
+                                        if max_items < unwrapped.len() {
+                                            return Err("maxItems is less than tuple length");
+                                        }
+                                        for _ in unwrapped.len()..max_items {
+                                            unwrapped.push(tag.type_into_ast(context)?)
+                                        }
+                                        ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                    }
+                                    Some(AdditionalProperties::Bool(false)) => {
+                                        ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                    }
+                                    _ => return Err("additionalItems set incorrectly"),
+                                }
+                            } else {
+                                ast::Type::Atom(ast::Atom::JSON)
+                            }
                         }
                     };
                     ast::Tag::new(data_type, None, false)
@@ -713,5 +742,80 @@ mod tests {
             "nullable": false,
         });
         assert_eq!(expect, translate(data))
+    }
+
+    fn translate_tuple(data: Value) -> Value {
+        let context = Context {
+            tuple_struct: true,
+            ..Default::default()
+        };
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let ast: ast::Tag = schema.translate_into(context).unwrap();
+        json!(ast)
+    }
+
+    #[test]
+    fn test_into_ast_tuple_default_behavior() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ]
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate(data))
+    }
+
+    #[test]
+    #[should_panic(expected = "additionalItems")]
+    fn test_into_ast_tuple_additional_items() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ]
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    #[should_panic(expected = "maxItems")]
+    fn test_into_ast_tuple_missing_max_items() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "additionalItems": {"type": "string"}
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    fn test_into_ast_tuple_valid() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "additionalItems": {"type": "string"},
+            "maxItems": 4
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"type": {"atom": "boolean"}, "nullable": false},
+                {"type": {"atom": "integer"}, "nullable": false},
+                {"type": {"atom": "string"}, "nullable": false},
+                {"type": {"atom": "string"}, "nullable": false},
+            ]}},
+            "nullable": false,
+        });
+        assert_eq!(expect, translate_tuple(data))
     }
 }
