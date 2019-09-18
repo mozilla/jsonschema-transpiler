@@ -241,9 +241,9 @@ impl Tag {
                             // accepted as valid. The type must be set to
                             // "array", the items a list of sub-schemas,
                             // additionalItems set to a valid type, and maxItems
-                            // set to a value that is longer than the items
-                            // list. Anything else will be directly translated
-                            // into a JSON atom.
+                            // set to a value that is equal to or longer than
+                            // the items list. Anything else will be directly
+                            // translated into a JSON atom.
                             if context.tuple_struct {
                                 let items: Result<Vec<_>, _> = items
                                     .iter()
@@ -264,6 +264,17 @@ impl Tag {
                                     }
                                     Some(AdditionalProperties::Bool(false)) => {
                                         ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                    }
+                                    None => {
+                                        // additionalItems may be unspecified if the max_length
+                                        // matches the number of items in the tuple. This corresponds
+                                        // to optional tuple values (variable length tuple).
+                                        let max_items: usize = self.array.max_items.unwrap_or(0);
+                                        if max_items == unwrapped.len() {
+                                            ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                        } else {
+                                            return Err("maxItems must be set if additionalItems are allowed");
+                                        }
                                     }
                                     _ => return Err("additionalItems set incorrectly"),
                                 }
@@ -768,8 +779,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "additionalItems")]
-    fn test_into_ast_tuple_additional_items() {
+    #[should_panic(expected = "maxItems must be set")]
+    fn test_into_ast_tuple_invalid() {
         let data = json!({
             "type": "array",
             "items": [
@@ -793,6 +804,25 @@ mod tests {
             "additionalItems": {"type": "string"}
         });
         let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate_tuple(data))
+    }
+    #[test]
+    fn test_into_ast_tuple_static() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "maxItems": 2
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"type": {"atom": "boolean"}, "nullable": false},
+                {"type": {"atom": "integer"}, "nullable": false}
+            ]}},
+            "nullable": false
+        });
         assert_eq!(expect, translate_tuple(data))
     }
 
