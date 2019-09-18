@@ -112,11 +112,13 @@ fn test_avro_tuple_atomic_with_additional_items() {
             },
             {
               "name": "_f2",
-              "type": {"type": "long"}
+              "default": null,
+              "type": [{"type": "null"}, {"type": "long"}]
             },
             {
               "name": "_f3",
-              "type": {"type": "long"}
+              "default": null,
+              "type": [{"type": "null"}, {"type": "long"}]
             }
           ],
           "name": "root",
@@ -151,12 +153,12 @@ fn test_bigquery_tuple_atomic_with_additional_items() {
         "type": "STRING"
         },
         {
-        "mode": "REQUIRED",
+        "mode": "NULLABLE",
         "name": "_f2",
         "type": "INT64"
         },
         {
-        "mode": "REQUIRED",
+        "mode": "NULLABLE",
         "name": "_f3",
         "type": "INT64"
         }

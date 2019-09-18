@@ -250,7 +250,12 @@ impl Tag {
                                     .map(|item| item.type_into_ast(context))
                                     .collect();
                                 let mut unwrapped = items?;
-
+                                let min_items: usize =
+                                    self.array.min_items.unwrap_or(unwrapped.len());
+                                // set items to optional
+                                for i in min_items..unwrapped.len() {
+                                    unwrapped[i].nullable = true;
+                                }
                                 match &self.array.additional_items {
                                     Some(AdditionalProperties::Object(tag)) => {
                                         let max_items: usize = self.array.max_items.unwrap_or(0);
@@ -258,7 +263,9 @@ impl Tag {
                                             return Err("maxItems is less than tuple length");
                                         }
                                         for _ in unwrapped.len()..max_items {
-                                            unwrapped.push(tag.type_into_ast(context)?)
+                                            let mut ast_tag = tag.type_into_ast(context)?;
+                                            ast_tag.nullable = true;
+                                            unwrapped.push(ast_tag);
                                         }
                                         ast::Type::Tuple(ast::Tuple::new(unwrapped))
                                     }
@@ -806,6 +813,7 @@ mod tests {
         let expect = json!({"type": {"atom": "json"}, "nullable": false});
         assert_eq!(expect, translate_tuple(data))
     }
+
     #[test]
     fn test_into_ast_tuple_static() {
         let data = json!({
@@ -827,6 +835,27 @@ mod tests {
     }
 
     #[test]
+    fn test_into_ast_tuple_static_nullable() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "minItems": 1,
+            "maxItems": 2
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"type": {"atom": "boolean"}, "nullable": false},
+                {"type": {"atom": "integer"}, "nullable": true}
+            ]}},
+            "nullable": false
+        });
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
     fn test_into_ast_tuple_valid() {
         let data = json!({
             "type": "array",
@@ -841,8 +870,8 @@ mod tests {
             "type": {"tuple": {"items": [
                 {"type": {"atom": "boolean"}, "nullable": false},
                 {"type": {"atom": "integer"}, "nullable": false},
-                {"type": {"atom": "string"}, "nullable": false},
-                {"type": {"atom": "string"}, "nullable": false},
+                {"type": {"atom": "string"}, "nullable": true},
+                {"type": {"atom": "string"}, "nullable": true},
             ]}},
             "nullable": false,
         });
