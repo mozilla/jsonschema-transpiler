@@ -76,12 +76,12 @@ fn test_bigquery_tuple_atomic() {
         r#"
         [
           {
-            "mode": "NULLABLE",
+            "mode": "REQUIRED",
             "name": "_f0",
             "type": "BOOL"
           },
           {
-            "mode": "NULLABLE",
+            "mode": "REQUIRED",
             "name": "_f1",
             "type": "STRING"
           }
@@ -141,22 +141,22 @@ fn test_bigquery_tuple_atomic_with_additional_items() {
         r#"
     [
         {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "_f0",
-        "type": "BOOLEAN"
+        "type": "BOOL"
         },
         {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "_f1",
         "type": "STRING"
         },
         {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "_f2",
         "type": "INT64"
         },
         {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "_f3",
         "type": "INT64"
         }

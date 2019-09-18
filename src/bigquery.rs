@@ -110,6 +110,29 @@ impl TranslateFrom<ast::Tag> for Tag {
                     Type::Record(Record { fields })
                 }
             }
+            ast::Type::Tuple(tuple) => {
+                let fields: Result<Vec<_>, _> = tuple
+                    .items
+                    .iter()
+                    .map(|v| Tag::translate_from(v.clone(), context))
+                    .collect();
+
+                let named_fields: HashMap<String, Box<Tag>> = fields?
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, mut v)| {
+                        // The name is actually derived from the value, not from
+                        // the associated key. Modify the name in place.
+                        let name = format!("_f{}", i);
+                        v.name = Some(name.clone());
+                        (name, Box::new(v))
+                    })
+                    .collect();
+
+                Type::Record(Record {
+                    fields: named_fields,
+                })
+            }
             ast::Type::Array(array) => match Tag::translate_from(*array.items.clone(), context) {
                 Ok(tag) => *tag.data_type,
                 Err(_) => return Err(fmt_reason("untyped array")),
@@ -531,8 +554,12 @@ mod tests {
             }
         });
         let expect = json!({
-            "type": "STRING",
+            "type": "RECORD",
             "mode": "REQUIRED",
+            "fields": [
+                {"name": "_f0", "type": "BOOL", "mode": "REQUIRED"},
+                {"name": "_f1", "type": "INT64", "mode": "REQUIRED"}
+            ]
         });
         assert_eq!(expect, transform_tag(data));
     }
