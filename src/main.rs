@@ -52,7 +52,6 @@ fn main() {
         .arg(
             Arg::with_name("tuple-struct")
             .help("Treats tuple validation as an anonymous struct")
-            .short("t")
             .long("tuple-struct"),
         )
         .get_matches();
