@@ -15,12 +15,13 @@ if len(sys.argv) > 1:
 else:
     sys.exit("Error: missing argument for document")
 
+assert os.path.isdir("data")
 assert any(
     [document in name for name in os.listdir("data")]
-), "document not found in data"
+), f"{document} not found in data"
 assert any(
     [document in name for name in os.listdir("avro")]
-), "document not found in avro schemas"
+), f"{document} not found in avro schemas"
 
 
 def format_key(key):
@@ -43,6 +44,9 @@ def convert(data, schema):
         out = {}
         if not data:
             return out
+        # cast tuple into an object before continuing
+        if isinstance(data, list):
+            data = {f"f{i}_": v for i, v in enumerate(data)}
         for key, value in data.items():
             # apply the appropriate transformations on the key
             key = format_key(key)
