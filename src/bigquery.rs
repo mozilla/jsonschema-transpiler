@@ -123,7 +123,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                     .map(|(i, mut v)| {
                         // The name is actually derived from the value, not from
                         // the associated key. Modify the name in place.
-                        let name = format!("_f{}", i);
+                        let name = format!("f{}_", i);
                         v.name = Some(name.clone());
                         (name, Box::new(v))
                     })
@@ -557,8 +557,8 @@ mod tests {
             "type": "RECORD",
             "mode": "REQUIRED",
             "fields": [
-                {"name": "_f0", "type": "BOOL", "mode": "REQUIRED"},
-                {"name": "_f1", "type": "INT64", "mode": "REQUIRED"}
+                {"name": "f0_", "type": "BOOL", "mode": "REQUIRED"},
+                {"name": "f1_", "type": "INT64", "mode": "REQUIRED"}
             ]
         });
         assert_eq!(expect, transform_tag(data));

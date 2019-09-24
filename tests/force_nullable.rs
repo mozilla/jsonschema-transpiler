@@ -144,7 +144,7 @@ fn test_bigquery_force_nullable() {
                 "fields": [
                 {
                     "mode": "NULLABLE",
-                    "name": "_f0",
+                    "name": "f0_",
                     "type": "BOOL"
                 }
                 ],
@@ -296,7 +296,7 @@ fn test_avro_force_nullable() {
                             "fields": [
                                 {
                                     "default": null,
-                                    "name": "_f0",
+                                    "name": "f0_",
                                     "type": [
                                         {"type": "null"},
                                         {"type": "boolean"}

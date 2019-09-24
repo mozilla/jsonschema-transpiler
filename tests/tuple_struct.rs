@@ -49,11 +49,11 @@ fn test_avro_tuple_atomic() {
     {
         "fields": [
             {
-                "name": "_f0",
+                "name": "f0_",
                 "type": {"type": "boolean"}
             },
             {
-                "name": "_f1",
+                "name": "f1_",
                 "type": {"type": "string"}
             }
         ],
@@ -77,12 +77,12 @@ fn test_bigquery_tuple_atomic() {
         [
           {
             "mode": "REQUIRED",
-            "name": "_f0",
+            "name": "f0_",
             "type": "BOOL"
           },
           {
             "mode": "REQUIRED",
-            "name": "_f1",
+            "name": "f1_",
             "type": "STRING"
           }
         ]
@@ -103,20 +103,20 @@ fn test_avro_tuple_atomic_with_additional_items() {
         {
           "fields": [
             {
-              "name": "_f0",
+              "name": "f0_",
               "type": {"type": "boolean"}
             },
             {
-              "name": "_f1",
+              "name": "f1_",
               "type": {"type": "string"}
             },
             {
-              "name": "_f2",
+              "name": "f2_",
               "default": null,
               "type": [{"type": "null"}, {"type": "long"}]
             },
             {
-              "name": "_f3",
+              "name": "f3_",
               "default": null,
               "type": [{"type": "null"}, {"type": "long"}]
             }
@@ -144,22 +144,22 @@ fn test_bigquery_tuple_atomic_with_additional_items() {
     [
         {
         "mode": "REQUIRED",
-        "name": "_f0",
+        "name": "f0_",
         "type": "BOOL"
         },
         {
         "mode": "REQUIRED",
-        "name": "_f1",
+        "name": "f1_",
         "type": "STRING"
         },
         {
         "mode": "NULLABLE",
-        "name": "_f2",
+        "name": "f2_",
         "type": "INT64"
         },
         {
         "mode": "NULLABLE",
-        "name": "_f3",
+        "name": "f3_",
         "type": "INT64"
         }
     ]

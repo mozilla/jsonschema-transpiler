@@ -200,7 +200,7 @@ impl TranslateFrom<ast::Tag> for Type {
                     .map(|(i, v)| {
                         let default = if v.nullable { Some(json!(null)) } else { None };
                         (
-                            format!("_f{}", i),
+                            format!("f{}_", i),
                             Type::translate_from(v.clone(), context),
                             default,
                         )
@@ -634,8 +634,8 @@ mod tests {
             "type": "record",
             "name": "__UNNAMED__",
             "fields": [
-                {"name": "_f0", "type": {"type": "boolean"}},
-                {"name": "_f1", "type": {"type": "long"}}
+                {"name": "f0_", "type": {"type": "boolean"}},
+                {"name": "f1_", "type": {"type": "long"}}
             ]
         });
         assert_from_ast_eq(ast, avro);
