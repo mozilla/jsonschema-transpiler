@@ -826,8 +826,8 @@ mod tests {
         });
         let expect = json!({
             "type": {"tuple": {"items": [
-                {"type": {"atom": "boolean"}, "nullable": false},
-                {"type": {"atom": "integer"}, "nullable": false}
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": false}
             ]}},
             "nullable": false
         });
@@ -847,8 +847,8 @@ mod tests {
         });
         let expect = json!({
             "type": {"tuple": {"items": [
-                {"type": {"atom": "boolean"}, "nullable": false},
-                {"type": {"atom": "integer"}, "nullable": true}
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": true}
             ]}},
             "nullable": false
         });
@@ -868,10 +868,10 @@ mod tests {
         });
         let expect = json!({
             "type": {"tuple": {"items": [
-                {"type": {"atom": "boolean"}, "nullable": false},
-                {"type": {"atom": "integer"}, "nullable": false},
-                {"type": {"atom": "string"}, "nullable": true},
-                {"type": {"atom": "string"}, "nullable": true},
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": false},
+                {"name": "f2_", "type": {"atom": "string"}, "nullable": true},
+                {"name": "f3_", "type": {"atom": "string"}, "nullable": true},
             ]}},
             "nullable": false,
         });

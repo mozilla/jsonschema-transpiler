@@ -478,6 +478,12 @@ impl Tag {
                     set_and_recurse(item, "__union__");
                 }
             }
+            Type::Tuple(tuple) => {
+                for (i, item) in tuple.items.iter_mut().enumerate() {
+                    let name = format!("f{}_", i);
+                    set_and_recurse(item, &name);
+                }
+            }
             _ => (),
         }
     }
