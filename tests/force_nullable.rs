@@ -55,9 +55,16 @@ fn test_data() -> Value {
                         "required": ["f"]
                     }
                 ]
+            },
+            "tuple": {
+                "type": "array",
+                "items": [
+                    {"type": "boolean"}
+                ],
+                "maxItems": 1
             }
         },
-        "required": ["atom", "object", "map", "array", "union"]
+        "required": ["atom", "object", "map", "array", "union", "tuple"]
     }
     "#,
     )
@@ -68,6 +75,7 @@ fn test_data() -> Value {
 fn test_bigquery_force_nullable() {
     let context = Context {
         force_nullable: true,
+        tuple_struct: true,
         ..Default::default()
     };
 
@@ -136,6 +144,18 @@ fn test_bigquery_force_nullable() {
                 "fields": [
                 {
                     "mode": "NULLABLE",
+                    "name": "f0_",
+                    "type": "BOOL"
+                }
+                ],
+                "mode": "NULLABLE",
+                "name": "tuple",
+                "type": "RECORD"
+            },
+            {
+                "fields": [
+                {
+                    "mode": "NULLABLE",
                     "name": "e",
                     "type": "BOOL"
                 },
@@ -161,6 +181,7 @@ fn test_bigquery_force_nullable() {
 fn test_avro_force_nullable() {
     let context = Context {
         force_nullable: true,
+        tuple_struct: true,
         ..Default::default()
     };
     let expected: Value = serde_json::from_str(
@@ -262,6 +283,28 @@ fn test_avro_force_nullable() {
                         "type": "record"
                     }
                 ]
+                },
+                {
+                    "default": null,
+                    "name": "tuple",
+                    "type": [
+                        {"type": "null"},
+                        {
+                            "name": "tuple",
+                            "namespace": "root",
+                            "type": "record",
+                            "fields": [
+                                {
+                                    "default": null,
+                                    "name": "f0_",
+                                    "type": [
+                                        {"type": "null"},
+                                        {"type": "boolean"}
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
                 "default": null,

@@ -478,6 +478,12 @@ impl Tag {
                     set_and_recurse(item, "__union__");
                 }
             }
+            Type::Tuple(tuple) => {
+                for (i, item) in tuple.items.iter_mut().enumerate() {
+                    let name = format!("f{}_", i);
+                    set_and_recurse(item, &name);
+                }
+            }
             _ => (),
         }
     }
@@ -567,7 +573,7 @@ impl TranslateFrom<jsonschema::Tag> for Tag {
     type Error = &'static str;
 
     fn translate_from(tag: jsonschema::Tag, context: Context) -> Result<Self, Self::Error> {
-        let mut tag = tag.type_into_ast();
+        let mut tag = tag.type_into_ast(context)?;
         tag.infer_name(context.normalize_case);
         tag.infer_nullability(context.force_nullable);
         tag.is_root = true;

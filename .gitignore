@@ -5,3 +5,4 @@ __pycache__/
 **/*.rs.bk
 
 /schemas
+/test_tuple_results

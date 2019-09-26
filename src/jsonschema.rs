@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 use super::ast;
+use super::Context;
 
 /// The type enumeration does not contain any data and is used to determine
 /// available fields in the flattened tag. In JSONSchema parlance, these are
@@ -60,10 +61,20 @@ enum ArrayType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 struct Array {
     // Using Option<TagArray> would support tuple validation
     #[serde(skip_serializing_if = "Option::is_none")]
     items: Option<ArrayType>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    additional_items: Option<AdditionalProperties>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_items: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_items: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -120,9 +131,9 @@ impl Tag {
         }
     }
 
-    pub fn type_into_ast(&self) -> ast::Tag {
+    pub fn type_into_ast(&self, context: Context) -> Result<ast::Tag, &'static str> {
         match self.get_type() {
-            Type::Atom(atom) => self.atom_into_ast(atom),
+            Type::Atom(atom) => self.atom_into_ast(atom, context),
             Type::List(list) => {
                 let mut nullable: bool = false;
                 let mut items: Vec<ast::Tag> = Vec::new();
@@ -130,15 +141,19 @@ impl Tag {
                     if let Atom::Null = &atom {
                         nullable = true;
                     }
-                    items.push(self.atom_into_ast(atom));
+                    items.push(self.atom_into_ast(atom, context)?);
                 }
-                ast::Tag::new(ast::Type::Union(ast::Union::new(items)), None, nullable)
+                Ok(ast::Tag::new(
+                    ast::Type::Union(ast::Union::new(items)),
+                    None,
+                    nullable,
+                ))
             }
         }
     }
 
-    fn atom_into_ast(&self, data_type: Atom) -> ast::Tag {
-        match data_type {
+    fn atom_into_ast(&self, data_type: Atom, context: Context) -> Result<ast::Tag, &'static str> {
+        let result = match data_type {
             Atom::Null => ast::Tag::new(ast::Type::Null, None, true),
             Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
             Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
@@ -150,7 +165,7 @@ impl Tag {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
                     for (key, value) in properties {
-                        fields.insert(key.to_string(), value.type_into_ast());
+                        fields.insert(key.to_string(), value.type_into_ast(context)?);
                     }
                     ast::Tag::new(
                         ast::Type::Object(ast::Object::new(fields, self.object.required.clone())),
@@ -166,23 +181,25 @@ impl Tag {
                     ) {
                         (Some(AdditionalProperties::Object(add)), Some(pat)) => {
                             let mut vec: Vec<ast::Tag> = Vec::new();
-                            vec.push(add.type_into_ast());
-                            vec.extend(pat.values().map(|v| v.type_into_ast()));
+                            vec.push(add.type_into_ast(context)?);
+                            let pat_vec: Result<Vec<_>, _> =
+                                pat.values().map(|v| v.type_into_ast(context)).collect();
+                            vec.extend(pat_vec?);
                             let value =
                                 ast::Tag::new(ast::Type::Union(ast::Union::new(vec)), None, false);
 
                             ast::Tag::new(ast::Type::Map(ast::Map::new(None, value)), None, false)
                         }
                         (Some(AdditionalProperties::Object(tag)), None) => ast::Tag::new(
-                            ast::Type::Map(ast::Map::new(None, tag.type_into_ast())),
+                            ast::Type::Map(ast::Map::new(None, tag.type_into_ast(context)?)),
                             None,
                             false,
                         ),
                         (_, Some(tag)) => {
+                            let items: Result<Vec<_>, _> =
+                                tag.values().map(|v| v.type_into_ast(context)).collect();
                             let union = ast::Tag::new(
-                                ast::Type::Union(ast::Union::new(
-                                    tag.values().map(|v| v.type_into_ast()).collect(),
-                                )),
+                                ast::Type::Union(ast::Union::new(items?)),
                                 None,
                                 false,
                             );
@@ -192,11 +209,14 @@ impl Tag {
                             // handle oneOf
                             match &self.one_of {
                                 Some(vec) => {
-                                    let items: Vec<ast::Tag> =
-                                        vec.iter().map(|item| item.type_into_ast()).collect();
-                                    let nullable: bool = items.iter().any(ast::Tag::is_null);
+                                    let items: Result<Vec<_>, _> = vec
+                                        .iter()
+                                        .map(|item| item.type_into_ast(context))
+                                        .collect();
+                                    let unwrapped = items?;
+                                    let nullable: bool = unwrapped.iter().any(ast::Tag::is_null);
                                     ast::Tag::new(
-                                        ast::Type::Union(ast::Union::new(items)),
+                                        ast::Type::Union(ast::Union::new(unwrapped)),
                                         None,
                                         nullable,
                                     )
@@ -213,20 +233,70 @@ impl Tag {
                 if let Some(items) = &self.array.items {
                     let data_type = match items {
                         ArrayType::Tag(items) => {
-                            ast::Type::Array(ast::Array::new(items.type_into_ast()))
+                            ast::Type::Array(ast::Array::new(items.type_into_ast(context)?))
                         }
                         ArrayType::TagTuple(items) => {
-                            let items: Vec<ast::Tag> =
-                                items.iter().map(|item| item.type_into_ast()).collect();
-                            ast::Type::Tuple(ast::Tuple::new(items))
+                            // Instead of expanding the definition of the AST
+                            // tuple type, only a subset of tuple validation is
+                            // accepted as valid. The type must be set to
+                            // "array", the items a list of sub-schemas,
+                            // additionalItems set to a valid type, and maxItems
+                            // set to a value that is equal to or longer than
+                            // the items list. Anything else will be directly
+                            // translated into a JSON atom.
+                            if context.tuple_struct {
+                                let items: Result<Vec<_>, _> = items
+                                    .iter()
+                                    .map(|item| item.type_into_ast(context))
+                                    .collect();
+                                let mut unwrapped = items?;
+                                let min_items: usize =
+                                    self.array.min_items.unwrap_or(unwrapped.len());
+                                // set items to optional
+                                for i in min_items..unwrapped.len() {
+                                    unwrapped[i].nullable = true;
+                                }
+                                match &self.array.additional_items {
+                                    Some(AdditionalProperties::Object(tag)) => {
+                                        let max_items: usize = self.array.max_items.unwrap_or(0);
+                                        if max_items < unwrapped.len() {
+                                            return Err("maxItems is less than tuple length");
+                                        }
+                                        for _ in unwrapped.len()..max_items {
+                                            let mut ast_tag = tag.type_into_ast(context)?;
+                                            ast_tag.nullable = true;
+                                            unwrapped.push(ast_tag);
+                                        }
+                                        ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                    }
+                                    Some(AdditionalProperties::Bool(false)) => {
+                                        ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                    }
+                                    None => {
+                                        // additionalItems may be unspecified if the max_length
+                                        // matches the number of items in the tuple. This corresponds
+                                        // to optional tuple values (variable length tuple).
+                                        let max_items: usize = self.array.max_items.unwrap_or(0);
+                                        if max_items == unwrapped.len() {
+                                            ast::Type::Tuple(ast::Tuple::new(unwrapped))
+                                        } else {
+                                            return Err("maxItems must be set if additionalItems are allowed");
+                                        }
+                                    }
+                                    _ => return Err("additionalItems set incorrectly"),
+                                }
+                            } else {
+                                ast::Type::Atom(ast::Atom::JSON)
+                            }
                         }
                     };
                     ast::Tag::new(data_type, None, false)
                 } else {
-                    panic!(format!("array missing item: {:#?}", self))
+                    return Err("array missing item");
                 }
             }
-        }
+        };
+        Ok(result)
     }
 }
 
@@ -407,7 +477,9 @@ mod tests {
             "items": [
                 {"type": "integer"},
                 {"type": "boolean"}
-            ]
+            ],
+            "additionalItems": {"type": "string"},
+            "maxItems": 4,
         });
         let schema: Tag = serde_json::from_value(data).unwrap();
         if let ArrayType::TagTuple(items) = schema.array.items.unwrap() {
@@ -416,6 +488,12 @@ mod tests {
         } else {
             panic!();
         }
+        if let AdditionalProperties::Object(tag) = schema.array.additional_items.unwrap() {
+            assert_eq!(tag.data_type, json!("string"));
+        } else {
+            panic!();
+        }
+        assert_eq!(schema.array.max_items.unwrap(), 4);
     }
 
     #[test]
@@ -682,5 +760,121 @@ mod tests {
             "nullable": false,
         });
         assert_eq!(expect, translate(data))
+    }
+
+    fn translate_tuple(data: Value) -> Value {
+        let context = Context {
+            tuple_struct: true,
+            ..Default::default()
+        };
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let ast: ast::Tag = schema.translate_into(context).unwrap();
+        json!(ast)
+    }
+
+    #[test]
+    fn test_into_ast_tuple_default_behavior() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ]
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate(data))
+    }
+
+    #[test]
+    #[should_panic(expected = "maxItems must be set")]
+    fn test_into_ast_tuple_invalid() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ]
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    #[should_panic(expected = "maxItems")]
+    fn test_into_ast_tuple_missing_max_items() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "additionalItems": {"type": "string"}
+        });
+        let expect = json!({"type": {"atom": "json"}, "nullable": false});
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    fn test_into_ast_tuple_static() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "maxItems": 2
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": false}
+            ]}},
+            "nullable": false
+        });
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    fn test_into_ast_tuple_static_nullable() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "minItems": 1,
+            "maxItems": 2
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": true}
+            ]}},
+            "nullable": false
+        });
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    fn test_into_ast_tuple_valid() {
+        let data = json!({
+            "type": "array",
+            "items": [
+                {"type": "boolean"},
+                {"type": "integer"}
+            ],
+            "additionalItems": {"type": "string"},
+            "maxItems": 4
+        });
+        let expect = json!({
+            "type": {"tuple": {"items": [
+                {"name": "f0_", "type": {"atom": "boolean"}, "nullable": false},
+                {"name": "f1_", "type": {"atom": "integer"}, "nullable": false},
+                {"name": "f2_", "type": {"atom": "string"}, "nullable": true},
+                {"name": "f3_", "type": {"atom": "string"}, "nullable": true},
+            ]}},
+            "nullable": false,
+        });
+        assert_eq!(expect, translate_tuple(data))
     }
 }

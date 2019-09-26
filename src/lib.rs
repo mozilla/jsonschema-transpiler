@@ -63,6 +63,7 @@ pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,
     pub force_nullable: bool,
+    pub tuple_struct: bool,
 }
 
 fn into_ast(input: &Value, context: Context) -> ast::Tag {
