@@ -115,7 +115,6 @@ impl TranslateFrom<ast::Tag> for Type {
             // construction of the namespace. Fully qualified names require a
             // top-down approach.
             tag.collapse();
-            tag.expand_nested_arrays(false);
             tag.name = Some("root".into());
             tag.infer_name(context.normalize_case);
         }

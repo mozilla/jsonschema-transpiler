@@ -568,40 +568,43 @@ impl Tag {
         }
     }
 
-    pub fn expand_nested_arrays(&mut self, parent_repeated: bool) {
-        let is_repeated = self.is_array();
+    pub fn expand_nested_arrays(&mut self) {
         let data_type = match self.data_type {
             Type::Object(ref mut object) => {
                 for value in object.fields.values_mut() {
-                    value.expand_nested_arrays(is_repeated)
+                    value.expand_nested_arrays()
                 }
                 None
             }
             Type::Map(ref mut map) => {
-                map.value.expand_nested_arrays(is_repeated);
+                map.value.expand_nested_arrays();
                 None
             }
             Type::Array(ref mut array) => {
-                if parent_repeated {
+                let child_is_array = match &array.items.data_type {
+                    Type::Array(_) => true,
+                    _ => false,
+                };
+
+                array.items.expand_nested_arrays();
+                if child_is_array {
                     Some(Type::Object(Object::new(
-                        hashmap! {"item".into() => *array.items.clone()
-                        },
-                        Some(hashset! {"item".into()}),
+                        hashmap! {"list".into() => *array.items.clone()},
+                        Some(hashset! {"list".into()}),
                     )))
                 } else {
-                    array.items.expand_nested_arrays(is_repeated);
                     None
                 }
             }
             Type::Tuple(ref mut tuple) => {
                 for item in tuple.items.iter_mut() {
-                    item.expand_nested_arrays(is_repeated)
+                    item.expand_nested_arrays()
                 }
                 None
             }
             Type::Union(ref mut union) => {
                 for item in union.items.iter_mut() {
-                    item.expand_nested_arrays(is_repeated)
+                    item.expand_nested_arrays()
                 }
                 None
             }
@@ -609,7 +612,6 @@ impl Tag {
         };
         if data_type.is_some() {
             self.data_type = data_type.unwrap();
-            self.expand_nested_arrays(false);
         }
     }
 }
@@ -1309,5 +1311,30 @@ mod tests {
         let mut tag: Tag = serde_json::from_value(data).unwrap();
         tag.infer_nullability(true);
         assert_eq!(expect, json!(tag))
+    }
+
+    #[test]
+    fn from_array_expansion() {
+        let data = json!({
+            "nullable": false,
+            "type": {"array": {"items": {
+                "nullable": false,
+                "type": {"array": {"items":
+                    {"type": {"atom": "integer"}}}}}}}
+        });
+        let expect = json!({
+            "nullable": false,
+            "type": {"object": {
+                "required": ["list"],
+                "fields": {
+                    "list": {
+                        "nullable": false,
+                        "type": {"array": {"items":{
+                            "nullable": false,
+                            "type": {"atom": "integer"}}}}}}}}
+        });
+        let mut tag: Tag = serde_json::from_value(data).unwrap();
+        tag.expand_nested_arrays();
+        assert_eq!(expect, json!(tag));
     }
 }
