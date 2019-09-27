@@ -133,10 +133,24 @@ impl TranslateFrom<ast::Tag> for Tag {
                     fields: named_fields,
                 })
             }
-            ast::Type::Array(array) => match Tag::translate_from(*array.items.clone(), context) {
-                Ok(tag) => *tag.data_type,
-                Err(_) => return Err(fmt_reason("untyped array")),
-            },
+            ast::Type::Array(array) => {
+                // workaround for nested lists
+                let child_is_array = match &array.items.data_type {
+                    ast::Type::Array(_) => true,
+                    _ => false,
+                };
+                let sub_tag = match Tag::translate_from(*array.items.clone(), context) {
+                    Ok(tag) => tag,
+                    Err(_) => return Err(fmt_reason("untyped array")),
+                };
+                if child_is_array {
+                    Type::Record(Record {
+                        fields: hashmap! {"list".into() => Box::new(sub_tag)},
+                    })
+                } else {
+                    *sub_tag.data_type
+                }
+            }
             ast::Type::Map(map) => {
                 let key = Tag::translate_from(*map.key.clone(), context).unwrap();
                 let value = match Tag::translate_from(*map.value.clone(), context) {
