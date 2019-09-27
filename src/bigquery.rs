@@ -183,7 +183,9 @@ impl TranslateFrom<ast::Tag> for Schema {
     type Error = &'static str;
 
     fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
-        let mut bq_tag = Tag::translate_from(tag.clone(), context).unwrap();
+        let mut cloned = tag.clone();
+        cloned.expand_nested_arrays(tag.is_array());
+        let mut bq_tag = Tag::translate_from(cloned, context).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
             // modes. These should not be extracted if they are the root-type.

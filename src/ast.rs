@@ -567,6 +567,51 @@ impl Tag {
             _ => (),
         }
     }
+
+    pub fn expand_nested_arrays(&mut self, parent_repeated: bool) {
+        let is_repeated = self.is_array();
+        let data_type = match self.data_type {
+            Type::Object(ref mut object) => {
+                for value in object.fields.values_mut() {
+                    value.expand_nested_arrays(is_repeated)
+                }
+                None
+            }
+            Type::Map(ref mut map) => {
+                map.value.expand_nested_arrays(is_repeated);
+                None
+            }
+            Type::Array(ref mut array) => {
+                if parent_repeated {
+                    Some(Type::Object(Object::new(
+                        hashmap! {"item".into() => *array.items.clone()
+                        },
+                        Some(hashset! {"item".into()}),
+                    )))
+                } else {
+                    array.items.expand_nested_arrays(is_repeated);
+                    None
+                }
+            }
+            Type::Tuple(ref mut tuple) => {
+                for item in tuple.items.iter_mut() {
+                    item.expand_nested_arrays(is_repeated)
+                }
+                None
+            }
+            Type::Union(ref mut union) => {
+                for item in union.items.iter_mut() {
+                    item.expand_nested_arrays(is_repeated)
+                }
+                None
+            }
+            _ => None,
+        };
+        if data_type.is_some() {
+            self.data_type = data_type.unwrap();
+            self.expand_nested_arrays(false);
+        }
+    }
 }
 
 impl TranslateFrom<jsonschema::Tag> for Tag {
