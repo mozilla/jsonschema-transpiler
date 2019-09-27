@@ -471,7 +471,7 @@ impl Tag {
                 set_and_recurse(&mut map.value, "value");
             }
             Type::Array(array) => {
-                set_and_recurse(&mut array.items, "items");
+                set_and_recurse(&mut array.items, "list");
             }
             Type::Union(union) => {
                 for item in union.items.iter_mut() {
@@ -1058,7 +1058,7 @@ mod tests {
                 "items": {
                     "nullable": false,
                     // array items are always named item, for the sanity of avro
-                    "name": "items",
+                    "name": "list",
                     "namespace": "foo",
                     "type": {
                         "object": {
@@ -1066,7 +1066,7 @@ mod tests {
                                 "bar": {
                                     "nullable": false,
                                     "name": "bar",
-                                    "namespace": "foo.items",
+                                    "namespace": "foo.list",
                                     "type": {"atom": "integer"}}
                             }}}}}}});
         assert_infer_name(expect, data);

@@ -621,16 +621,17 @@ mod tests {
     #[test]
     fn from_ast_array_array() {
         let ast = json!({
+            "is_root": true,
             "type": {"array": {"items": {
                 "type": {"array": {"items":
                     {"type": {"atom": "integer"}}}}}}}
         });
         let avro = json!({
             "type": "record",
-            "name": "items",
+            "name": "root",
             "fields": [
                 {
-                    "name": "items",
+                    "name": "list",
                     "type": {
                         "type": "array",
                         "items": {

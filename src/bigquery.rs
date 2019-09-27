@@ -551,12 +551,11 @@ mod tests {
                     {"type": {"atom": "integer"}}}}}}}
         });
         let expect = json!({
-            "name": "root",
             "type": "RECORD",
             "mode": "REPEATED",
             "fields": [
                 {
-                    "name": "items",
+                    "name": "list",
                     "type": "INT64",
                     "mode": "REPEATED"
                 }

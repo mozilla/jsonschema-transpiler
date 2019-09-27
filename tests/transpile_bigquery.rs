@@ -115,12 +115,12 @@ fn bigquery_test_array_of_array() {
             "fields": [
               {
                 "mode": "REPEATED",
-                "name": "items",
+                "name": "list",
                 "type": "INT64"
               }
             ],
             "mode": "REPEATED",
-            "name": "items",
+            "name": "list",
             "type": "RECORD"
           }
         ],

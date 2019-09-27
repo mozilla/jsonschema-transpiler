@@ -58,7 +58,7 @@
                 ]
               }
             ],
-            "name": "items",
+            "name": "list",
             "namespace": "root",
             "type": "record"
           },
@@ -106,28 +106,33 @@
         "avro": {
           "fields": [
             {
-              "fields": [
-                {
-                  "name": "items",
-                  "type": {
-                    "fields": [
-                      {
-                        "name": "items",
-                        "type": {
-                          "items": {
-                            "type": "long"
-                          },
-                          "type": "array"
-                        }
-                      }
-                    ],
-                    "name": "items",
-                    "type": "record"
-                  }
-                }
-              ],
               "name": "array",
-              "type": "record"
+              "type": {
+                "fields": [
+                  {
+                    "name": "list",
+                    "type": {
+                      "fields": [
+                        {
+                          "name": "list",
+                          "type": {
+                            "items": {
+                              "type": "long"
+                            },
+                            "type": "array"
+                          }
+                        }
+                      ],
+                      "name": "list",
+                      "namespace": "root.array",
+                      "type": "record"
+                    }
+                  }
+                ],
+                "name": "array",
+                "namespace": "root",
+                "type": "record"
+              }
             }
           ],
           "name": "root",
@@ -140,12 +145,12 @@
                 "fields": [
                   {
                     "mode": "REPEATED",
-                    "name": "items",
+                    "name": "list",
                     "type": "INT64"
                   }
                 ],
                 "mode": "REPEATED",
-                "name": "items",
+                "name": "list",
                 "type": "RECORD"
               }
             ],

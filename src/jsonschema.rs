@@ -672,7 +672,7 @@ mod tests {
         "type": {
             "array": {
                 "items": {
-                    "name": "items",
+                    "name": "list",
                     "nullable": false,
                     "type": {"atom": "integer"}
                 }}}});
@@ -897,15 +897,15 @@ mod tests {
         "nullable": false,
         "type": {"array": {"items": {
             "nullable": false,
-            "name": "items",
+            "name": "list",
             "type": {"array": {"items": {
                 "nullable": false,
-                "name": "items",
-                "namespace": ".items",
+                "name": "list",
+                "namespace": ".list",
                 "type": {"tuple": {"items": [
                     {
                         "name": "f0_",
-                        "namespace": ".items.items",
+                        "namespace": ".list.list",
                         "type": {"atom": "integer"},
                         "nullable": false
                     }]}}}}}}}}});

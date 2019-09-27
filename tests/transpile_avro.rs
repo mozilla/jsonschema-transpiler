@@ -79,7 +79,7 @@ fn avro_test_array_with_complex() {
             ]
           }
         ],
-        "name": "items",
+        "name": "list",
         "namespace": "root",
         "type": "record"
       },
@@ -125,28 +125,33 @@ fn avro_test_array_of_array() {
     {
       "fields": [
         {
-          "fields": [
-            {
-              "name": "items",
-              "type": {
-                "fields": [
-                  {
-                    "name": "items",
-                    "type": {
-                      "items": {
-                        "type": "long"
-                      },
-                      "type": "array"
-                    }
-                  }
-                ],
-                "name": "items",
-                "type": "record"
-              }
-            }
-          ],
           "name": "array",
-          "type": "record"
+          "type": {
+            "fields": [
+              {
+                "name": "list",
+                "type": {
+                  "fields": [
+                    {
+                      "name": "list",
+                      "type": {
+                        "items": {
+                          "type": "long"
+                        },
+                        "type": "array"
+                      }
+                    }
+                  ],
+                  "name": "list",
+                  "namespace": "root.array",
+                  "type": "record"
+                }
+              }
+            ],
+            "name": "array",
+            "namespace": "root",
+            "type": "record"
+          }
         }
       ],
       "name": "root",
