@@ -251,10 +251,10 @@ impl Tag {
                                     .collect();
                                 let mut unwrapped = items?;
                                 let min_items: usize =
-                                    self.array.min_items.unwrap_or(unwrapped.len());
+                                    self.array.min_items.unwrap_or_else(|| unwrapped.len());
                                 // set items to optional
-                                for i in min_items..unwrapped.len() {
-                                    unwrapped[i].nullable = true;
+                                for item in unwrapped.iter_mut().skip(min_items) {
+                                    item.nullable = true;
                                 }
                                 match &self.array.additional_items {
                                     Some(AdditionalProperties::Object(tag)) => {
