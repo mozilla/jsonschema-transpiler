@@ -542,6 +542,28 @@ mod tests {
     }
 
     #[test]
+    fn from_bigquery_array_array() {
+        let data = json!({
+            "type": {"array": {"items": {
+                "type": {"array": {"items":
+                    {"type": {"atom": "integer"}}}}}}}
+        });
+        let expect = json!({
+            "name": "root",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {
+                    "name": "items",
+                    "type": "INT64",
+                    "mode": "REPEATED"
+                }
+            ]
+        });
+        assert_eq!(expect, transform_tag(data));
+    }
+
+    #[test]
     fn test_from_ast_tuple() {
         let data = json!({
             "type": {

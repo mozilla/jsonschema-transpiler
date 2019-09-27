@@ -84,6 +84,64 @@ fn bigquery_test_array_with_complex() {
 }
 
 #[test]
+fn bigquery_test_array_of_array() {
+    let input_data = r#"
+    {
+      "properties": {
+        "array": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "array"
+      ],
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "fields": [
+          {
+            "fields": [
+              {
+                "mode": "REPEATED",
+                "name": "items",
+                "type": "INT64"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "items",
+            "type": "RECORD"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "array",
+        "type": "RECORD"
+      }
+    ]
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_atomic() {
     let input_data = r#"
     {

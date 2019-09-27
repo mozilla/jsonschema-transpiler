@@ -618,6 +618,31 @@ mod tests {
     }
 
     #[test]
+    fn from_ast_array_array() {
+        let ast = json!({
+            "type": {"array": {"items": {
+                "type": {"array": {"items":
+                    {"type": {"atom": "integer"}}}}}}}
+        });
+        let avro = json!({
+            "type": "record",
+            "name": "items",
+            "fields": [
+                {
+                    "name": "items",
+                    "type": {
+                        "type": "array",
+                        "items": {
+                            "type": "long"
+                        }
+                    }
+                }
+            ]
+        });
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
     fn from_ast_tuple() {
         // This case is not handled and instead converted into an object
         let ast = json!({

@@ -98,6 +98,73 @@ fn avro_test_array_with_complex() {
 }
 
 #[test]
+fn avro_test_array_of_array() {
+    let input_data = r#"
+    {
+      "properties": {
+        "array": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "array"
+      ],
+      "type": "object"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "fields": [
+        {
+          "fields": [
+            {
+              "name": "items",
+              "type": {
+                "fields": [
+                  {
+                    "name": "items",
+                    "type": {
+                      "items": {
+                        "type": "long"
+                      },
+                      "type": "array"
+                    }
+                  }
+                ],
+                "name": "items",
+                "type": "record"
+              }
+            }
+          ],
+          "name": "array",
+          "type": "record"
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
 fn avro_test_atomic() {
     let input_data = r#"
     {

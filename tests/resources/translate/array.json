@@ -98,6 +98,83 @@
           "type": "array"
         }
       }
+    },
+    {
+      "name": "test_array_of_array",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "fields": [
+                {
+                  "name": "items",
+                  "type": {
+                    "fields": [
+                      {
+                        "name": "items",
+                        "type": {
+                          "items": {
+                            "type": "long"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    ],
+                    "name": "items",
+                    "type": "record"
+                  }
+                }
+              ],
+              "name": "array",
+              "type": "record"
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "fields": [
+                  {
+                    "mode": "REPEATED",
+                    "name": "items",
+                    "type": "INT64"
+                  }
+                ],
+                "mode": "REPEATED",
+                "name": "items",
+                "type": "RECORD"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "array",
+            "type": "RECORD"
+          }
+        ],
+        "json": {
+          "properties": {
+            "array": {
+              "items": {
+                "items": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "array"
+          ],
+          "type": "object"
+        }
+      }
     }
   ]
 }

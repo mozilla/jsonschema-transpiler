@@ -877,4 +877,38 @@ mod tests {
         });
         assert_eq!(expect, translate_tuple(data))
     }
+
+    #[test]
+    fn test_into_ast_array_of_array_of_tuples() {
+        let data = json!({
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": [
+                        {"type": "integer"}
+                    ],
+                    "additionalItems": false
+                }
+            }
+        });
+        let expect = json!({
+        "nullable": false,
+        "type": {"array": {"items": {
+            "nullable": false,
+            "name": "items",
+            "type": {"array": {"items": {
+                "nullable": false,
+                "name": "items",
+                "namespace": ".items",
+                "type": {"tuple": {"items": [
+                    {
+                        "name": "f0_",
+                        "namespace": ".items.items",
+                        "type": {"atom": "integer"},
+                        "nullable": false
+                    }]}}}}}}}}});
+        assert_eq!(expect, translate_tuple(data))
+    }
 }
