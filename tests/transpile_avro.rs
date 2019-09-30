@@ -131,20 +131,26 @@ fn avro_test_array_of_array() {
               {
                 "name": "list",
                 "type": {
-                  "fields": [
-                    {
-                      "name": "list",
-                      "type": {
-                        "items": {
-                          "type": "long"
-                        },
-                        "type": "array"
+                  "items": {
+                    "fields": [
+                      {
+                        "name": "list",
+                        "type": {
+                          "items": {
+                            "items": {
+                              "type": "long"
+                            },
+                            "type": "array"
+                          },
+                          "type": "array"
+                        }
                       }
-                    }
-                  ],
-                  "name": "list",
-                  "namespace": "root.array",
-                  "type": "record"
+                    ],
+                    "name": "list",
+                    "namespace": "root.array",
+                    "type": "record"
+                  },
+                  "type": "array"
                 }
               }
             ],
