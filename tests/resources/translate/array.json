@@ -58,7 +58,7 @@
                 ]
               }
             ],
-            "name": "items",
+            "name": "list",
             "namespace": "root",
             "type": "record"
           },
@@ -96,6 +96,94 @@
             "type": "object"
           },
           "type": "array"
+        }
+      }
+    },
+    {
+      "name": "test_array_of_array",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "name": "array",
+              "type": {
+                "items": {
+                  "fields": [
+                    {
+                      "name": "list",
+                      "type": {
+                        "items": {
+                          "fields": [
+                            {
+                              "name": "list",
+                              "type": {
+                                "items": {
+                                  "type": "long"
+                                },
+                                "type": "array"
+                              }
+                            }
+                          ],
+                          "name": "list",
+                          "namespace": "root.array",
+                          "type": "record"
+                        },
+                        "type": "array"
+                      }
+                    }
+                  ],
+                  "name": "array",
+                  "namespace": "root",
+                  "type": "record"
+                },
+                "type": "array"
+              }
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "fields": [
+                  {
+                    "mode": "REPEATED",
+                    "name": "list",
+                    "type": "INT64"
+                  }
+                ],
+                "mode": "REPEATED",
+                "name": "list",
+                "type": "RECORD"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "array",
+            "type": "RECORD"
+          }
+        ],
+        "json": {
+          "properties": {
+            "array": {
+              "items": {
+                "items": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "array"
+          ],
+          "type": "object"
         }
       }
     }

@@ -209,7 +209,7 @@ fn test_avro_force_nullable() {
                                             ]
                                         }
                                     ],
-                                    "name": "items",
+                                    "name": "list",
                                     "namespace": "root.array",
                                     "type": "record"
                                 }

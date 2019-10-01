@@ -226,12 +226,40 @@ impl TranslateFrom<ast::Tag> for Type {
                 }
                 Type::Complex(Complex::Record(record))
             }
-            ast::Type::Array(array) => match Type::translate_from(*array.items.clone(), context) {
-                Ok(data_type) => Type::Complex(Complex::Array(Array {
-                    items: Box::new(data_type),
-                })),
-                Err(_) => return Err(fmt_reason("untyped array")),
-            },
+            ast::Type::Array(array) => {
+                let child_is_array = match &array.items.data_type {
+                    ast::Type::Array(_) => true,
+                    _ => false,
+                };
+                match Type::translate_from(*array.items.clone(), context) {
+                    Ok(data_type) => {
+                        if child_is_array {
+                            Type::Complex(Complex::Array(Array {
+                                items: Box::new(Type::Complex(Complex::Record(Record {
+                                    common: CommonAttributes {
+                                        name: tag
+                                            .name
+                                            .clone()
+                                            .unwrap_or_else(|| "__UNNAMED__".into()),
+                                        namespace: tag.namespace.clone(),
+                                        ..Default::default()
+                                    },
+                                    fields: vec![Field {
+                                        name: "list".into(),
+                                        data_type,
+                                        ..Default::default()
+                                    }],
+                                }))),
+                            }))
+                        } else {
+                            Type::Complex(Complex::Array(Array {
+                                items: Box::new(data_type),
+                            }))
+                        }
+                    }
+                    Err(_) => return Err(fmt_reason("untyped array")),
+                }
+            }
             ast::Type::Map(map) => match Type::translate_from(*map.value.clone(), context) {
                 Ok(data_type) => Type::Complex(Complex::Map(Map {
                     values: Box::new(data_type),
@@ -613,6 +641,36 @@ mod tests {
         let avro = json!({
             "type": "array",
             "items": {"type": "string"}
+        });
+        assert_from_ast_eq(ast, avro);
+    }
+
+    #[test]
+    fn from_ast_array_array() {
+        let ast = json!({
+            "is_root": true,
+            "type": {"array": {"items": {
+                "type": {"array": {"items":
+                    {"type": {"atom": "integer"}}}}}}}
+        });
+        let avro = json!({
+            "type": "array",
+            "items":
+                {
+                    "type": "record",
+                    "name": "root",
+                    "fields": [
+                        {
+                            "name": "list",
+                            "type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "long"
+                                }
+                            }
+                        }
+                    ]
+                }
         });
         assert_from_ast_eq(ast, avro);
     }

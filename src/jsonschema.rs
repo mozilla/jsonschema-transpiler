@@ -251,10 +251,10 @@ impl Tag {
                                     .collect();
                                 let mut unwrapped = items?;
                                 let min_items: usize =
-                                    self.array.min_items.unwrap_or(unwrapped.len());
+                                    self.array.min_items.unwrap_or_else(|| unwrapped.len());
                                 // set items to optional
-                                for i in min_items..unwrapped.len() {
-                                    unwrapped[i].nullable = true;
+                                for item in unwrapped.iter_mut().skip(min_items) {
+                                    item.nullable = true;
                                 }
                                 match &self.array.additional_items {
                                     Some(AdditionalProperties::Object(tag)) => {
@@ -672,7 +672,7 @@ mod tests {
         "type": {
             "array": {
                 "items": {
-                    "name": "items",
+                    "name": "list",
                     "nullable": false,
                     "type": {"atom": "integer"}
                 }}}});
@@ -875,6 +875,40 @@ mod tests {
             ]}},
             "nullable": false,
         });
+        assert_eq!(expect, translate_tuple(data))
+    }
+
+    #[test]
+    fn test_into_ast_array_of_array_of_tuples() {
+        let data = json!({
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": [
+                        {"type": "integer"}
+                    ],
+                    "additionalItems": false
+                }
+            }
+        });
+        let expect = json!({
+        "nullable": false,
+        "type": {"array": {"items": {
+            "nullable": false,
+            "name": "list",
+            "type": {"array": {"items": {
+                "nullable": false,
+                "name": "list",
+                "namespace": ".list",
+                "type": {"tuple": {"items": [
+                    {
+                        "name": "f0_",
+                        "namespace": ".list.list",
+                        "type": {"atom": "integer"},
+                        "nullable": false
+                    }]}}}}}}}}});
         assert_eq!(expect, translate_tuple(data))
     }
 }
