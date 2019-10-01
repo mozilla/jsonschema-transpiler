@@ -44,6 +44,10 @@ def convert(data, schema):
         out = {}
         if not data:
             return out
+
+        # convert a nested
+        if isinstance(data, list) and set(schema.field_map.keys()) == {"list"}:
+            data = {"list": data}
         # cast tuple into an object before continuing
         if isinstance(data, list):
             data = {f"f{i}_": v for i, v in enumerate(data)}
