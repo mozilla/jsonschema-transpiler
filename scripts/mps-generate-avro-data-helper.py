@@ -34,7 +34,6 @@ def format_key(key):
 
 
 def convert(data, schema):
-
     if schema.type == "string":
         if not isinstance(data, str):
             return json.dumps(data)
@@ -100,13 +99,14 @@ with open(f"data/{document}.ndjson", "r") as f:
     data = f.readlines()
 
 try:
-    out = {}
+    orig = None
     for line in data:
-        out = convert(json.loads(line), schema)
+        orig = json.loads(line)
+        out = convert(orig, schema)
         writer.append(out)
 except:
     with open("test.json", "w") as f:
-        json.dump(out, f)
+        json.dump(orig, f)
     with open("test-schema.json", "w") as f:
         json.dump(schema.to_json(), f, indent=2)
     validation.validate(out, parse_schema(schema.to_json()))

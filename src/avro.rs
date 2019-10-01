@@ -246,9 +246,7 @@ impl TranslateFrom<ast::Tag> for Type {
                                     },
                                     fields: vec![Field {
                                         name: "list".into(),
-                                        data_type: Type::Complex(Complex::Array(Array {
-                                            items: Box::new(data_type),
-                                        })),
+                                        data_type,
                                         ..Default::default()
                                     }],
                                 }))),
@@ -667,10 +665,7 @@ mod tests {
                             "type": {
                                 "type": "array",
                                 "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "long"
-                                    }
+                                    "type": "long"
                                 }
                             }
                         }
