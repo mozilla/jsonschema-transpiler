@@ -127,36 +127,42 @@ fn avro_test_array_of_array() {
         {
           "name": "array",
           "type": {
-            "fields": [
-              {
-                "name": "list",
-                "type": {
-                  "items": {
-                    "fields": [
-                      {
+            "items": {
+              "fields": [
+                {
+                  "name": "list",
+                  "type": {
+                    "items": {
+                      "items": {
+                        "fields": [
+                          {
+                            "name": "list",
+                            "type": {
+                              "items": {
+                                "items": {
+                                  "type": "long"
+                                },
+                                "type": "array"
+                              },
+                              "type": "array"
+                            }
+                          }
+                        ],
                         "name": "list",
-                        "type": {
-                          "items": {
-                            "items": {
-                              "type": "long"
-                            },
-                            "type": "array"
-                          },
-                          "type": "array"
-                        }
-                      }
-                    ],
-                    "name": "list",
-                    "namespace": "root.array",
-                    "type": "record"
-                  },
-                  "type": "array"
+                        "namespace": "root.array",
+                        "type": "record"
+                      },
+                      "type": "array"
+                    },
+                    "type": "array"
+                  }
                 }
-              }
-            ],
-            "name": "array",
-            "namespace": "root",
-            "type": "record"
+              ],
+              "name": "array",
+              "namespace": "root",
+              "type": "record"
+            },
+            "type": "array"
           }
         }
       ],

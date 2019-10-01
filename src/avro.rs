@@ -234,19 +234,24 @@ impl TranslateFrom<ast::Tag> for Type {
                 match Type::translate_from(*array.items.clone(), context) {
                     Ok(data_type) => {
                         if child_is_array {
-                            Type::Complex(Complex::Record(Record {
-                                common: CommonAttributes {
-                                    name: tag.name.clone().unwrap_or_else(|| "__UNNAMED__".into()),
-                                    namespace: tag.namespace.clone(),
-                                    ..Default::default()
-                                },
-                                fields: vec![Field {
-                                    name: "list".into(),
-                                    data_type: Type::Complex(Complex::Array(Array {
-                                        items: Box::new(data_type),
-                                    })),
-                                    ..Default::default()
-                                }],
+                            Type::Complex(Complex::Array(Array {
+                                items: Box::new(Type::Complex(Complex::Record(Record {
+                                    common: CommonAttributes {
+                                        name: tag
+                                            .name
+                                            .clone()
+                                            .unwrap_or_else(|| "__UNNAMED__".into()),
+                                        namespace: tag.namespace.clone(),
+                                        ..Default::default()
+                                    },
+                                    fields: vec![Field {
+                                        name: "list".into(),
+                                        data_type: Type::Complex(Complex::Array(Array {
+                                            items: Box::new(data_type),
+                                        })),
+                                        ..Default::default()
+                                    }],
+                                }))),
                             }))
                         } else {
                             Type::Complex(Complex::Array(Array {
@@ -651,22 +656,26 @@ mod tests {
                     {"type": {"atom": "integer"}}}}}}}
         });
         let avro = json!({
-            "type": "record",
-            "name": "root",
-            "fields": [
+            "type": "array",
+            "items":
                 {
-                    "name": "list",
-                    "type": {
-                        "type": "array",
-                        "items": {
-                            "type": "array",
-                            "items": {
-                                "type": "long"
+                    "type": "record",
+                    "name": "root",
+                    "fields": [
+                        {
+                            "name": "list",
+                            "type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "long"
+                                    }
+                                }
                             }
                         }
-                    }
+                    ]
                 }
-            ]
         });
         assert_from_ast_eq(ast, avro);
     }
