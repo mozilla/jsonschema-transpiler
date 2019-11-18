@@ -154,13 +154,19 @@ impl TranslateFrom<ast::Tag> for Tag {
             ast::Type::Map(map) => {
                 let key = Tag::translate_from(*map.key.clone(), context).unwrap();
                 let value = match Tag::translate_from(*map.value.clone(), context) {
-                    Ok(tag) => tag,
-                    Err(_) => return Err(fmt_reason("untyped map value")),
+                    Ok(tag) => Some(tag),
+                    // Err is only reachable when context.resolve_method is Drop
+                    Err(_) => match context.allow_maps_without_value {
+                        true => None,
+                        false => return Err(fmt_reason("untyped map value")),
+                    },
                 };
-                let fields: HashMap<String, Box<Tag>> = vec![("key", key), ("value", value)]
-                    .into_iter()
-                    .map(|(k, v)| (k.to_string(), Box::new(v)))
-                    .collect();
+                let fields: HashMap<String, Box<Tag>> =
+                    vec![Some(("key", key)), value.map(|v| ("value", v))]
+                        .into_iter()
+                        .flatten()
+                        .map(|(k, v)| (k.to_string(), Box::new(v)))
+                        .collect();
                 Type::Record(Record { fields })
             }
             _ => handle_error("unknown type")?,
@@ -270,6 +276,12 @@ mod tests {
         let context = Context {
             ..Default::default()
         };
+        let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
+        let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
+        json!(bq_tag)
+    }
+
+    fn transform_tag_with_context(data: Value, context: Context) -> Value {
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
         let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
         json!(bq_tag)
@@ -615,6 +627,30 @@ mod tests {
             {"name": "value", "type": "INT64", "mode": "REQUIRED"},
         ]});
         assert_eq!(expect, transform_tag(data));
+    }
+
+    #[test]
+    fn test_from_ast_map_without_value() {
+        let data = json!({
+        "type": {
+            "map": {
+                "key": {"type": {"atom": "string"}},
+                "value": {"type": {"atom": "json"}},
+        }}});
+        let expect = json!({
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "fields": [
+            {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+        ]});
+        let context = Context {
+            resolve_method: ResolveMethod::Drop,
+            normalize_case: false,
+            force_nullable: false,
+            tuple_struct: false,
+            allow_maps_without_value: true,
+        };
+        assert_eq!(expect, transform_tag_with_context(data, context));
     }
 
     #[test]

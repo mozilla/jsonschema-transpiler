@@ -264,7 +264,11 @@ impl TranslateFrom<ast::Tag> for Type {
                 Ok(data_type) => Type::Complex(Complex::Map(Map {
                     values: Box::new(data_type),
                 })),
-                Err(_) => return Err(fmt_reason("untyped map value")),
+                // Err is only reachable when context.resolve_method is Drop
+                Err(_) => match context.allow_maps_without_value {
+                    true => return Err(fmt_reason("map value cannot be dropped in avro")),
+                    false => return Err(fmt_reason("untyped map value")),
+                },
             },
             _ => handle_error("unknown type")?,
         };

@@ -54,6 +54,12 @@ fn main() {
             .help("Treats tuple validation as an anonymous struct")
             .long("tuple-struct"),
         )
+        .arg(
+            Arg::with_name("allow-maps-without-value")
+            .help("Produces maps without a value field for incompatible or under-specified value schema")
+            .short("w")
+            .long("allow-maps-without-value"),
+        )
         .get_matches();
 
     let reader: Box<io::Read> = match matches.value_of("file") {
@@ -75,6 +81,7 @@ fn main() {
         normalize_case: matches.is_present("normalize-case"),
         force_nullable: matches.is_present("force-nullable"),
         tuple_struct: matches.is_present("tuple-struct"),
+        allow_maps_without_value: matches.is_present("allow-maps-without-value"),
     };
 
     let output = match matches.value_of("type").unwrap() {

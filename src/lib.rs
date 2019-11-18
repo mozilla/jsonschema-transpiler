@@ -66,6 +66,7 @@ pub struct Context {
     pub normalize_case: bool,
     pub force_nullable: bool,
     pub tuple_struct: bool,
+    pub allow_maps_without_value: bool,
 }
 
 fn into_ast(input: &Value, context: Context) -> ast::Tag {
