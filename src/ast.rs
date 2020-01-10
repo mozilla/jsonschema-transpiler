@@ -53,7 +53,7 @@ pub struct Tuple {
 impl Tuple {
     pub fn new(items: Vec<Tag>) -> Self {
         Tuple {
-            items: items.clone(),
+            items,
         }
     }
 }
@@ -95,7 +95,7 @@ impl Union {
     /// type is found, it will be converted into a JSON type. Because of the ambiguity
     /// around finding structure in a JSON blob, the union of any type with JSON will
     /// be consumed by the JSON type. In a similar fashion, a table schema is determined
-    /// to be nullable or required via occurances of null types in unions.
+    /// to be nullable or required via occurrences of null types in unions.
     pub fn collapse(&self) -> Tag {
         let is_null = self.items.iter().any(Tag::is_null);
 

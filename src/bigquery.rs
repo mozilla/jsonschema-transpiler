@@ -155,10 +155,12 @@ impl TranslateFrom<ast::Tag> for Tag {
                 let key = Tag::translate_from(*map.key.clone(), context).unwrap();
                 let value = match Tag::translate_from(*map.value.clone(), context) {
                     Ok(tag) => Some(tag),
-                    // Err is only reachable when context.resolve_method is Drop
-                    Err(_) => match context.allow_maps_without_value {
-                        true => None,
-                        false => return Err(fmt_reason("untyped map value")),
+                    Err(_) => {
+                        if context.allow_maps_without_value {
+                            None
+                        } else {
+                            return Err(fmt_reason("untyped map value"))
+                        }
                     },
                 };
                 let fields: HashMap<String, Box<Tag>> =
