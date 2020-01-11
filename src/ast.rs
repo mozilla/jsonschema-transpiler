@@ -52,9 +52,7 @@ pub struct Tuple {
 
 impl Tuple {
     pub fn new(items: Vec<Tag>) -> Self {
-        Tuple {
-            items,
-        }
+        Tuple { items }
     }
 }
 
@@ -73,6 +71,7 @@ impl Map {
                 data_type: Type::Atom(Atom::String),
                 nullable: false,
                 is_root: false,
+                description: None,
             }),
             value: Box::new(value),
         }
@@ -108,6 +107,7 @@ impl Union {
                 nullable: is_null,
                 is_root: false,
                 data_type: self.items[0].data_type.clone(),
+                description: None,
             };
         }
 
@@ -127,7 +127,7 @@ impl Union {
             .collect();
 
         // after collapsing nulls in the base case and collapsing nested unions in
-        // the preprocessing step, check for nullability based on the immediate level of tags
+        // the pre-processing step, check for nullability based on the immediate level of tags
         let nullable = is_null || items.iter().any(|tag| tag.nullable);
 
         let data_type: Type = if items.iter().all(Tag::is_atom) {
@@ -232,6 +232,7 @@ impl Union {
             nullable,
             data_type,
             is_root: false,
+            description: None,
         };
         tag.infer_nullability(false);
         tag
@@ -275,16 +276,25 @@ pub struct Tag {
 
     #[serde(default, skip_serializing)]
     pub is_root: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 impl Tag {
-    pub fn new(data_type: Type, name: Option<String>, nullable: bool) -> Self {
+    pub fn new(
+        data_type: Type,
+        name: Option<String>,
+        nullable: bool,
+        description: Option<String>,
+    ) -> Self {
         Tag {
             data_type,
             name,
             namespace: None,
             nullable,
             is_root: false,
+            description,
         }
     }
 
@@ -914,15 +924,17 @@ mod tests {
             Tag::new(
                 Type::Map(Map::new(
                     None,
-                    Tag::new(Type::Atom(Atom::Integer), None, false),
+                    Tag::new(Type::Atom(Atom::Integer), None, false, None),
                 )),
                 None,
                 false,
+                None,
             ),
             Tag::new(
-                Type::Map(Map::new(None, Tag::new(Type::Null, None, false))),
+                Type::Map(Map::new(None, Tag::new(Type::Null, None, false, None))),
                 None,
                 false,
+                None,
             ),
         ]));
         let expect = json!({

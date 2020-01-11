@@ -271,7 +271,7 @@ impl TranslateFrom<ast::Tag> for Type {
                     } else {
                         Err(fmt_reason("untyped map value"))
                     }
-                },
+                }
             },
             _ => handle_error("unknown type")?,
         };

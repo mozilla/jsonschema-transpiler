@@ -53,6 +53,8 @@ pub struct Tag {
     #[serde(rename = "type")]
     data_type: Box<Type>,
     mode: Mode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
 }
 
 impl TranslateFrom<ast::Tag> for Tag {
@@ -159,9 +161,9 @@ impl TranslateFrom<ast::Tag> for Tag {
                         if context.allow_maps_without_value {
                             None
                         } else {
-                            return Err(fmt_reason("untyped map value"))
+                            return Err(fmt_reason("untyped map value"));
                         }
-                    },
+                    }
                 };
                 let fields: HashMap<String, Box<Tag>> =
                     vec![Some(("key", key)), value.map(|v| ("value", v))]
@@ -181,10 +183,14 @@ impl TranslateFrom<ast::Tag> for Tag {
         } else {
             Mode::Required
         };
+
+        let description = tag.description;
+
         Ok(Tag {
             name: tag.name.clone(),
             data_type: Box::new(data_type),
             mode,
+            description,
         })
     }
 }
@@ -304,6 +310,7 @@ mod tests {
             name: None,
             data_type: Box::new(Type::Atom(Atom::Bool)),
             mode: Mode::Nullable,
+            description: None,
         };
         let expect = json!({
             "type": "BOOL",
@@ -341,6 +348,7 @@ mod tests {
             name: Some("test-int".into()),
             data_type: Box::new(Type::Atom(Atom::Int64)),
             mode: Mode::Nullable,
+            description: Some("test description".to_string()),
         };
 
         let mut record = Record {
@@ -352,15 +360,18 @@ mod tests {
             name: None,
             data_type: Box::new(Type::Record(record)),
             mode: Mode::Nullable,
+            description: Some("test description".to_string()),
         };
 
         let expect = json!({
             "type": "RECORD",
             "mode": "NULLABLE",
+            "description": "test description",
             "fields": [{
                 "name": "test-int",
                 "type": "INT64",
-                "mode": "NULLABLE"
+                "mode": "NULLABLE",
+                "description": "test description"
             }]
         });
 
@@ -375,7 +386,8 @@ mod tests {
             "fields": [{
                 "name": "test-int",
                 "type": "INT64",
-                "mode": "NULLABLE"
+                "mode": "NULLABLE",
+                "description": "test description"
             }]
         }))
         .unwrap();
@@ -388,6 +400,10 @@ mod tests {
             Type::Atom(Atom::Int64) => (),
             _ => panic!(),
         };
+
+        if test_int.description.as_ref().unwrap() != "test description" {
+            panic!();
+        }
     }
 
     #[test]
@@ -396,6 +412,7 @@ mod tests {
             name: Some("test-int".into()),
             data_type: Box::new(Type::Atom(Atom::Int64)),
             mode: Mode::Nullable,
+            description: Some("innermost record".to_string()),
         };
 
         let mut record_b = Record {
@@ -407,6 +424,7 @@ mod tests {
             name: Some("test-record-b".into()),
             data_type: Box::new(Type::Record(record_b)),
             mode: Mode::Nullable,
+            description: Some("inner record".to_string()),
         };
 
         let mut record_a = Record {
@@ -420,19 +438,23 @@ mod tests {
             name: Some("test-record-a".into()),
             data_type: Box::new(Type::Record(record_a)),
             mode: Mode::Nullable,
+            description: Some("outer record".to_string()),
         };
 
         let expect = json!({
             "name": "test-record-a",
             "type": "RECORD",
             "mode": "NULLABLE",
+            "description": "outer record",
             "fields": [{
                 "name": "test-record-b",
                 "type": "RECORD",
+                "description": "inner record",
                 "fields": [{
                     "name": "test-int",
                     "type": "INT64",
-                    "mode": "NULLABLE"
+                    "mode": "NULLABLE",
+                    "description": "innermost record"
                 }],
                 "mode": "NULLABLE"
             }]
@@ -447,13 +469,16 @@ mod tests {
             "name": "test-record-a",
             "type": "RECORD",
             "mode": "NULLABLE",
+            "description": "outer record",
             "fields": [{
                 "name": "test-record-b",
                 "type": "RECORD",
+                "description": "inner record",
                 "fields": [{
                     "name": "test-int",
                     "type": "INT64",
-                    "mode": "NULLABLE"
+                    "mode": "NULLABLE",
+                    "description": "innermost record"
                 }],
                 "mode": "NULLABLE"
             }]
