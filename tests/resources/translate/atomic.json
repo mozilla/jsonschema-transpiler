@@ -146,6 +146,70 @@
           "type": "string"
         }
       }
+    },
+    {
+      "name": "test_atomic_with_description",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "type": "long"
+        },
+        "bigquery": [
+          {
+            "description": "test description",
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "INT64"
+          }
+        ],
+        "json": {
+          "description": "test description",
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "name": "test_atomic_with_description_and_title",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "type": "long"
+        },
+        "bigquery": [
+          {
+            "description": "test title - test description",
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "INT64"
+          }
+        ],
+        "json": {
+          "description": "test description",
+          "title": "test title",
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "name": "test_atomic_with_title",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "type": "long"
+        },
+        "bigquery": [
+          {
+            "description": "test title",
+            "mode": "REQUIRED",
+            "name": "root",
+            "type": "INT64"
+          }
+        ],
+        "json": {
+          "title": "test title",
+          "type": "integer"
+        }
+      }
     }
   ]
 }

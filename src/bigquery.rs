@@ -49,8 +49,7 @@ pub enum Type {
 pub struct Tag {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-    #[serde(flatten)]
-    #[serde(rename = "type")]
+    #[serde(flatten, rename = "type")]
     data_type: Box<Type>,
     mode: Mode,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -184,7 +183,15 @@ impl TranslateFrom<ast::Tag> for Tag {
             Mode::Required
         };
 
-        let description = tag.description;
+        // If schema uses both title and description, format description as "<title> - <description>".
+        // Otherwise set description to whatever is available.
+        let description = match tag.title {
+            Some(title) => match tag.description {
+                Some(description) => Some(format!("{} - {}", title, description)),
+                None => Some(title),
+            },
+            None => tag.description,
+        };
 
         Ok(Tag {
             name: tag.name.clone(),
@@ -659,6 +666,7 @@ mod tests {
     #[test]
     fn test_from_ast_map_without_value() {
         let data = json!({
+        "description": "foo",
         "type": {
             "map": {
                 "key": {"type": {"atom": "string"}},
@@ -667,6 +675,7 @@ mod tests {
         let expect = json!({
         "type": "RECORD",
         "mode": "REPEATED",
+        "description": "foo",
         "fields": [
             {"name": "key", "type": "STRING", "mode": "REQUIRED"},
         ]});

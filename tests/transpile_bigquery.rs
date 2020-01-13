@@ -318,6 +318,94 @@ fn bigquery_test_bytes_format() {
 }
 
 #[test]
+fn bigquery_test_atomic_with_description() {
+    let input_data = r#"
+    {
+      "description": "test description",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "description": "test description",
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
+fn bigquery_test_atomic_with_description_and_title() {
+    let input_data = r#"
+    {
+      "description": "test description",
+      "title": "test title",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "description": "test title - test description",
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
+fn bigquery_test_atomic_with_title() {
+    let input_data = r#"
+    {
+      "title": "test title",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "description": "test title",
+        "mode": "REQUIRED",
+        "name": "root",
+        "type": "INT64"
+      }
+    ]
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_map_with_atomics() {
     let input_data = r#"
     {
@@ -364,8 +452,10 @@ fn bigquery_test_map_with_complex() {
     let input_data = r#"
     {
       "additionalProperties": {
+        "description": "object description",
         "properties": {
           "field_1": {
+            "description": "field description",
             "type": "string"
           },
           "field_2": {
@@ -374,12 +464,14 @@ fn bigquery_test_map_with_complex() {
         },
         "type": "object"
       },
+      "description": "root description",
       "type": "object"
     }
     "#;
     let expected_data = r#"
     [
       {
+        "description": "root description",
         "fields": [
           {
             "mode": "REQUIRED",
@@ -387,8 +479,10 @@ fn bigquery_test_map_with_complex() {
             "type": "STRING"
           },
           {
+            "description": "object description",
             "fields": [
               {
+                "description": "field description",
                 "mode": "NULLABLE",
                 "name": "field_1",
                 "type": "STRING"
@@ -781,6 +875,7 @@ fn bigquery_test_object_with_complex() {
         "namespace_1": {
           "properties": {
             "field_1": {
+              "description": "field description",
               "type": "string"
             },
             "field_2": {
@@ -798,6 +893,7 @@ fn bigquery_test_object_with_complex() {
       {
         "fields": [
           {
+            "description": "field description",
             "mode": "NULLABLE",
             "name": "field_1",
             "type": "STRING"

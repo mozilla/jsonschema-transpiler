@@ -72,6 +72,7 @@ impl Map {
                 nullable: false,
                 is_root: false,
                 description: None,
+                title: None,
             }),
             value: Box::new(value),
         }
@@ -108,6 +109,7 @@ impl Union {
                 is_root: false,
                 data_type: self.items[0].data_type.clone(),
                 description: None,
+                title: None,
             };
         }
 
@@ -233,6 +235,7 @@ impl Union {
             data_type,
             is_root: false,
             description: None,
+            title: None,
         };
         tag.infer_nullability(false);
         tag
@@ -279,6 +282,9 @@ pub struct Tag {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 impl Tag {
@@ -287,6 +293,7 @@ impl Tag {
         name: Option<String>,
         nullable: bool,
         description: Option<String>,
+        title: Option<String>,
     ) -> Self {
         Tag {
             data_type,
@@ -295,6 +302,7 @@ impl Tag {
             nullable,
             is_root: false,
             description,
+            title,
         }
     }
 
@@ -924,16 +932,21 @@ mod tests {
             Tag::new(
                 Type::Map(Map::new(
                     None,
-                    Tag::new(Type::Atom(Atom::Integer), None, false, None),
+                    Tag::new(Type::Atom(Atom::Integer), None, false, None, None),
                 )),
                 None,
                 false,
                 None,
+                None,
             ),
             Tag::new(
-                Type::Map(Map::new(None, Tag::new(Type::Null, None, false, None))),
+                Type::Map(Map::new(
+                    None,
+                    Tag::new(Type::Null, None, false, None, None),
+                )),
                 None,
                 false,
+                None,
                 None,
             ),
         ]));

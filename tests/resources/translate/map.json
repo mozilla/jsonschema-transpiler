@@ -85,6 +85,7 @@
         },
         "bigquery": [
           {
+            "description": "root description",
             "fields": [
               {
                 "mode": "REQUIRED",
@@ -92,8 +93,10 @@
                 "type": "STRING"
               },
               {
+                "description": "object description",
                 "fields": [
                   {
+                    "description": "field description",
                     "mode": "NULLABLE",
                     "name": "field_1",
                     "type": "STRING"
@@ -116,8 +119,10 @@
         ],
         "json": {
           "additionalProperties": {
+            "description": "object description",
             "properties": {
               "field_1": {
+                "description": "field description",
                 "type": "string"
               },
               "field_2": {
@@ -126,6 +131,7 @@
             },
             "type": "object"
           },
+          "description": "root description",
           "type": "object"
         }
       }
