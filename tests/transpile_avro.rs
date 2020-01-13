@@ -338,6 +338,79 @@ fn avro_test_bytes_format() {
 }
 
 #[test]
+fn avro_test_atomic_with_description() {
+    let input_data = r#"
+    {
+      "description": "test description",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "long"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
+fn avro_test_atomic_with_description_and_title() {
+    let input_data = r#"
+    {
+      "description": "test description",
+      "title": "test title",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "long"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
+fn avro_test_atomic_with_title() {
+    let input_data = r#"
+    {
+      "title": "test title",
+      "type": "integer"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "type": "long"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_avro(&input, context));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
 fn avro_test_map_with_atomics() {
     let input_data = r#"
     {
@@ -371,8 +444,10 @@ fn avro_test_map_with_complex() {
     let input_data = r#"
     {
       "additionalProperties": {
+        "description": "object description",
         "properties": {
           "field_1": {
+            "description": "field description",
             "type": "string"
           },
           "field_2": {
@@ -381,6 +456,7 @@ fn avro_test_map_with_complex() {
         },
         "type": "object"
       },
+      "description": "root description",
       "type": "object"
     }
     "#;
@@ -803,6 +879,7 @@ fn avro_test_object_with_complex() {
         "namespace_1": {
           "properties": {
             "field_1": {
+              "description": "field description",
               "type": "string"
             },
             "field_2": {

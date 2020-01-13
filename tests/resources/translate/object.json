@@ -318,6 +318,7 @@
           {
             "fields": [
               {
+                "description": "field description",
                 "mode": "NULLABLE",
                 "name": "field_1",
                 "type": "STRING"
@@ -338,6 +339,7 @@
             "namespace_1": {
               "properties": {
                 "field_1": {
+                  "description": "field description",
                   "type": "string"
                 },
                 "field_2": {

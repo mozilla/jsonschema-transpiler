@@ -20,7 +20,7 @@ mod traits;
 use serde_json::{json, Value};
 use traits::TranslateFrom;
 
-/// The error resoluton method in the [`TranslateFrom`] and [`TranslateInto`]
+/// The error resolution method in the [`TranslateFrom`] and [`TranslateInto`]
 /// interfaces when converting between schema formats.
 ///
 /// The `Cast` method will represent under-specified (e.g. empty objects) and

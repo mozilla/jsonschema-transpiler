@@ -95,6 +95,10 @@ pub struct Tag {
     data_type: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     format: Option<Format>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
     #[serde(flatten)]
     object: Object,
     #[serde(flatten)]
@@ -143,24 +147,69 @@ impl Tag {
                     }
                     items.push(self.atom_into_ast(atom, context)?);
                 }
+
+                let description = self.description.clone();
+                let title = self.title.clone();
+
                 Ok(ast::Tag::new(
                     ast::Type::Union(ast::Union::new(items)),
                     None,
                     nullable,
+                    description,
+                    title,
                 ))
             }
         }
     }
 
     fn atom_into_ast(&self, data_type: Atom, context: Context) -> Result<ast::Tag, &'static str> {
+        let description = self.description.clone();
+        let title = self.title.clone();
+
         let result = match data_type {
-            Atom::Null => ast::Tag::new(ast::Type::Null, None, true),
-            Atom::Boolean => ast::Tag::new(ast::Type::Atom(ast::Atom::Boolean), None, false),
-            Atom::Number => ast::Tag::new(ast::Type::Atom(ast::Atom::Number), None, false),
-            Atom::Integer => ast::Tag::new(ast::Type::Atom(ast::Atom::Integer), None, false),
-            Atom::String => ast::Tag::new(ast::Type::Atom(ast::Atom::String), None, false),
-            Atom::DateTime => ast::Tag::new(ast::Type::Atom(ast::Atom::Datetime), None, false),
-            Atom::Bytes => ast::Tag::new(ast::Type::Atom(ast::Atom::Bytes), None, false),
+            Atom::Null => ast::Tag::new(ast::Type::Null, None, true, description, title),
+            Atom::Boolean => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::Boolean),
+                None,
+                false,
+                description,
+                title,
+            ),
+            Atom::Number => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::Number),
+                None,
+                false,
+                description,
+                title,
+            ),
+            Atom::Integer => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::Integer),
+                None,
+                false,
+                description,
+                title,
+            ),
+            Atom::String => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::String),
+                None,
+                false,
+                description,
+                title,
+            ),
+            Atom::DateTime => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::Datetime),
+                None,
+                false,
+                description,
+                title,
+            ),
+            Atom::Bytes => ast::Tag::new(
+                ast::Type::Atom(ast::Atom::Bytes),
+                None,
+                false,
+                description,
+                title,
+            ),
             Atom::Object => match &self.object.properties {
                 Some(properties) => {
                     let mut fields: HashMap<String, ast::Tag> = HashMap::new();
@@ -171,6 +220,8 @@ impl Tag {
                         ast::Type::Object(ast::Object::new(fields, self.object.required.clone())),
                         None,
                         false,
+                        description,
+                        title,
                     )
                 }
                 None => {
@@ -185,15 +236,28 @@ impl Tag {
                             let pat_vec: Result<Vec<_>, _> =
                                 pat.values().map(|v| v.type_into_ast(context)).collect();
                             vec.extend(pat_vec?);
-                            let value =
-                                ast::Tag::new(ast::Type::Union(ast::Union::new(vec)), None, false);
+                            let value = ast::Tag::new(
+                                ast::Type::Union(ast::Union::new(vec)),
+                                None,
+                                false,
+                                None,
+                                None,
+                            );
 
-                            ast::Tag::new(ast::Type::Map(ast::Map::new(None, value)), None, false)
+                            ast::Tag::new(
+                                ast::Type::Map(ast::Map::new(None, value)),
+                                None,
+                                false,
+                                description,
+                                title,
+                            )
                         }
                         (Some(AdditionalProperties::Object(tag)), None) => ast::Tag::new(
                             ast::Type::Map(ast::Map::new(None, tag.type_into_ast(context)?)),
                             None,
                             false,
+                            description,
+                            title,
                         ),
                         (_, Some(tag)) => {
                             let items: Result<Vec<_>, _> =
@@ -202,8 +266,16 @@ impl Tag {
                                 ast::Type::Union(ast::Union::new(items?)),
                                 None,
                                 false,
+                                None,
+                                None,
                             );
-                            ast::Tag::new(ast::Type::Map(ast::Map::new(None, union)), None, false)
+                            ast::Tag::new(
+                                ast::Type::Map(ast::Map::new(None, union)),
+                                None,
+                                false,
+                                description,
+                                title,
+                            )
                         }
                         _ => {
                             // handle oneOf
@@ -219,11 +291,17 @@ impl Tag {
                                         ast::Type::Union(ast::Union::new(unwrapped)),
                                         None,
                                         nullable,
+                                        description,
+                                        title,
                                     )
                                 }
-                                None => {
-                                    ast::Tag::new(ast::Type::Atom(ast::Atom::JSON), None, false)
-                                }
+                                None => ast::Tag::new(
+                                    ast::Type::Atom(ast::Atom::JSON),
+                                    None,
+                                    false,
+                                    description,
+                                    title,
+                                ),
                             }
                         }
                     }
@@ -290,7 +368,7 @@ impl Tag {
                             }
                         }
                     };
-                    ast::Tag::new(data_type, None, false)
+                    ast::Tag::new(data_type, None, false, None, None)
                 } else {
                     return Err("array missing item");
                 }
@@ -450,6 +528,37 @@ mod tests {
         assert_eq!(props.len(), 1);
         let nested_object = *props.get("nested-object").as_ref().unwrap();
         assert_eq!(nested_object.data_type, json!("object"));
+        let nested_object_props = nested_object.object.properties.as_ref().unwrap();
+        assert_eq!(nested_object_props.len(), 1);
+    }
+
+    #[test]
+    fn test_deserialize_type_nested_object_with_description() {
+        let data = json!({
+            "type": "object",
+            "description": "outer object",
+            "properties": {
+                "nested-object": {
+                    "type": "object",
+                    "description": "test description",
+                    "title": "test title",
+                    "properties": {
+                        "test-int": {"type": "int"}
+                    }
+                },
+            }
+        });
+        let schema: Tag = serde_json::from_value(data).unwrap();
+        let props = schema.object.properties.as_ref().unwrap();
+        assert_eq!(props.len(), 1);
+        assert_eq!(schema.description, Some("outer object".to_string()));
+        let nested_object = *props.get("nested-object").as_ref().unwrap();
+        assert_eq!(nested_object.data_type, json!("object"));
+        assert_eq!(
+            nested_object.description,
+            Some("test description".to_string())
+        );
+        assert_eq!(nested_object.title, Some("test title".to_string()));
         let nested_object_props = nested_object.object.properties.as_ref().unwrap();
         assert_eq!(nested_object_props.len(), 1);
     }

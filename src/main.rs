@@ -62,7 +62,7 @@ fn main() {
         )
         .get_matches();
 
-    let reader: Box<io::Read> = match matches.value_of("file") {
+    let reader: Box<dyn io::Read> = match matches.value_of("file") {
         Some(path) if path == "-" => Box::new(io::stdin()),
         Some(path) => {
             let file = File::open(path).unwrap();
