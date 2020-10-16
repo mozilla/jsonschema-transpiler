@@ -1,6 +1,6 @@
 [package]
 name = "jsonschema-transpiler"
-version = "1.8.0"
+version = "1.8.1"
 authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 description = "A tool to transpile JSON Schema into schemas for data processing"
 license = "MPL-2.0"
