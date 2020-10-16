@@ -1,4 +1,5 @@
 # jsonschema-transpiler
+
 [![CircleCI](https://circleci.com/gh/mozilla/jsonschema-transpiler.svg?style=svg)](https://circleci.com/gh/mozilla/jsonschema-transpiler)
 
 A tool for transpiling [JSON Schema](https://json-schema.org/) into schemas for
@@ -21,32 +22,40 @@ the canonical source of truth for JSON schemas in the Firefox Data Platform.
 
 ## Installation
 
-```
+```bash
 cargo install jsonschema-transpiler
 ```
 
 ## Usage
 
-```
+```bash
 A tool to transpile JSON Schema into schemas for data processing
 
 USAGE:
-    jsonschema-transpiler [OPTIONS] [FILE]
+    jsonschema-transpiler [FLAGS] [OPTIONS] [file]
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -w, --allow-maps-without-value    Produces maps without a value field for incompatible or under-specified value
+                                      schema
+    -n, --force-nullable              Treats all columns as NULLABLE, ignoring the required section in the JSON Schema
+                                      object
+    -h, --help                        Prints help information
+    -c, --normalize-case              snake_case column-names for consistent behavior between SQL engines
+        --tuple-struct                Treats tuple validation as an anonymous struct
+    -V, --version                     Prints version information
 
 OPTIONS:
-    -t, --type <type>    The output schema format [default: avro]  [possible values: avro, bigquery]
+    -r, --resolve <resolve>    The resolution strategy for incompatible or under-specified schema [default: cast]
+                               [possible values: cast, panic, drop]
+    -t, --type <type>          The output schema format [default: avro]  [possible values: avro, bigquery]
 
 ARGS:
-    <FILE>    Sets the input file to use
+    <file>    Sets the input file to use
 ```
 
 JSON Schemas can be read from stdin or from a file.
 
-### Examples usage:
+### Examples usage
 
 ```bash
 # An object with a single, optional boolean field
