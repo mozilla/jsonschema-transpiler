@@ -5,6 +5,7 @@ authors = ["Anthony Miyaguchi <amiyaguchi@mozilla.com>"]
 description = "A tool to transpile JSON Schema into schemas for data processing"
 license = "MPL-2.0"
 readme = "README.md"
+repository = "https://github.com/mozilla/jsonschema-transpiler"
 edition = "2018"
 
 [lib]
