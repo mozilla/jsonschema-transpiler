@@ -10,6 +10,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
+use wasm_bindgen::prelude::*;
+
 mod ast;
 mod avro;
 mod bigquery;
