@@ -1,7 +1,8 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate onig;
+extern crate heck;
+extern crate regex;
 #[macro_use]
 extern crate serde;
 extern crate serde_json;
@@ -41,7 +42,7 @@ use traits::TranslateFrom;
 /// The `Panic` method will panic if the JSON Schema is inconsistent or uses
 /// unsupported features. This method is a useful way to test for incompatible
 /// schemas.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum ResolveMethod {
     Cast,
     Drop,
@@ -62,7 +63,7 @@ impl Default for ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,
@@ -89,4 +90,12 @@ pub fn convert_avro(input: &Value, context: Context) -> Value {
 pub fn convert_bigquery(input: &Value, context: Context) -> Value {
     let bq = bigquery::Schema::translate_from(into_ast(input, context), context).unwrap();
     json!(bq)
+}
+
+#[wasm_bindgen]
+pub fn convert_bigquery_js(input: &JsValue, context: &JsValue) -> JsValue {
+    let input: Value = input.into_serde().unwrap();
+    let context: Context = context.into_serde().unwrap();
+    let bq = bigquery::Schema::translate_from(into_ast(&input, context), context).unwrap();
+    JsValue::from_serde(&bq).unwrap()
 }

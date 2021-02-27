@@ -1,4 +1,4 @@
-use onig::Regex;
+use heck::SnakeCase;
 
 /// Normalize the case of a string to be `snake_case`.
 ///
@@ -24,28 +24,7 @@ use onig::Regex;
 /// * [[StackOverflow] - RegEx to split camelCase or TitleCase (advanced)](https://stackoverflow.com/a/7599674)
 /// * [[StackOverflow] - What's the technical reason for “lookbehind assertion MUST be fixed length” in regex?](https://stackoverflow.com/a/40078049)
 pub fn to_snake_case(input: &str) -> String {
-    lazy_static! {
-        static ref EXTRA_SYMBOL: Regex = Regex::new(r"[^\w]|_").unwrap();
-        // This regex matches camelCase in reverse, since the lookbehind
-        // operation only accepts patterns of fixed length. This "inverted"
-        // lookahead can help determine whether a digit is lowercase or
-        // uppercase.
-        static ref REV_WORD_BOUNDARY: Regex = Regex::new(
-            r"(?x)
-            \b                              # standard word boundary
-            |(?<=[a-z][A-Z])(?=\d*[A-Z])    # break on runs of uppercase e.g. A7Aa -> A7|Aa
-            |(?<=[a-z][A-Z])(?=\d*[a-z])    # break on runs of lowercase e.g a7Aa -> a7|Aa
-            |(?<=[A-Z])(?=\d*[a-z])         # break on final uppercase e.g. a7A -> a7|A
-            ",
-        )
-        .unwrap();
-    }
-    let subbed: String = EXTRA_SYMBOL.replace_all(input, " ").chars().rev().collect();
-    let words: Vec<&str> = REV_WORD_BOUNDARY
-        .split(&subbed)
-        .filter(|s| !s.trim().is_empty())
-        .collect();
-    words.join("_").to_lowercase().chars().rev().collect()
+    input.to_snake_case()
 }
 
 #[cfg(test)]
