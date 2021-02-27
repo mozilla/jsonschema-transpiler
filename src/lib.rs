@@ -42,7 +42,7 @@ use traits::TranslateFrom;
 /// The `Panic` method will panic if the JSON Schema is inconsistent or uses
 /// unsupported features. This method is a useful way to test for incompatible
 /// schemas.
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone)]
 pub enum ResolveMethod {
     Cast,
     Drop,
@@ -63,7 +63,7 @@ impl Default for ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,
@@ -92,10 +92,25 @@ pub fn convert_bigquery(input: &Value, context: Context) -> Value {
     json!(bq)
 }
 
+pub fn set_panic_hook() {
+    // When the `console_error_panic_hook` feature is enabled, we can call the
+    // `set_panic_hook` function at least once during initialization, and then
+    // we will get better error messages if our code ever panics.
+    //
+    // For more details see
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
+
 #[wasm_bindgen]
-pub fn convert_bigquery_js(input: &JsValue, context: &JsValue) -> JsValue {
+pub fn convert_bigquery_js(input: &JsValue) -> JsValue {
+    set_panic_hook();
     let input: Value = input.into_serde().unwrap();
-    let context: Context = context.into_serde().unwrap();
+    let context: Context = Context {
+        resolve_method: ResolveMethod::Drop,
+        ..Default::default()
+    };
     let bq = bigquery::Schema::translate_from(into_ast(&input, context), context).unwrap();
     JsValue::from_serde(&bq).unwrap()
 }
