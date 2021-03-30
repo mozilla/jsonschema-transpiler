@@ -1,7 +1,8 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate onig;
+extern crate heck;
+extern crate regex;
 #[macro_use]
 extern crate serde;
 extern crate serde_json;
@@ -9,6 +10,8 @@ extern crate serde_json;
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
+
+use wasm_bindgen::prelude::*;
 
 mod ast;
 mod avro;
@@ -87,4 +90,27 @@ pub fn convert_avro(input: &Value, context: Context) -> Value {
 pub fn convert_bigquery(input: &Value, context: Context) -> Value {
     let bq = bigquery::Schema::translate_from(into_ast(input, context), context).unwrap();
     json!(bq)
+}
+
+pub fn set_panic_hook() {
+    // When the `console_error_panic_hook` feature is enabled, we can call the
+    // `set_panic_hook` function at least once during initialization, and then
+    // we will get better error messages if our code ever panics.
+    //
+    // For more details see
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
+
+#[wasm_bindgen]
+pub fn convert_bigquery_js(input: &JsValue) -> JsValue {
+    set_panic_hook();
+    let input: Value = input.into_serde().unwrap();
+    let context: Context = Context {
+        resolve_method: ResolveMethod::Drop,
+        ..Default::default()
+    };
+    let bq = bigquery::Schema::translate_from(into_ast(&input, context), context).unwrap();
+    JsValue::from_serde(&bq).unwrap()
 }
