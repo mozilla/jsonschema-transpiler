@@ -4,6 +4,7 @@ use super::{Context, ResolveMethod};
 use std::collections::HashMap;
 
 const DEFAULT_COLUMN: &str = "root";
+const MAX_DESCRIPTION_LENGTH: usize = 1024;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE", tag = "type")]
@@ -193,11 +194,17 @@ impl TranslateFrom<ast::Tag> for Tag {
             None => tag.description,
         };
 
+        // The maximum length is 1024 characters for BigQuery schemas
+        let truncated_description = match description {
+            Some(d) => Some(d.chars().take(MAX_DESCRIPTION_LENGTH).collect()),
+            None => None,
+        };
+
         Ok(Tag {
             name: tag.name.clone(),
             data_type: Box::new(data_type),
             mode,
-            description,
+            description: truncated_description,
         })
     }
 }
