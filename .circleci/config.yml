@@ -38,4 +38,7 @@ jobs:
             cargo clippy
       - run:
           name: Run all tests
-          command: cargo test --all
+          command: |
+            cargo test --all
+            # also run tests with oniguruma
+            cargo test --all --features oniguruma

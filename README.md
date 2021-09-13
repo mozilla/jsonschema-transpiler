@@ -104,6 +104,23 @@ $ echo $schema | jsonschema-transpiler --type bigquery
 }
 ```
 
+## Building
+
+To build and test the package:
+
+```bash
+cargo build
+cargo test
+```
+
+Older versions of the package (<= 1.9) relied on the use of oniguruma for
+performing snake-casing logic. To enable the use of this module, add a feature
+flag:
+
+```bash
+cargo test --features oniguruma
+```
+
 ## Contributing
 
 Contributions are welcome. The API may change significantly, but the
@@ -139,9 +156,9 @@ denoted by a null type. There are type modifiers, like the union of two types.
 
 The following schemas are currently supported:
 
-* JSON Schema
-* Avro
-* BigQuery
+- JSON Schema
+- Avro
+- BigQuery
 
 In the future, it may be possible to support schemas from similar systems like
 Parquet and Spark, or into various interactive data languages (IDL) like

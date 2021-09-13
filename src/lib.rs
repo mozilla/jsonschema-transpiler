@@ -1,12 +1,8 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate onig;
 #[macro_use]
 extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
