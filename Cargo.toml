@@ -6,7 +6,7 @@ license = "MPL-2.0"
 name = "jsonschema-transpiler"
 readme = "README.md"
 repository = "https://github.com/mozilla/jsonschema-transpiler"
-version = "1.9.0"
+version = "1.10.0"
 
 [lib]
 name = "jst"
