@@ -1,3 +1,6 @@
+#[cfg(not(feature = "oniguruma"))]
+use heck::SnakeCase;
+#[cfg(feature = "oniguruma")]
 use onig::Regex;
 
 /// Normalize the case of a string to be `snake_case`.
@@ -23,6 +26,11 @@ use onig::Regex;
 /// * [[RexEgg] - Regex Boundaries and Delimiters—Standard and Advanced](https://www.rexegg.com/regex-boundaries.html)
 /// * [[StackOverflow] - RegEx to split camelCase or TitleCase (advanced)](https://stackoverflow.com/a/7599674)
 /// * [[StackOverflow] - What's the technical reason for “lookbehind assertion MUST be fixed length” in regex?](https://stackoverflow.com/a/40078049)
+#[cfg(not(feature = "oniguruma"))]
+pub fn to_snake_case(input: &str) -> String {
+    input.to_snake_case()
+}
+#[cfg(feature = "oniguruma")]
 pub fn to_snake_case(input: &str) -> String {
     lazy_static! {
         static ref EXTRA_SYMBOL: Regex = Regex::new(r"[^\w]|_").unwrap();

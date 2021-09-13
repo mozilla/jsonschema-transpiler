@@ -2,7 +2,7 @@ use super::casing::to_snake_case;
 use super::jsonschema;
 use super::Context;
 use super::TranslateFrom;
-use onig::Regex;
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]

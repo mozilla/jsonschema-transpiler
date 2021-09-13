@@ -1,10 +1,9 @@
 #![recursion_limit = "128"]
 #[macro_use]
 extern crate log;
-extern crate onig;
 #[macro_use]
 extern crate serde;
-extern crate serde_json;
+#[cfg(feature = "oniguruma")]
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
