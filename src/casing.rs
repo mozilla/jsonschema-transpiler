@@ -1,6 +1,8 @@
 #[cfg(not(feature = "oniguruma"))]
 use heck::SnakeCase;
 #[cfg(feature = "oniguruma")]
+use lazy_static::lazy_static;
+#[cfg(feature = "oniguruma")]
 use onig::Regex;
 
 /// Normalize the case of a string to be `snake_case`.
