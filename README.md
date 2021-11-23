@@ -75,6 +75,7 @@ $ echo $schema | jsonschema-transpiler --type avro
 {
   "fields": [
     {
+      "default": null,
       "name": "foo",
       "type": [
         {
@@ -91,17 +92,13 @@ $ echo $schema | jsonschema-transpiler --type avro
 }
 
 $ echo $schema | jsonschema-transpiler --type bigquery
-{
-  "fields": [
-    {
-      "mode": "NULLABLE",
-      "name": "foo",
-      "type": "BOOL"
-    }
-  ],
-  "mode": "REQUIRED",
-  "type": "RECORD"
-}
+[
+  {
+    "mode": "NULLABLE",
+    "name": "foo",
+    "type": "BOOL"
+  }
+]
 ```
 
 ## Building
