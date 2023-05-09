@@ -35,17 +35,12 @@ use traits::TranslateFrom;
 /// The `Panic` method will panic if the JSON Schema is inconsistent or uses
 /// unsupported features. This method is a useful way to test for incompatible
 /// schemas.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub enum ResolveMethod {
+    #[default]
     Cast,
     Drop,
     Panic,
-}
-
-impl Default for ResolveMethod {
-    fn default() -> Self {
-        ResolveMethod::Cast
-    }
 }
 
 /// Options for modifying the behavior of translating between two schema

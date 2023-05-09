@@ -195,10 +195,8 @@ impl TranslateFrom<ast::Tag> for Tag {
         };
 
         // The maximum length is 1024 characters for BigQuery schemas
-        let truncated_description = match description {
-            Some(d) => Some(d.chars().take(MAX_DESCRIPTION_LENGTH).collect()),
-            None => None,
-        };
+        let truncated_description =
+            description.map(|d| d.chars().take(MAX_DESCRIPTION_LENGTH).collect());
 
         Ok(Tag {
             name: tag.name.clone(),
@@ -280,7 +278,7 @@ mod fields_as_vec {
     {
         let s: Vec<Box<Tag>> = Vec::deserialize(deserializer)?;
         let map = HashMap::<String, Box<Tag>>::from_iter(s.into_iter().map(|record| {
-            let name: String = (*record).name.clone().unwrap();
+            let name: String = record.name.clone().unwrap();
             (name, record)
         }));
         Ok(map)

@@ -48,7 +48,7 @@ fn snake_case_test(case_name: &str) {
     let reader = BufReader::new(file);
     for line in reader.lines() {
         let line = line.unwrap().to_string();
-        let cols: Vec<&str> = line.split(",").collect();
+        let cols: Vec<&str> = line.split(',').collect();
         assert_eq!(cols.len(), 2);
         assert_eq!(to_snake_case(cols[0]), cols[1]);
     }

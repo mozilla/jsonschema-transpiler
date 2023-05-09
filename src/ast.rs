@@ -189,7 +189,7 @@ impl Union {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
                                     (Some(x), Some(y)) => {
-                                        Some(x.intersection(&y).map(ToString::to_string).collect())
+                                        Some(x.intersection(y).map(ToString::to_string).collect())
                                     }
                                     (Some(x), None) | (None, Some(x)) => Some(x.clone()),
                                     _ => None,
@@ -244,7 +244,9 @@ impl Union {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Type {
+    #[default]
     Null,
     Atom(Atom),
     Object(Object),
@@ -254,12 +256,6 @@ pub enum Type {
     Union(Union),
     // Intersection
     // Not
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Null
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -387,7 +383,7 @@ impl Tag {
     /// is enforced by BigQuery during table creation.
     fn normalize_name_bigquery(string: &str) -> Option<String> {
         let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
-        let renamed = Tag::normalize_numeric_prefix(string.replace(".", "_").replace("-", "_"));
+        let renamed = Tag::normalize_numeric_prefix(string.replace(['.', '-'], "_"));
         if re.is_match(&renamed) {
             Some(renamed)
         } else {
@@ -437,15 +433,13 @@ impl Tag {
                     let renamed: HashSet<String> = required
                         .iter()
                         .map(String::as_str)
-                        .map(Tag::normalize_name_bigquery)
-                        .filter(Option::is_some)
-                        .map(Option::unwrap)
+                        .filter_map(Tag::normalize_name_bigquery)
                         .collect();
                     if normalize_case {
                         Some(
                             renamed
                                 .iter()
-                                .map(|s| Tag::normalize_numeric_prefix(to_snake_case(&s)))
+                                .map(|s| Tag::normalize_numeric_prefix(to_snake_case(s)))
                                 .collect(),
                         )
                     } else {

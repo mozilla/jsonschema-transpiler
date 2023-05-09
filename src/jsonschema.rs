@@ -329,7 +329,7 @@ impl Tag {
                                     .collect();
                                 let mut unwrapped = items?;
                                 let min_items: usize =
-                                    self.array.min_items.unwrap_or_else(|| unwrapped.len());
+                                    self.array.min_items.unwrap_or(unwrapped.len());
                                 // set items to optional
                                 for item in unwrapped.iter_mut().skip(min_items) {
                                     item.nullable = true;
