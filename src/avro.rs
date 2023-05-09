@@ -130,7 +130,7 @@ impl TranslateFrom<ast::Tag> for Type {
                     Ok(Type::Primitive(Primitive::String))
                 }
                 ResolveMethod::Drop => Err(message),
-                ResolveMethod::Panic => panic!(message),
+                ResolveMethod::Panic => panic!("{}", message),
             }
         };
 

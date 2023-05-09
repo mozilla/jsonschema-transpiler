@@ -76,7 +76,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                     Ok(Type::Atom(Atom::String))
                 }
                 ResolveMethod::Drop => Err(message),
-                ResolveMethod::Panic => panic!(message),
+                ResolveMethod::Panic => panic!("{}", message),
             }
         };
 
