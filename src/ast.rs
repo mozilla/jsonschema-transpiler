@@ -13,7 +13,7 @@ pub enum Atom {
     Number,
     String,
     Datetime,
-    JSON,
+    Json,
     Bytes,
 }
 
@@ -147,14 +147,14 @@ impl Union {
                             (Atom::String, Atom::String) => Atom::String,
                             (lhs, rhs) => {
                                 trace!("Invalid union collapse of atoms {:?} and {:?}", lhs, rhs);
-                                Atom::JSON
+                                Atom::Json
                             }
                         };
                         Type::Atom(atom)
                     }
                     _ => {
                         trace!("Invalid union collapse of atoms found during fold");
-                        Type::Atom(Atom::JSON)
+                        Type::Atom(Atom::Json)
                     }
                 })
         } else if items.iter().all(Tag::is_object) {
@@ -180,11 +180,10 @@ impl Union {
                             .map(|(k, v)| (k, Union::new(v).collapse()))
                             .collect();
                         // Recursively invalidate the tree if any of the subschemas are incompatible.
-                        // Atom::JSON is a catch-all value and marks inconsistent objects.
-                        let is_consistent = !result.iter().any(|(_, v)| match v.data_type {
-                            Type::Atom(Atom::JSON) => true,
-                            _ => false,
-                        });
+                        // Atom::Json is a catch-all value and marks inconsistent objects.
+                        let is_consistent = !result
+                            .iter()
+                            .any(|(_, v)| matches!(v.data_type, Type::Atom(Atom::Json)));
                         if is_consistent {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
@@ -197,12 +196,12 @@ impl Union {
                             Type::Object(Object::new(result, required))
                         } else {
                             trace!("Incompatible subschemas found during union collapse");
-                            Type::Atom(Atom::JSON)
+                            Type::Atom(Atom::Json)
                         }
                     }
                     _ => {
                         trace!("Inconsistent union collapse of object");
-                        Type::Atom(Atom::JSON)
+                        Type::Atom(Atom::Json)
                     }
                 })
         } else if items.iter().all(Tag::is_map) {
@@ -225,7 +224,7 @@ impl Union {
             Type::Array(Array::new(Union::new(tags).collapse()))
         } else {
             trace!("Incompatible union collapse found");
-            Type::Atom(Atom::JSON)
+            Type::Atom(Atom::Json)
         };
 
         let mut tag = Tag {
@@ -303,38 +302,23 @@ impl Tag {
     }
 
     pub fn is_null(&self) -> bool {
-        match self.data_type {
-            Type::Null => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Null)
     }
 
     pub fn is_atom(&self) -> bool {
-        match self.data_type {
-            Type::Atom(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Atom(_))
     }
 
     pub fn is_object(&self) -> bool {
-        match self.data_type {
-            Type::Object(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Object(_))
     }
 
     pub fn is_map(&self) -> bool {
-        match self.data_type {
-            Type::Map(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Map(_))
     }
 
     pub fn is_array(&self) -> bool {
-        match self.data_type {
-            Type::Array(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Array(_))
     }
 
     /// Get the path to the current tag in the context of the larger schema.

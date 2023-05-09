@@ -143,7 +143,7 @@ impl TranslateFrom<ast::Tag> for Type {
                 ast::Atom::String => Primitive::String,
                 ast::Atom::Datetime => Primitive::String,
                 ast::Atom::Bytes => Primitive::Bytes,
-                ast::Atom::JSON => match handle_error("json atom") {
+                ast::Atom::Json => match handle_error("json atom") {
                     Ok(_) => Primitive::String,
                     Err(reason) => return Err(reason),
                 },
@@ -227,10 +227,7 @@ impl TranslateFrom<ast::Tag> for Type {
                 Type::Complex(Complex::Record(record))
             }
             ast::Type::Array(array) => {
-                let child_is_array = match &array.items.data_type {
-                    ast::Type::Array(_) => true,
-                    _ => false,
-                };
+                let child_is_array = matches!(&array.items.data_type, ast::Type::Array(_));
                 match Type::translate_from(*array.items.clone(), context) {
                     Ok(data_type) => {
                         if child_is_array {

@@ -88,7 +88,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::Bytes => Atom::Bytes,
-                ast::Atom::JSON => match handle_error("json atom") {
+                ast::Atom::Json => match handle_error("json atom") {
                     Ok(_) => Atom::String,
                     Err(reason) => return Err(reason),
                 },
@@ -137,10 +137,7 @@ impl TranslateFrom<ast::Tag> for Tag {
             }
             ast::Type::Array(array) => {
                 // workaround for nested lists
-                let child_is_array = match &array.items.data_type {
-                    ast::Type::Array(_) => true,
-                    _ => false,
-                };
+                let child_is_array = matches!(&array.items.data_type, ast::Type::Array(_));
                 let sub_tag = match Tag::translate_from(*array.items.clone(), context) {
                     Ok(tag) => tag,
                     Err(_) => return Err(fmt_reason("untyped array")),
