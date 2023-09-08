@@ -35,7 +35,7 @@ use traits::TranslateFrom;
 /// The `Panic` method will panic if the JSON Schema is inconsistent or uses
 /// unsupported features. This method is a useful way to test for incompatible
 /// schemas.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Deserialize)]
 pub enum ResolveMethod {
     #[default]
     Cast,
@@ -51,7 +51,7 @@ pub enum ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Deserialize)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,

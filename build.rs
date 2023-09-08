@@ -13,6 +13,8 @@ struct TestData {
     avro: Value,
     bigquery: Value,
     json: Value,
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    context: Value,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -117,8 +119,14 @@ fn bigquery_{name}() {{
     let expected_data = r#"
     {expected}
     "#;
-    let mut context = Context {{
-        ..Default::default()
+    let context_data = r#"
+    {context}
+    "#;
+    let context: Value = serde_json::from_str(context_data).unwrap();
+    let mut context: Context = if context.is_null() {{
+        Default::default()
+    }} else {{
+        serde_json::from_value(context).unwrap()
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
@@ -136,6 +144,7 @@ fn bigquery_{name}() {{
             },
             input_data = format_json(case.test.json.clone()),
             expected = format_json(case.test.bigquery.clone()),
+            context = format_json(case.test.context.clone()),
         );
         write!(outfile, "{}", formatted).unwrap()
     }
