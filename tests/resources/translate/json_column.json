@@ -1,0 +1,33 @@
+{
+  "name": "json",
+  "tests": [
+    {
+      "name": "test_json_object",
+      "compatible": true,
+      "test": {
+        "avro": null,
+        "bigquery": [
+          {
+            "mode": "NULLABLE",
+            "name": "an_object_name",
+            "type": "JSON"
+          }
+        ],
+        "json": {
+          "properties": {
+            "an_object_name": {
+              "items": {},
+              "type": [
+                "object",
+                "array"
+              ]
+            }
+          }
+        },
+        "context": {
+          "json_object_path": "an_object_name"
+        }
+      }
+    }
+  ]
+}
