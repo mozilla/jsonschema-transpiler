@@ -20,6 +20,7 @@ pub enum Atom {
     Geography,
     Time,
     Timestamp,
+    Json,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -88,10 +89,16 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::Bytes => Atom::Bytes,
-                ast::Atom::Json => match handle_error("json atom") {
-                    Ok(_) => Atom::String,
-                    Err(reason) => return Err(reason),
-                },
+                ast::Atom::Json => {
+                    if context.is_json_object_path(&tag.fully_qualified_name()) {
+                        Atom::Json
+                    } else {
+                        match handle_error("json atom") {
+                            Ok(_) => Atom::String,
+                            Err(reason) => return Err(reason),
+                        }
+                    }
+                }
             }),
             ast::Type::Object(object) => {
                 let fields: HashMap<String, Box<Tag>> = if object.fields.is_empty() {
@@ -687,6 +694,7 @@ mod tests {
             force_nullable: false,
             tuple_struct: false,
             allow_maps_without_value: true,
+            ..Default::default()
         };
         assert_eq!(expect, transform_tag_with_context(data, &context));
     }

@@ -83,6 +83,7 @@ enum Format {
     DateTime,
     // Custom format value for casting strings into byte-strings
     Bytes,
+    Json,
     #[serde(other)]
     Other,
 }
@@ -108,7 +109,7 @@ pub struct Tag {
     #[serde(skip_serializing_if = "Option::is_none")]
     all_of: Option<AllOf>,
     #[serde(flatten)]
-    extra: HashMap<String, Value>,
+    pub(crate) extra: HashMap<String, Value>,
 }
 
 impl Tag {

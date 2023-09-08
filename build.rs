@@ -88,7 +88,12 @@ fn avro_{name}() {{
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_avro(&input, context));
+    if expected.is_null() {{
+        // No expected data = no avro support
+        return;
+    }}
+
+    assert_eq!(expected, convert_avro(&input, context.clone()));
 
     context.resolve_method = ResolveMethod::Panic;
     convert_avro(&input, context);
@@ -130,7 +135,7 @@ fn bigquery_{name}() {{
     }};
     let input: Value = serde_json::from_str(input_data).unwrap();
     let expected: Value = serde_json::from_str(expected_data).unwrap();
-    assert_eq!(expected, convert_bigquery(&input, context));
+    assert_eq!(expected, convert_bigquery(&input, context.clone()));
 
     context.resolve_method = ResolveMethod::Panic;
     convert_bigquery(&input, context);

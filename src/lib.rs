@@ -13,6 +13,7 @@ pub mod casing;
 mod jsonschema;
 mod traits;
 
+use regex::Regex;
 use serde_json::{json, Value};
 use traits::TranslateFrom;
 
@@ -51,31 +52,62 @@ pub enum ResolveMethod {
 /// particular, the context is useful for resolving edge-cases in ambiguous
 /// situations. This can includes situations like casting or dropping an empty
 /// object.
-#[derive(Copy, Clone, Default, Deserialize)]
+#[derive(Clone, Default, Deserialize)]
+#[serde(default)]
 pub struct Context {
     pub resolve_method: ResolveMethod,
     pub normalize_case: bool,
     pub force_nullable: bool,
     pub tuple_struct: bool,
     pub allow_maps_without_value: bool,
+    pub json_object_path: Option<String>,
 }
 
-fn into_ast(input: &Value, context: &Context) -> ast::Tag {
+impl Context {
+    /// Determine whether the given fully qualified name matches the configured json object path.
+    fn is_json_object_path(&self, fqn: &str) -> bool {
+        // would need to be passed in _somehow_.
+        self.json_object_path
+            .as_ref()
+            .map(|json_object_path| {
+                let re = format!(r"\A{}", json_object_path);
+                let json_object_path_re = Regex::new(&re).unwrap();
+                json_object_path_re.is_match(fqn)
+            })
+            .unwrap_or(false)
+    }
+}
+
+fn into_ast(input: &Value, context: &mut Context) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
         Err(e) => panic!("{:#?}", e),
     };
+
+    // The only special thing this crates knows about the schema:
+    // Every sub-tree id matching the regex in `mozPipelineMetadata.json_object_path` is dumped as a JSON
+    // column without peeking further into that subtree.
+    let metadata = jsonschema
+        .extra
+        .get("mozPipelineMetadata")
+        .and_then(|obj| obj["json_object_path"].as_str());
+    if let Some(json_object_path) = metadata {
+        context.json_object_path = Some(json_object_path.to_string());
+    }
+
     ast::Tag::translate_from(jsonschema, context).unwrap()
 }
 
 /// Convert JSON Schema into an Avro compatible schema
-pub fn convert_avro(input: &Value, context: Context) -> Value {
-    let avro = avro::Type::translate_from(into_ast(input, &context), &context).unwrap();
+pub fn convert_avro(input: &Value, mut context: Context) -> Value {
+    let ast = into_ast(input, &mut context);
+    let avro = avro::Type::translate_from(ast, &context).unwrap();
     json!(avro)
 }
 
 /// Convert JSON Schema into a BigQuery compatible schema
-pub fn convert_bigquery(input: &Value, context: Context) -> Value {
-    let bq = bigquery::Schema::translate_from(into_ast(input, &context), &context).unwrap();
+pub fn convert_bigquery(input: &Value, mut context: Context) -> Value {
+    let ast = into_ast(input, &mut context);
+    let bq = bigquery::Schema::translate_from(ast, &context).unwrap();
     json!(bq)
 }
