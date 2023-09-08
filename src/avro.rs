@@ -108,7 +108,7 @@ impl Default for Type {
 impl TranslateFrom<ast::Tag> for Type {
     type Error = String;
 
-    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: &Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         if tag.is_root {
             // Name inference is run only from the root for the proper
@@ -302,7 +302,7 @@ mod tests {
             ..Default::default()
         };
         let tag: ast::Tag = serde_json::from_value(ast).unwrap();
-        let from_tag = Type::translate_from(tag, context).unwrap();
+        let from_tag = Type::translate_from(tag, &context).unwrap();
         assert_eq!(avro, json!(from_tag))
     }
 
