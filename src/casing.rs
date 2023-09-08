@@ -1,5 +1,5 @@
 #[cfg(not(feature = "oniguruma"))]
-use heck::SnakeCase;
+use heck::ToSnakeCase;
 #[cfg(feature = "oniguruma")]
 use lazy_static::lazy_static;
 #[cfg(feature = "oniguruma")]
