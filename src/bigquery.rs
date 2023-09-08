@@ -60,7 +60,7 @@ pub struct Tag {
 impl TranslateFrom<ast::Tag> for Tag {
     type Error = String;
 
-    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: &Context) -> Result<Self, Self::Error> {
         let mut tag = tag;
         tag.collapse();
         tag.infer_name(context.normalize_case);
@@ -219,7 +219,7 @@ pub enum Schema {
 impl TranslateFrom<ast::Tag> for Schema {
     type Error = &'static str;
 
-    fn translate_from(tag: ast::Tag, context: Context) -> Result<Self, Self::Error> {
+    fn translate_from(tag: ast::Tag, context: &Context) -> Result<Self, Self::Error> {
         let mut bq_tag = Tag::translate_from(tag.clone(), context).unwrap();
         match *bq_tag.data_type {
             // Maps and arrays are both treated as a Record type with different
@@ -294,11 +294,11 @@ mod tests {
             ..Default::default()
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
+        let bq_tag: Tag = ast_tag.translate_into(&context).unwrap();
         json!(bq_tag)
     }
 
-    fn transform_tag_with_context(data: Value, context: Context) -> Value {
+    fn transform_tag_with_context(data: Value, context: &Context) -> Value {
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
         let bq_tag: Tag = ast_tag.translate_into(context).unwrap();
         json!(bq_tag)
@@ -309,7 +309,7 @@ mod tests {
             ..Default::default()
         };
         let ast_tag: ast::Tag = serde_json::from_value(data).unwrap();
-        let bq_tag: Schema = ast_tag.translate_into(context).unwrap();
+        let bq_tag: Schema = ast_tag.translate_into(&context).unwrap();
         json!(bq_tag)
     }
 
@@ -688,7 +688,7 @@ mod tests {
             tuple_struct: false,
             allow_maps_without_value: true,
         };
-        assert_eq!(expect, transform_tag_with_context(data, context));
+        assert_eq!(expect, transform_tag_with_context(data, &context));
     }
 
     #[test]

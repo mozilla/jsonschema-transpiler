@@ -135,7 +135,7 @@ impl Tag {
         }
     }
 
-    pub fn type_into_ast(&self, context: Context) -> Result<ast::Tag, &'static str> {
+    pub fn type_into_ast(&self, context: &Context) -> Result<ast::Tag, &'static str> {
         match self.get_type() {
             Type::Atom(atom) => self.atom_into_ast(atom, context),
             Type::List(list) => {
@@ -162,7 +162,7 @@ impl Tag {
         }
     }
 
-    fn atom_into_ast(&self, data_type: Atom, context: Context) -> Result<ast::Tag, &'static str> {
+    fn atom_into_ast(&self, data_type: Atom, context: &Context) -> Result<ast::Tag, &'static str> {
         let description = self.description.clone();
         let title = self.title.clone();
 
@@ -390,7 +390,7 @@ mod tests {
             ..Default::default()
         };
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(context).unwrap();
+        let ast: ast::Tag = schema.translate_into(&context).unwrap();
         json!(ast)
     }
 
@@ -877,7 +877,7 @@ mod tests {
             ..Default::default()
         };
         let schema: Tag = serde_json::from_value(data).unwrap();
-        let ast: ast::Tag = schema.translate_into(context).unwrap();
+        let ast: ast::Tag = schema.translate_into(&context).unwrap();
         json!(ast)
     }
 

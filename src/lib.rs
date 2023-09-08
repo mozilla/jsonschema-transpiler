@@ -60,7 +60,7 @@ pub struct Context {
     pub allow_maps_without_value: bool,
 }
 
-fn into_ast(input: &Value, context: Context) -> ast::Tag {
+fn into_ast(input: &Value, context: &Context) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
         Err(e) => panic!("{:#?}", e),
@@ -70,12 +70,12 @@ fn into_ast(input: &Value, context: Context) -> ast::Tag {
 
 /// Convert JSON Schema into an Avro compatible schema
 pub fn convert_avro(input: &Value, context: Context) -> Value {
-    let avro = avro::Type::translate_from(into_ast(input, context), context).unwrap();
+    let avro = avro::Type::translate_from(into_ast(input, &context), &context).unwrap();
     json!(avro)
 }
 
 /// Convert JSON Schema into a BigQuery compatible schema
 pub fn convert_bigquery(input: &Value, context: Context) -> Value {
-    let bq = bigquery::Schema::translate_from(into_ast(input, context), context).unwrap();
+    let bq = bigquery::Schema::translate_from(into_ast(input, &context), &context).unwrap();
     json!(bq)
 }
