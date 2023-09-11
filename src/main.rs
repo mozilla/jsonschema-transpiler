@@ -1,68 +1,68 @@
-extern crate clap;
-extern crate env_logger;
-extern crate jst;
-
-use clap::{App, Arg};
+use clap::{Parser, ValueEnum};
 use jst::{Context, ResolveMethod};
 use serde_json::Value;
 use std::fs::File;
 use std::io::{self, BufReader};
 
+/// Output schema format
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Type {
+    /// Avro format
+    #[default]
+    Avro,
+    /// BigQuery format
+    Bigquery,
+}
+
+/// Resolution strategy
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Resolve {
+    /// Cast incompatible/under-specified schemas
+    #[default]
+    Cast,
+    /// Panic on incompatible/under-specified schemas
+    Panic,
+    /// Drop incompatible/under-specified schemas
+    Drop,
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Sets the input file to use
+    file: Option<String>,
+
+    /// The output schema format
+    #[arg(short, long = "type", value_enum, default_value_t = Type::Avro, value_name = "TYPE")]
+    typ: Type,
+
+    /// The resolution strategy for incompatible or under-specified schema
+    #[arg(short, long, value_enum, default_value_t = Resolve::Cast)]
+    resolve: Resolve,
+
+    /// snake_case column-names for consistent behavior between SQL engines
+    #[arg(short = 'c', long)]
+    normalize_case: bool,
+
+    /// Treats all columns as NULLABLE, ignoring the required section in the JSON Schema object
+    #[arg(short = 'n', long)]
+    force_nullable: bool,
+
+    /// Treats tuple validation as an anonymous struct
+    #[arg(long)]
+    tuple_struct: bool,
+
+    /// Produces maps without a value field for incompatible or under-specified value schema
+    #[arg(short = 'w', long)]
+    allow_maps_without_value: bool,
+}
+
 fn main() {
     env_logger::init();
 
-    let matches = App::new(env!("CARGO_PKG_NAME"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .arg(
-            Arg::with_name("file")
-                .help("Sets the input file to use")
-                .takes_value(true)
-                .index(1),
-        )
-        .arg(
-            Arg::with_name("type")
-                .help("The output schema format")
-                .short("t")
-                .long("type")
-                .takes_value(true)
-                .possible_values(&["avro", "bigquery"])
-                .default_value("avro"),
-        )
-        .arg(
-            Arg::with_name("resolve")
-                .help("The resolution strategy for incompatible or under-specified schema")
-                .short("r")
-                .long("resolve")
-                .takes_value(true)
-                .possible_values(&["cast", "panic", "drop"])
-                .default_value("cast"),
-        )
-        .arg(
-            Arg::with_name("normalize-case")
-                .help("snake_case column-names for consistent behavior between SQL engines")
-                .short("c")
-                .long("normalize-case"),
-        )
-        .arg(
-            Arg::with_name("force-nullable")
-            .help("Treats all columns as NULLABLE, ignoring the required section in the JSON Schema object")
-            .short("n")
-            .long("force-nullable"),
-        )
-        .arg(
-            Arg::with_name("tuple-struct")
-            .help("Treats tuple validation as an anonymous struct")
-            .long("tuple-struct"),
-        )
-        .arg(
-            Arg::with_name("allow-maps-without-value")
-            .help("Produces maps without a value field for incompatible or under-specified value schema")
-            .short("w")
-            .long("allow-maps-without-value"),
-        )
-        .get_matches();
+    let args = Args::parse();
 
-    let reader: Box<dyn io::Read> = match matches.value_of("file") {
+    let reader: Box<dyn io::Read> = match &args.file {
         Some(path) if path == "-" => Box::new(io::stdin()),
         Some(path) => {
             let file = File::open(path).unwrap();
@@ -72,22 +72,20 @@ fn main() {
     };
     let data: Value = serde_json::from_reader(reader).unwrap();
     let context = Context {
-        resolve_method: match matches.value_of("resolve").unwrap() {
-            "cast" => ResolveMethod::Cast,
-            "panic" => ResolveMethod::Panic,
-            "drop" => ResolveMethod::Drop,
-            _ => panic!("Unknown resolution method!"),
+        resolve_method: match args.resolve {
+            Resolve::Cast => ResolveMethod::Cast,
+            Resolve::Panic => ResolveMethod::Panic,
+            Resolve::Drop => ResolveMethod::Drop,
         },
-        normalize_case: matches.is_present("normalize-case"),
-        force_nullable: matches.is_present("force-nullable"),
-        tuple_struct: matches.is_present("tuple-struct"),
-        allow_maps_without_value: matches.is_present("allow-maps-without-value"),
+        normalize_case: args.normalize_case,
+        force_nullable: args.force_nullable,
+        tuple_struct: args.tuple_struct,
+        allow_maps_without_value: args.allow_maps_without_value,
     };
 
-    let output = match matches.value_of("type").unwrap() {
-        "avro" => jst::convert_avro(&data, context),
-        "bigquery" => jst::convert_bigquery(&data, context),
-        _ => panic!("Unknown type!"),
+    let output = match args.typ {
+        Type::Avro => jst::convert_avro(&data, context),
+        Type::Bigquery => jst::convert_bigquery(&data, context),
     };
     let pretty = serde_json::to_string_pretty(&output).unwrap();
     println!("{}", pretty);

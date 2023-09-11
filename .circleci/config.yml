@@ -6,6 +6,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install dependencies
+          command: |
+            apt update
+            apt install --yes --no-install-recommends libclang-dev
+      - run:
           name: Version information
           command: rustc --version; cargo --version; rustup --version
       - run:
