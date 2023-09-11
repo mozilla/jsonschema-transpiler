@@ -13,7 +13,7 @@ pub enum Atom {
     Number,
     String,
     Datetime,
-    JSON,
+    Json,
     Bytes,
 }
 
@@ -147,14 +147,14 @@ impl Union {
                             (Atom::String, Atom::String) => Atom::String,
                             (lhs, rhs) => {
                                 trace!("Invalid union collapse of atoms {:?} and {:?}", lhs, rhs);
-                                Atom::JSON
+                                Atom::Json
                             }
                         };
                         Type::Atom(atom)
                     }
                     _ => {
                         trace!("Invalid union collapse of atoms found during fold");
-                        Type::Atom(Atom::JSON)
+                        Type::Atom(Atom::Json)
                     }
                 })
         } else if items.iter().all(Tag::is_object) {
@@ -180,16 +180,15 @@ impl Union {
                             .map(|(k, v)| (k, Union::new(v).collapse()))
                             .collect();
                         // Recursively invalidate the tree if any of the subschemas are incompatible.
-                        // Atom::JSON is a catch-all value and marks inconsistent objects.
-                        let is_consistent = !result.iter().any(|(_, v)| match v.data_type {
-                            Type::Atom(Atom::JSON) => true,
-                            _ => false,
-                        });
+                        // Atom::Json is a catch-all value and marks inconsistent objects.
+                        let is_consistent = !result
+                            .iter()
+                            .any(|(_, v)| matches!(v.data_type, Type::Atom(Atom::Json)));
                         if is_consistent {
                             let required: Option<HashSet<String>> =
                                 match (&left.required, &right.required) {
                                     (Some(x), Some(y)) => {
-                                        Some(x.intersection(&y).map(ToString::to_string).collect())
+                                        Some(x.intersection(y).map(ToString::to_string).collect())
                                     }
                                     (Some(x), None) | (None, Some(x)) => Some(x.clone()),
                                     _ => None,
@@ -197,12 +196,12 @@ impl Union {
                             Type::Object(Object::new(result, required))
                         } else {
                             trace!("Incompatible subschemas found during union collapse");
-                            Type::Atom(Atom::JSON)
+                            Type::Atom(Atom::Json)
                         }
                     }
                     _ => {
                         trace!("Inconsistent union collapse of object");
-                        Type::Atom(Atom::JSON)
+                        Type::Atom(Atom::Json)
                     }
                 })
         } else if items.iter().all(Tag::is_map) {
@@ -225,7 +224,7 @@ impl Union {
             Type::Array(Array::new(Union::new(tags).collapse()))
         } else {
             trace!("Incompatible union collapse found");
-            Type::Atom(Atom::JSON)
+            Type::Atom(Atom::Json)
         };
 
         let mut tag = Tag {
@@ -244,7 +243,9 @@ impl Union {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Type {
+    #[default]
     Null,
     Atom(Atom),
     Object(Object),
@@ -254,12 +255,6 @@ pub enum Type {
     Union(Union),
     // Intersection
     // Not
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Null
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -307,38 +302,23 @@ impl Tag {
     }
 
     pub fn is_null(&self) -> bool {
-        match self.data_type {
-            Type::Null => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Null)
     }
 
     pub fn is_atom(&self) -> bool {
-        match self.data_type {
-            Type::Atom(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Atom(_))
     }
 
     pub fn is_object(&self) -> bool {
-        match self.data_type {
-            Type::Object(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Object(_))
     }
 
     pub fn is_map(&self) -> bool {
-        match self.data_type {
-            Type::Map(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Map(_))
     }
 
     pub fn is_array(&self) -> bool {
-        match self.data_type {
-            Type::Array(_) => true,
-            _ => false,
-        }
+        matches!(&self.data_type, Type::Array(_))
     }
 
     /// Get the path to the current tag in the context of the larger schema.
@@ -387,7 +367,7 @@ impl Tag {
     /// is enforced by BigQuery during table creation.
     fn normalize_name_bigquery(string: &str) -> Option<String> {
         let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
-        let renamed = Tag::normalize_numeric_prefix(string.replace(".", "_").replace("-", "_"));
+        let renamed = Tag::normalize_numeric_prefix(string.replace(['.', '-'], "_"));
         if re.is_match(&renamed) {
             Some(renamed)
         } else {
@@ -437,15 +417,13 @@ impl Tag {
                     let renamed: HashSet<String> = required
                         .iter()
                         .map(String::as_str)
-                        .map(Tag::normalize_name_bigquery)
-                        .filter(Option::is_some)
-                        .map(Option::unwrap)
+                        .filter_map(Tag::normalize_name_bigquery)
                         .collect();
                     if normalize_case {
                         Some(
                             renamed
                                 .iter()
-                                .map(|s| Tag::normalize_numeric_prefix(to_snake_case(&s)))
+                                .map(|s| Tag::normalize_numeric_prefix(to_snake_case(s)))
                                 .collect(),
                         )
                     } else {

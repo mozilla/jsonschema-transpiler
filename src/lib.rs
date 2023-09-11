@@ -35,17 +35,12 @@ use traits::TranslateFrom;
 /// The `Panic` method will panic if the JSON Schema is inconsistent or uses
 /// unsupported features. This method is a useful way to test for incompatible
 /// schemas.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub enum ResolveMethod {
+    #[default]
     Cast,
     Drop,
     Panic,
-}
-
-impl Default for ResolveMethod {
-    fn default() -> Self {
-        ResolveMethod::Cast
-    }
 }
 
 /// Options for modifying the behavior of translating between two schema
@@ -68,7 +63,7 @@ pub struct Context {
 fn into_ast(input: &Value, context: Context) -> ast::Tag {
     let jsonschema: jsonschema::Tag = match serde_json::from_value(json!(input)) {
         Ok(tag) => tag,
-        Err(e) => panic!(format!("{:#?}", e)),
+        Err(e) => panic!("{:#?}", e),
     };
     ast::Tag::translate_from(jsonschema, context).unwrap()
 }

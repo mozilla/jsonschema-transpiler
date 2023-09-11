@@ -76,7 +76,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                     Ok(Type::Atom(Atom::String))
                 }
                 ResolveMethod::Drop => Err(message),
-                ResolveMethod::Panic => panic!(message),
+                ResolveMethod::Panic => panic!("{}", message),
             }
         };
 
@@ -88,7 +88,7 @@ impl TranslateFrom<ast::Tag> for Tag {
                 ast::Atom::String => Atom::String,
                 ast::Atom::Datetime => Atom::Timestamp,
                 ast::Atom::Bytes => Atom::Bytes,
-                ast::Atom::JSON => match handle_error("json atom") {
+                ast::Atom::Json => match handle_error("json atom") {
                     Ok(_) => Atom::String,
                     Err(reason) => return Err(reason),
                 },
@@ -137,10 +137,7 @@ impl TranslateFrom<ast::Tag> for Tag {
             }
             ast::Type::Array(array) => {
                 // workaround for nested lists
-                let child_is_array = match &array.items.data_type {
-                    ast::Type::Array(_) => true,
-                    _ => false,
-                };
+                let child_is_array = matches!(&array.items.data_type, ast::Type::Array(_));
                 let sub_tag = match Tag::translate_from(*array.items.clone(), context) {
                     Ok(tag) => tag,
                     Err(_) => return Err(fmt_reason("untyped array")),
@@ -195,10 +192,8 @@ impl TranslateFrom<ast::Tag> for Tag {
         };
 
         // The maximum length is 1024 characters for BigQuery schemas
-        let truncated_description = match description {
-            Some(d) => Some(d.chars().take(MAX_DESCRIPTION_LENGTH).collect()),
-            None => None,
-        };
+        let truncated_description =
+            description.map(|d| d.chars().take(MAX_DESCRIPTION_LENGTH).collect());
 
         Ok(Tag {
             name: tag.name.clone(),
@@ -280,7 +275,7 @@ mod fields_as_vec {
     {
         let s: Vec<Box<Tag>> = Vec::deserialize(deserializer)?;
         let map = HashMap::<String, Box<Tag>>::from_iter(s.into_iter().map(|record| {
-            let name: String = (*record).name.clone().unwrap();
+            let name: String = record.name.clone().unwrap();
             (name, record)
         }));
         Ok(map)

@@ -46,7 +46,7 @@ fn get_env_var_as_bool(var: &str, default: bool) -> bool {
 fn format_json(obj: Value) -> String {
     let pretty = serde_json::to_string_pretty(&obj).unwrap();
     // 4 spaces
-    pretty.replace("\n", "\n    ")
+    pretty.replace('\n', "\n    ")
 }
 
 fn write_backup(path: &std::path::PathBuf) {
@@ -66,7 +66,7 @@ fn write_formatted_test(path: &std::path::PathBuf, suite: &TestSuite) {
     println!("Formatting test: {:?}", path);
     let formatted = serde_json::to_string_pretty(suite).unwrap();
     let fp_write = File::create(path).unwrap();
-    write!(&fp_write, "{}\n", formatted).unwrap()
+    writeln!(&fp_write, "{}", formatted).unwrap()
 }
 
 fn write_avro_tests(mut outfile: &File, suite: &TestSuite) {
@@ -172,7 +172,7 @@ use serde_json::Value;
         .unwrap()
         .map(|e| e.unwrap().path())
         .filter(|e| match e.file_name() {
-            Some(os_str) => !os_str.to_str().unwrap().starts_with("."),
+            Some(os_str) => !os_str.to_str().unwrap().starts_with('.'),
             None => false,
         })
         .collect();
