@@ -28,6 +28,45 @@
           "json_object_path_regex": "an_object_name"
         }
       }
+    },
+    {
+      "name": "test_json_object_no_avro_support",
+      "compatible": false,
+      "test": {
+        "avro": {
+          "fields": [
+            {
+              "default": null,
+              "name": "an_object_name",
+              "type": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "name": "root",
+          "type": "record"
+        },
+        "bigquery": "no schema -- we need it to panic",
+        "json": {
+          "properties": {
+            "an_object_name": {
+              "items": {},
+              "type": [
+                "object",
+                "array"
+              ]
+            }
+          }
+        },
+        "context": {
+          "json_object_path_regex": "an_object_name"
+        }
+      }
     }
   ]
 }

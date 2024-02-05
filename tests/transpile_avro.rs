@@ -505,6 +505,58 @@ fn avro_test_json_object() {
 }
 
 #[test]
+#[should_panic]
+fn avro_test_json_object_no_avro_support() {
+    let input_data = r#"
+    {
+      "properties": {
+        "an_object_name": {
+          "items": {},
+          "type": [
+            "object",
+            "array"
+          ]
+        }
+      }
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "fields": [
+        {
+          "default": null,
+          "name": "an_object_name",
+          "type": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      ],
+      "name": "root",
+      "type": "record"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    if expected.is_null() {
+        // No expected data = no avro support
+        return;
+    }
+
+    assert_eq!(expected, convert_avro(&input, context.clone()));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
 fn avro_test_map_with_atomics() {
     let input_data = r#"
     {
