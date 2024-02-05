@@ -521,6 +521,44 @@ fn bigquery_test_json_object() {
 }
 
 #[test]
+#[should_panic]
+fn bigquery_test_json_object_no_avro_support() {
+    let input_data = r#"
+    {
+      "properties": {
+        "an_object_name": {
+          "items": {},
+          "type": [
+            "object",
+            "array"
+          ]
+        }
+      }
+    }
+    "#;
+    let expected_data = r#"
+    "no schema -- we need it to panic"
+    "#;
+    let context_data = r#"
+    {
+      "json_object_path_regex": "an_object_name"
+    }
+    "#;
+    let context: Value = serde_json::from_str(context_data).unwrap();
+    let mut context: Context = if context.is_null() {
+        Default::default()
+    } else {
+        serde_json::from_value(context).unwrap()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context.clone()));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_map_with_atomics() {
     let input_data = r#"
     {
