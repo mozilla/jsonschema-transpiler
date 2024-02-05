@@ -60,17 +60,18 @@ pub struct Context {
     pub force_nullable: bool,
     pub tuple_struct: bool,
     pub allow_maps_without_value: bool,
-    pub json_object_path: Option<String>,
+    pub json_object_path_regex: Option<String>,
 }
 
 impl Context {
     /// Determine whether the given fully qualified name matches the configured json object path.
     fn is_json_object_path(&self, fqn: &str) -> bool {
         // would need to be passed in _somehow_.
-        self.json_object_path
+        self.json_object_path_regex
             .as_ref()
-            .map(|json_object_path| {
-                let re = format!(r"\A{}", json_object_path);
+            .map(|object_regex| {
+                // Ensure we match from the beginning of the string
+                let re = format!(r"\A{}", object_regex);
                 let json_object_path_re = Regex::new(&re).unwrap();
                 json_object_path_re.is_match(fqn)
             })
@@ -85,14 +86,14 @@ fn into_ast(input: &Value, context: &mut Context) -> ast::Tag {
     };
 
     // The only special thing this crates knows about the schema:
-    // Every sub-tree id matching the regex in `mozPipelineMetadata.json_object_path` is dumped as a JSON
+    // Every sub-tree id matching the regex in `mozPipelineMetadata.json_object_path_regex` is dumped as a JSON
     // column without peeking further into that subtree.
     let metadata = jsonschema
         .extra
         .get("mozPipelineMetadata")
-        .and_then(|obj| obj["json_object_path"].as_str());
-    if let Some(json_object_path) = metadata {
-        context.json_object_path = Some(json_object_path.to_string());
+        .and_then(|obj| obj["json_object_path_regex"].as_str());
+    if let Some(json_object_path_regex) = metadata {
+        context.json_object_path_regex = Some(json_object_path_regex.to_string());
     }
 
     ast::Tag::translate_from(jsonschema, context).unwrap()

@@ -81,7 +81,7 @@ fn main() {
         force_nullable: args.force_nullable,
         tuple_struct: args.tuple_struct,
         allow_maps_without_value: args.allow_maps_without_value,
-        json_object_path: None,
+        json_object_path_regex: None,
     };
 
     let output = match args.typ {

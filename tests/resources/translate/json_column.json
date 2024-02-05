@@ -25,7 +25,7 @@
           }
         },
         "context": {
-          "json_object_path": "an_object_name"
+          "json_object_path_regex": "an_object_name"
         }
       }
     }

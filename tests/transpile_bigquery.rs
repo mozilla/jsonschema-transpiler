@@ -503,7 +503,7 @@ fn bigquery_test_json_object() {
     "#;
     let context_data = r#"
     {
-      "json_object_path": "an_object_name"
+      "json_object_path_regex": "an_object_name"
     }
     "#;
     let context: Value = serde_json::from_str(context_data).unwrap();
