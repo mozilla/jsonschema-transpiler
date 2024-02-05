@@ -559,6 +559,61 @@ fn bigquery_test_json_object_no_avro_support() {
 }
 
 #[test]
+fn bigquery_test_json_object_nested() {
+    let input_data = r#"
+    {
+      "properties": {
+        "object": {
+          "properties": {
+            "an_object_name": {
+              "items": {},
+              "type": [
+                "object",
+                "array"
+              ]
+            }
+          },
+          "type": "object"
+        }
+      }
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "fields": [
+          {
+            "mode": "NULLABLE",
+            "name": "an_object_name",
+            "type": "JSON"
+          }
+        ],
+        "mode": "NULLABLE",
+        "name": "object",
+        "type": "RECORD"
+      }
+    ]
+    "#;
+    let context_data = r#"
+    {
+      "json_object_path_regex": "object\\..*"
+    }
+    "#;
+    let context: Value = serde_json::from_str(context_data).unwrap();
+    let mut context: Context = if context.is_null() {
+        Default::default()
+    } else {
+        serde_json::from_value(context).unwrap()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context.clone()));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_map_with_atomics() {
     let input_data = r#"
     {

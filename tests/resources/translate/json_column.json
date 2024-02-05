@@ -67,6 +67,46 @@
           "json_object_path_regex": "an_object_name"
         }
       }
+    },
+    {
+      "name": "test_json_object_nested",
+      "compatible": true,
+      "test": {
+        "avro": null,
+        "bigquery": [
+          {
+            "fields": [
+              {
+                "mode": "NULLABLE",
+                "name": "an_object_name",
+                "type": "JSON"
+              }
+            ],
+            "mode": "NULLABLE",
+            "name": "object",
+            "type": "RECORD"
+          }
+        ],
+        "json": {
+          "properties": {
+            "object": {
+              "properties": {
+                "an_object_name": {
+                  "items": {},
+                  "type": [
+                    "object",
+                    "array"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "context": {
+          "json_object_path_regex": "object\\..*"
+        }
+      }
     }
   ]
 }
