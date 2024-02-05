@@ -486,9 +486,15 @@ impl Tag {
 
     /// Assign names and namespaces to tags from parent tags.
     pub fn infer_name(&mut self, normalize_case: bool) {
-        let namespace = match &self.name {
-            Some(name) => name.clone(),
-            None => "".into(),
+        let namespace = {
+            let name = match &self.name {
+                Some(name) => name,
+                None => "",
+            };
+            match &self.namespace {
+                Some(ns) => format!("{}.{}", ns, name),
+                None => name.to_string(),
+            }
         };
         self.recurse_infer_name(namespace, normalize_case);
     }
