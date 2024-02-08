@@ -31,26 +31,49 @@ cargo install jsonschema-transpiler
 ```bash
 A tool to transpile JSON Schema into schemas for data processing
 
-USAGE:
-    jsonschema-transpiler [FLAGS] [OPTIONS] [file]
+Usage: jsonschema-transpiler [OPTIONS] [FILE]
 
-FLAGS:
-    -w, --allow-maps-without-value    Produces maps without a value field for incompatible or under-specified value
-                                      schema
-    -n, --force-nullable              Treats all columns as NULLABLE, ignoring the required section in the JSON Schema
-                                      object
-    -h, --help                        Prints help information
-    -c, --normalize-case              snake_case column-names for consistent behavior between SQL engines
-        --tuple-struct                Treats tuple validation as an anonymous struct
-    -V, --version                     Prints version information
+Arguments:
+  [FILE]
+          Sets the input file to use
 
-OPTIONS:
-    -r, --resolve <resolve>    The resolution strategy for incompatible or under-specified schema [default: cast]
-                               [possible values: cast, panic, drop]
-    -t, --type <type>          The output schema format [default: avro]  [possible values: avro, bigquery]
+Options:
+  -t, --type <TYPE>
+          The output schema format
 
-ARGS:
-    <file>    Sets the input file to use
+          [default: avro]
+
+          Possible values:
+          - avro:     Avro format
+          - bigquery: BigQuery format
+
+  -r, --resolve <RESOLVE>
+          The resolution strategy for incompatible or under-specified schema
+
+          [default: cast]
+
+          Possible values:
+          - cast:  Cast incompatible/under-specified schemas
+          - panic: Panic on incompatible/under-specified schemas
+          - drop:  Drop incompatible/under-specified schemas
+
+  -c, --normalize-case
+          snake_case column-names for consistent behavior between SQL engines
+
+  -n, --force-nullable
+          Treats all columns as NULLABLE, ignoring the required section in the JSON Schema object
+
+      --tuple-struct
+          Treats tuple validation as an anonymous struct
+
+  -w, --allow-maps-without-value
+          Produces maps without a value field for incompatible or under-specified value schema
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
 ```
 
 JSON Schemas can be read from stdin or from a file.
