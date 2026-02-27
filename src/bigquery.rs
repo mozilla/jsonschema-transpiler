@@ -598,6 +598,7 @@ mod tests {
     #[test]
     fn test_from_ast_array() {
         let data = json!({
+        "description": "foo",
         "type": {
             "array": {
                 "items": {
@@ -606,6 +607,7 @@ mod tests {
         let expect = json!({
             "type": "INT64",
             "mode": "REPEATED",
+            "description": "foo",
         });
         assert_eq!(expect, transform_tag(data));
     }

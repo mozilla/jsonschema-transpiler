@@ -40,6 +40,44 @@ fn bigquery_test_array_with_atomics() {
 }
 
 #[test]
+fn bigquery_test_array_with_atomic_with_description() {
+    let input_data = r#"
+    {
+      "description": "foo",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+    "#;
+    let expected_data = r#"
+    [
+      {
+        "description": "foo",
+        "mode": "REPEATED",
+        "name": "root",
+        "type": "STRING"
+      }
+    ]
+    "#;
+    let context_data = r#"
+    null
+    "#;
+    let context: Value = serde_json::from_str(context_data).unwrap();
+    let mut context: Context = if context.is_null() {
+        Default::default()
+    } else {
+        serde_json::from_value(context).unwrap()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    assert_eq!(expected, convert_bigquery(&input, context.clone()));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_bigquery(&input, context);
+}
+
+#[test]
 fn bigquery_test_array_with_complex() {
     let input_data = r#"
     {

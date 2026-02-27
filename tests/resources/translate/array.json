@@ -27,6 +27,33 @@
       }
     },
     {
+      "name": "test_array_with_atomic_with_description",
+      "compatible": true,
+      "test": {
+        "avro": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "bigquery": [
+          {
+            "description": "foo",
+            "mode": "REPEATED",
+            "name": "root",
+            "type": "STRING"
+          }
+        ],
+        "json": {
+          "description": "foo",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      }
+    },
+    {
       "name": "test_array_with_complex",
       "compatible": true,
       "test": {

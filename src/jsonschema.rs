@@ -369,7 +369,7 @@ impl Tag {
                             }
                         }
                     };
-                    ast::Tag::new(data_type, None, false, None, None)
+                    ast::Tag::new(data_type, None, false, description, title)
                 } else {
                     return Err("array missing item");
                 }

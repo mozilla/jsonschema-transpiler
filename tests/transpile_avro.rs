@@ -38,6 +38,41 @@ fn avro_test_array_with_atomics() {
 }
 
 #[test]
+fn avro_test_array_with_atomic_with_description() {
+    let input_data = r#"
+    {
+      "description": "foo",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+    "#;
+    let expected_data = r#"
+    {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+    "#;
+    let mut context = Context {
+        ..Default::default()
+    };
+    let input: Value = serde_json::from_str(input_data).unwrap();
+    let expected: Value = serde_json::from_str(expected_data).unwrap();
+    if expected.is_null() {
+        // No expected data = no avro support
+        return;
+    }
+
+    assert_eq!(expected, convert_avro(&input, context.clone()));
+
+    context.resolve_method = ResolveMethod::Panic;
+    convert_avro(&input, context);
+}
+
+#[test]
 fn avro_test_array_with_complex() {
     let input_data = r#"
     {
